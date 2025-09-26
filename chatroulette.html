@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Mini Chatroulette</title>
+<style>
+canvas { border:1px solid black; margin:5px; }
+button { padding:8px 12px; margin:5px; }
+</style>
+</head>
+<body>
+<h2>Mini Chatroulette (lokal)</h2>
+<canvas id="localCanvas" width="320" height="240"></canvas>
+<canvas id="remoteCanvas" width="320" height="240"></canvas>
+<button id="nextBtn">Nächster Partner</button>
+
+<script>
+const localCanvas = document.getElementById('localCanvas');
+const remoteCanvas = document.getElementById('remoteCanvas');
+const localCtx = localCanvas.getContext('2d');
+const remoteCtx = remoteCanvas.getContext('2d');
+const nextBtn = document.getElementById('nextBtn');
+
+let localVideo = document.createElement('video');
+localVideo.autoplay = true;
+localVideo.muted = true;
+
+navigator.mediaDevices.getUserMedia({ video:true, audio:true })
+  .then(stream => { localVideo.srcObject = stream; });
+
+let partner = { x:50, y:50, dx:2, dy:2, color:'red' };
+
+function drawLocal() {
+  if(localVideo.readyState >=2) localCtx.drawImage(localVideo,0,0,320,240);
+  else { localCtx.fillStyle='#222'; localCtx.fillRect(0,0,320,240); }
+  requestAnimationFrame(drawLocal);
+}
+
+function drawRemote() {
+  remoteCtx.fillStyle='black';
+  remoteCtx.fillRect(0,0,320,240);
+  remoteCtx.fillStyle = partner.color;
+  remoteCtx.fillRect(partner.x, partner.y, 80,60);
+  partner.x += partner.dx; partner.y += partner.dy;
+  if(partner.x<0 || partner.x>240) partner.dx*=-1;
+  if(partner.y<0 || partner.y>180) partner.dy*=-1;
+  requestAnimationFrame(drawRemote);
+}
+
+nextBtn.onclick = () => {
+  const colors = ['red','green','purple','orange','teal','pink'];
+  partner.color = colors[Math.floor(Math.random()*colors.length)];
+  partner.x = Math.random()*240; partner.y = Math.random()*180;
+  partner.dx = Math.random()*4-2; partner.dy = Math.random()*4-2;
+};
+
+drawLocal();
+drawRemote();
+</script>
+</body>
+</html>
