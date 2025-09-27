@@ -4,7 +4,89 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mini Chatroulette</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1c1c1c, #2e2e2e);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .profile-form, .videos, .chat-box {
+      background: rgba(50, 50, 50, 0.95);
+      padding: 15px;
+      margin: 10px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      max-width: 1200px;
+    }
+    .profile-form label {
+      margin-right: 15px;
+    }
+    video {
+      width: 48%;
+      height: 360px;
+      background: #000;
+      border-radius: 8px;
+      margin: 5px 0;
+      object-fit: cover;
+    }
+    .video-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: bold;
+    }
+    .btn-start, .btn-next {
+      background-color: #007bff;
+      color: #fff;
+    }
+    .btn-stop {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    .btn-send {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .chat-messages {
+      height: 200px;
+      overflow-y: auto;
+      background: #1f1f1f;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1em;
+    }
+  </style>
 </head>
 <body>
   <header>Mini Chatroulette</header>
@@ -51,7 +133,7 @@
     </div>
   </section>
 
-  <!-- echte Logik ausgelagert -->
+  <!-- echtes P2P Script -->
   <script src="client.js"></script>
 </body>
 </html>
