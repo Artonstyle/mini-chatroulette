@@ -1,5 +1,7 @@
 const startBtn = document.querySelector('.btn-start');
 const localVideo = document.getElementById('localVideo');
+const chatInput = document.querySelector('.chat-input input');
+const sendBtn = document.querySelector('.btn-send');
 
 let localStream;
 
@@ -16,8 +18,8 @@ async function startWebcam() {
 
 startBtn.addEventListener('click', startWebcam);
 
-};
 chatInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') sendBtn.onclick();
+  if (e.key === 'Enter') {
+    sendBtn.onclick();
+  }
 });
-
