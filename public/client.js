@@ -1,97 +1,77 @@
-const ws = new WebSocket("wss://mini-chatroulette.onrender.com"); // Render-URL
+// ... Vorhandener Code ...
 
-let localStream;
-let peerConnection;
-let dataChannel;
-
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-const messagesDiv = document.querySelector(".chat-messages");
-const input = document.querySelector(".chat-input input");
-const sendBtn = document.querySelector(".btn-send");
-
-const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-
-async function startCamera() {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  localVideo.srcObject = localStream;
-}
-
-function createPeerConnection() {
-  peerConnection = new RTCPeerConnection(config);
-
-  // Lokalen Stream anhängen
-  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-  // Remote-Stream empfangen
-  peerConnection.ontrack = (event) => {
-    remoteVideo.srcObject = event.streams[0];
-  };
-
-  // ICE-Kandidaten senden
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
-    }
-  };
-
-  // DataChannel für Chat
-  dataChannel = peerConnection.createDataChannel("chat");
-  dataChannel.onmessage = (event) => {
-    addMessage("Partner", event.data);
-  };
-
-  peerConnection.ondatachannel = (event) => {
-    event.channel.onmessage = (e) => {
-      addMessage("Partner", e.data);
-    };
-  };
-}
-
-function addMessage(sender, text) {
-  const div = document.createElement("div");
-  div.textContent = `${sender}: ${text}`;
-  messagesDiv.appendChild(div);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-// --- WebSocket Handling ---
-ws.onopen = () => console.log("✅ Verbunden mit Signalisierungsserver");
-
-ws.onmessage = async (event) => {
-  const data = JSON.parse(event.data);
-
-  if (data.type === "offer") {
-    createPeerConnection();
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    ws.send(JSON.stringify({ type: "answer", answer }));
-  } else if (data.type === "answer") {
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-  } else if (data.type === "candidate" && peerConnection) {
-    try {
-      await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (err) {
-      console.error("❌ Fehler beim Hinzufügen des ICE Candidate:", err);
-    }
-  }
-};
-
-// --- Buttons ---
+// --- Button Handling ---
 document.querySelector(".btn-start").onclick = async () => {
-  await startCamera();
-  createPeerConnection();
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
-  ws.send(JSON.stringify({ type: "offer", offer }));
+    // 1. Kriterien sammeln
+    const gender = document.getElementById("gender").value;
+    const search = document.getElementById("search").value;
+    const country = document.getElementById("country").value;
+
+    // 2. Kamera starten
+    await startCamera(); 
+
+    // 3. Server um Match bitten und Kriterien senden
+    ws.send(JSON.stringify({ 
+        type: "join", 
+        gender: gender, 
+        search: search, 
+        country: country 
+    }));
+    
+    // Anmerkung: createPeerConnection() und offer-Erstellung 
+    // sollten erst erfolgen, wenn der Server ein Match findet und dies 
+    // dem Client mitteilt (z.B. mit einer "match-found" Nachricht).
+    // ABER für den *simplen* Test lassen wir es hier, und senden nur die Kriterien.
+    // In einer echten App würde der Server das "offer" an den gematchten 
+    // Partner weiterleiten.
 };
 
-document.querySelector(".btn-send").onclick = () => {
-  const text = input.value.trim();
-  if (text && dataChannel) {
-    dataChannel.send(text);
-    addMessage("Ich", text);
-    input.value = "";
-  }
+document.querySelector(".btn-next").onclick = () => {
+    // 1. Aktuelle Verbindung beenden (falls vorhanden)
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+        remoteVideo.srcObject = null;
+    }
+    
+    // 2. Server informieren und um einen neuen Partner bitten (inkl. Kriterien)
+    const gender = document.getElementById("gender").value;
+    const search = document.getElementById("search").value;
+    const country = document.getElementById("country").value;
+
+    ws.send(JSON.stringify({ 
+        type: "next", // Neuer Typ für den Server
+        gender: gender, 
+        search: search, 
+        country: country 
+    }));
+    
+    // Chat leeren
+    messagesDiv.innerHTML = "";
+    addMessage("System", "Suche nach neuem Partner...");
 };
+
+document.querySelector(".btn-stop").onclick = () => {
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+        remoteVideo.srcObject = null;
+    }
+    // Server informieren, dass man die Warteschlange verlässt/stoppt
+    ws.send(JSON.stringify({ type: "stop" }));
+    messagesDiv.innerHTML = "";
+    addMessage("System", "Chat beendet.");
+    // Ggf. Kamera stoppen
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localVideo.srcObject = null;
+        localStream = null;
+    }
+};
+
+// ... Anpassung in ws.onmessage ...
+// Der Server muss jetzt auf "join", "next", "stop" reagieren 
+// und die Signalisierung (offer/answer/candidate) nur zwischen 
+// zwei gematchten Peers weiterleiten.
+// Er müsste dem Client mitteilen, WANN er das createPeerConnection und Offer 
+// starten soll, nachdem ein Match gefunden wurde.
