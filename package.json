@@ -1,12 +1,173 @@
-{
-  "name": "mini-chatroulette",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "ws": "^8.15.0"
-  }
+// Server-Logik für Render (Node.js mit ws)
+const WebSocket = require('ws');
+const http = require('http');
+
+// WICHTIG: Port für Render/Deployment muss aus Umgebungsvariable gelesen werden
+const PORT = process.env.PORT || 8080; 
+
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('WebSocket Server is running');
+});
+
+const wss = new WebSocket.Server({ server });
+
+// Queue für wartende Benutzer, um das Matching zu vereinfachen
+let waitingUsers = []; 
+// Map zur Speicherung der Verbindungen und Suchkriterien
+const clients = new Map(); 
+
+wss.on('connection', (ws) => {
+    const clientId = generateId(); // Eindeutige ID für jeden Client
+
+    // Speichere den Client und setze den Partner auf null
+    clients.set(ws, { id: clientId, partner: null, criteria: null }); 
+
+    console.log(`[${clientId}] Verbunden. Aktive Clients: ${clients.size}`);
+
+    ws.on('message', (message) => {
+        let data;
+        try {
+            data = JSON.parse(message);
+        } catch (e) {
+            console.error("Ungültiges JSON", message);
+            return;
+        }
+
+        // Finde den aktuellen Client und seinen Partner
+        const currentClient = clients.get(ws);
+        const partnerWs = currentClient.partner ? findClientWs(currentClient.partner) : null;
+
+        // --- Matchmaking & Chatroulette-Logik ---
+
+        if (data.type === 'join' || data.type === 'next') {
+            
+            // Partner beenden, falls vorhanden (bei 'next')
+            if (currentClient.partner) {
+                disconnectPartner(ws, currentClient.partner);
+            }
+            
+            currentClient.criteria = { 
+                gender: data.gender, 
+                search: data.search, 
+                country: data.country 
+            };
+            
+            // Prüfe, ob ein passender Partner wartet
+            const matchedUser = findMatch(currentClient);
+
+            if (matchedUser) {
+                // MATCH GEFUNDEN!
+                console.log(`[${clientId}] matched mit [${matchedUser.id}]`);
+                
+                // Setze die Partnerschaft für beide
+                currentClient.partner = matchedUser.id;
+                matchedUser.partner = clientId;
+                
+                // Entferne beide aus der Warteschlange
+                waitingUsers = waitingUsers.filter(u => u.id !== clientId && u.id !== matchedUser.id);
+
+                // Startet die WebRTC-Verhandlung: Einer ist der Caller (erzeugt Offer)
+                ws.send(JSON.stringify({ type: 'matched', should_offer: true }));
+                findClientWs(matchedUser.id).send(JSON.stringify({ type: 'matched', should_offer: false }));
+                
+            } else {
+                // Kein Match gefunden: Zur Warteschlange hinzufügen
+                if (!waitingUsers.some(u => u.id === clientId)) {
+                    waitingUsers.push(currentClient);
+                }
+                console.log(`[${clientId}] Wartet. Warteschlange: ${waitingUsers.length}`);
+                if (data.type !== 'next') {
+                    // Sende 'no_match' nur beim ersten 'join' (oder wenn es eine Weile dauert)
+                    // (Kann für besseres Feedback entfernt werden, da der Client ohnehin wartet)
+                    // ws.send(JSON.stringify({ type: 'no_match' })); 
+                }
+            }
+            
+        // --- WebRTC Signalisierung ---
+        } else if (partnerWs && ['offer', 'answer', 'candidate'].includes(data.type)) {
+            // Leite Signalisierungsnachrichten an den Partner weiter
+            partnerWs.send(JSON.stringify(data));
+            
+        // --- Verbindung beenden/Stoppen-Logik ---
+        } else if (data.type === 'stop' || data.type === 'next') {
+            // Client stoppt/wechselt
+            if (currentClient.partner) {
+                disconnectPartner(ws, currentClient.partner);
+            }
+            // Entferne aus Warteschlange, falls er gewartet hat
+            waitingUsers = waitingUsers.filter(u => u.id !== clientId);
+            console.log(`[${clientId}] hat gestoppt/gewechselt.`);
+        }
+    });
+
+    ws.on('close', () => {
+        // Trenne auch den Partner, falls verbunden
+        if (currentClient && currentClient.partner) {
+            disconnectPartner(ws, currentClient.partner);
+        }
+        // Entferne den Client aus der Warteschlange und Map
+        waitingUsers = waitingUsers.filter(u => u.id !== clientId);
+        clients.delete(ws);
+        console.log(`[${clientId}] Getrennt. Aktive Clients: ${clients.size}`);
+    });
+});
+
+// --- Server Hilfsfunktionen ---
+
+function generateId() {
+    return Math.random().toString(36).substring(2, 9);
 }
+
+function findClientWs(clientId) {
+    for (const [ws, clientData] of clients.entries()) {
+        if (clientData.id === clientId) {
+            return ws;
+        }
+    }
+    return null;
+}
+
+function disconnectPartner(ws, partnerId) {
+    const partnerWs = findClientWs(partnerId);
+    if (partnerWs) {
+        // Sende dem Partner die Nachricht, dass der andere gegangen ist
+        partnerWs.send(JSON.stringify({ type: 'partner_left' }));
+        const partnerClient = clients.get(partnerWs);
+        partnerClient.partner = null; // Partner-Referenz beim Partner entfernen
+        // Partner zur Warteschlange hinzufügen, falls er eine neue Suche starten möchte
+        // (Optional: Kann weggelassen werden, wenn der Partner manuell auf 'Nächster' klicken soll)
+        if (!waitingUsers.some(u => u.id === partnerId)) {
+             waitingUsers.push(partnerClient);
+        }
+    }
+    const currentClient = clients.get(ws);
+    currentClient.partner = null; // Partner-Referenz beim aktuellen Client entfernen
+}
+
+function findMatch(currentClient) {
+    const { gender, search, country } = currentClient.criteria;
+
+    return waitingUsers.find(potentialPartner => {
+        const p = potentialPartner.criteria;
+
+        // Nicht mit sich selbst matchen
+        if (potentialPartner.id === currentClient.id) return false; 
+        
+        // 1. Geschlechter-Matching: Bin ich OK für den Partner?
+        const partnerAcceptsMe = (p.search === 'egal' || p.search === gender);
+        
+        // 2. Geschlechter-Matching: Ist der Partner OK für mich?
+        const iAcceptPartner = (search === 'egal' || search === p.gender);
+
+        // 3. Länder-Matching: Land des Partners
+        const countryMatch = (country === 'egal' || country === p.country) && 
+                             (p.country === 'egal' || p.country === country); 
+
+        return partnerAcceptsMe && iAcceptPartner && countryMatch;
+    });
+}
+
+server.listen(PORT, () => {
+    console.log(`Signalisierungsserver gestartet auf Port ${PORT}`);
+});
