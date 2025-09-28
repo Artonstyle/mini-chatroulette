@@ -9,8 +9,8 @@ const wss = new WebSocket.Server({ server });
 
 app.use(express.static(path.join(__dirname, "public")));
 
-let waiting = null; // ein User wartet auf Partner
-const pairs = new Map(); // Map: client → partner
+let waiting = null;
+const pairs = new Map();
 
 wss.on("connection", (ws) => {
   console.log("🔗 Neuer Client");
@@ -19,18 +19,15 @@ wss.on("connection", (ws) => {
     const data = JSON.parse(msg);
 
     if (data.type === "start") {
-      // Prüfen ob schon jemand wartet
       if (waiting && waiting !== ws) {
-        // Matchen
+        // Match
         pairs.set(ws, waiting);
         pairs.set(waiting, ws);
-
-        waiting.send(JSON.stringify({ type: "match" }));
         ws.send(JSON.stringify({ type: "match" }));
-
-        waiting = null; // keiner mehr wartet
+        waiting.send(JSON.stringify({ type: "match" }));
+        waiting = null;
       } else {
-        waiting = ws; // dieser Client wartet jetzt
+        waiting = ws;
       }
     }
 
@@ -44,11 +41,20 @@ wss.on("connection", (ws) => {
       if (waiting && waiting !== ws) {
         pairs.set(ws, waiting);
         pairs.set(waiting, ws);
-        waiting.send(JSON.stringify({ type: "match" }));
         ws.send(JSON.stringify({ type: "match" }));
+        waiting.send(JSON.stringify({ type: "match" }));
         waiting = null;
       } else {
         waiting = ws;
+      }
+    }
+
+    else if (data.type === "stop") {
+      const partner = pairs.get(ws);
+      if (partner) {
+        pairs.delete(ws);
+        pairs.delete(partner);
+        partner.send(JSON.stringify({ type: "partner-left" }));
       }
     }
 
@@ -74,4 +80,4 @@ wss.on("connection", (ws) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Läuft auf Port ${PORT}`));
