@@ -1,136 +1,97 @@
-// Elemente aus HTML
-const startBtn = document.querySelector('.btn-start');
-const stopBtn = document.querySelector('.btn-stop');
-const nextBtn = document.querySelector('.btn-next');
-const sendBtn = document.querySelector('.btn-send');
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-const chatMessages = document.querySelector('.chat-messages');
-const chatInput = document.querySelector('.chat-input input');
+const ws = new WebSocket("wss://mini-chatroulette.onrender.com"); // Render-URL
 
 let localStream;
 let peerConnection;
 let dataChannel;
-let ws;
 
-// Starte WebSocket + PeerConnection
-function connectWS() {
-  ws = new WebSocket(`wss://${window.location.host}`);
-  
-  ws.onmessage = async (event) => {
-    const data = JSON.parse(event.data);
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const messagesDiv = document.querySelector(".chat-messages");
+const input = document.querySelector(".chat-input input");
+const sendBtn = document.querySelector(".btn-send");
 
-    if (data.type === 'offer') {
-      await handleOffer(data.offer);
-    } else if (data.type === 'answer') {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-    } else if (data.type === 'candidate') {
-      await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
-  };
+const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  ws.onopen = () => console.log("WebSocket verbunden ✅");
-  ws.onerror = (err) => console.error("WebSocket Fehler:", err);
-}
-
-// Webcam starten + Peer erstellen
-async function startWebcam() {
-  connectWS();
+async function startCamera() {
   localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
   localVideo.srcObject = localStream;
-
-  createPeerConnection();
-
-  // Track hinzufügen
-  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-  // DataChannel für Chat
-  dataChannel = peerConnection.createDataChannel("chat");
-  setupDataChannel();
-
-  // Offer erstellen
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
-  ws.send(JSON.stringify({ type: 'offer', offer }));
 }
 
-// PeerConnection erstellen
 function createPeerConnection() {
-  peerConnection = new RTCPeerConnection();
+  peerConnection = new RTCPeerConnection(config);
 
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      ws.send(JSON.stringify({ type: 'candidate', candidate: event.candidate }));
-    }
-  };
+  // Lokalen Stream anhängen
+  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
+  // Remote-Stream empfangen
   peerConnection.ontrack = (event) => {
     remoteVideo.srcObject = event.streams[0];
   };
 
-  peerConnection.ondatachannel = (event) => {
-    dataChannel = event.channel;
-    setupDataChannel();
+  // ICE-Kandidaten senden
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+    }
   };
-}
 
-// Offer vom Partner empfangen + Answer senden
-async function handleOffer(offer) {
-  createPeerConnection();
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
-  // Eigene Kamera
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  localVideo.srcObject = localStream;
-  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-  const answer = await peerConnection.createAnswer();
-  await peerConnection.setLocalDescription(answer);
-  ws.send(JSON.stringify({ type: 'answer', answer }));
-}
-
-// Chat DataChannel
-function setupDataChannel() {
-  if (!dataChannel) return;
-
+  // DataChannel für Chat
+  dataChannel = peerConnection.createDataChannel("chat");
   dataChannel.onmessage = (event) => {
-    const div = document.createElement('div');
-    div.textContent = "Partner: " + event.data;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    addMessage("Partner", event.data);
+  };
+
+  peerConnection.ondatachannel = (event) => {
+    event.channel.onmessage = (e) => {
+      addMessage("Partner", e.data);
+    };
   };
 }
 
-// Nachricht senden
-function sendMessage() {
-  const msg = chatInput.value.trim();
-  if (!msg || !dataChannel) return;
-
-  dataChannel.send(msg);
-
-  const div = document.createElement('div');
-  div.textContent = "Du: " + msg;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-
-  chatInput.value = '';
+function addMessage(sender, text) {
+  const div = document.createElement("div");
+  div.textContent = `${sender}: ${text}`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// Webcam + Verbindung stoppen
-function stopAll() {
-  if (localStream) localStream.getTracks().forEach(track => track.stop());
-  localVideo.srcObject = null;
-  remoteVideo.srcObject = null;
-  chatMessages.innerHTML = '';
-  chatInput.value = '';
-  if (peerConnection) peerConnection.close();
-  if (ws) ws.close();
-}
+// --- WebSocket Handling ---
+ws.onopen = () => console.log("✅ Verbunden mit Signalisierungsserver");
 
-startBtn.addEventListener('click', startWebcam);
-stopBtn.addEventListener('click', stopAll);
-sendBtn.addEventListener('click', sendMessage);
-chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+ws.onmessage = async (event) => {
+  const data = JSON.parse(event.data);
 
-// Optional: Nächster Benutzer (Reload/Reset für Demo)
-nextBtn.addEventListener('click', () => { stopAll(); startWebcam(); });
+  if (data.type === "offer") {
+    createPeerConnection();
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    ws.send(JSON.stringify({ type: "answer", answer }));
+  } else if (data.type === "answer") {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+  } else if (data.type === "candidate" && peerConnection) {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    } catch (err) {
+      console.error("❌ Fehler beim Hinzufügen des ICE Candidate:", err);
+    }
+  }
+};
+
+// --- Buttons ---
+document.querySelector(".btn-start").onclick = async () => {
+  await startCamera();
+  createPeerConnection();
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+  ws.send(JSON.stringify({ type: "offer", offer }));
+};
+
+document.querySelector(".btn-send").onclick = () => {
+  const text = input.value.trim();
+  if (text && dataChannel) {
+    dataChannel.send(text);
+    addMessage("Ich", text);
+    input.value = "";
+  }
+};
