@@ -1,35 +1,42 @@
 const express = require('express');
+const { WebSocketServer } = require('ws');
 const http = require('http');
-const WebSocket = require('ws');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
-app.use(express.static(path.join(__dirname, 'public')));
-
+// Array für alle verbundenen Clients
 let clients = [];
 
 wss.on('connection', (ws) => {
+  console.log("Neuer Client verbunden ✅");
   clients.push(ws);
-  console.log('Neuer Client verbunden, gesamt:', clients.length);
 
   ws.on('message', (message) => {
-    // Nachrichten an alle anderen Clients senden
+    // Nachricht an alle anderen Clients weiterleiten
     clients.forEach(client => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(message);
+      if (client !== ws && client.readyState === client.OPEN) {
+        client.send(message.toString());
       }
     });
   });
 
   ws.on('close', () => {
+    console.log("Client getrennt ❌");
     clients = clients.filter(c => c !== ws);
-    console.log('Client getrennt, gesamt:', clients.length);
+  });
+
+  ws.on('error', (err) => {
+    console.error("WebSocket Fehler:", err);
   });
 });
 
+// Statische Dateien aus public/ bereitstellen
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Server starten
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);
