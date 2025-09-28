@@ -1,6 +1,3 @@
-
-// Konfigurieren Sie hier die URL Ihres Signalisierungsservers
-// !!! WICHTIG: Ersetzen Sie den Platzhalter 'IHRE-RENDERSERVER-URL-MIT-ZUFALLSZEICHEN' durch die ECHTE Adresse von Render (ohne https://)!
 const WS_URL = "wss://mini-chatrouelette.onrender.com"; 
 const ws = new WebSocket(WS_URL); 
 
@@ -231,4 +228,5 @@ sendBtn.onclick = () => {
         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
     }
 };
+
 
