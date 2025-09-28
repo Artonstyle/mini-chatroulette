@@ -1,4 +1,4 @@
-const WS_URL = "wss://mini-chatrouelette.onrender.com"; 
+const WS_URL = "wss://mini-chatroulette.onrender.com"; 
 const ws = new WebSocket(WS_URL); 
 
 let localStream;
@@ -228,5 +228,6 @@ sendBtn.onclick = () => {
         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
     }
 };
+
 
 
