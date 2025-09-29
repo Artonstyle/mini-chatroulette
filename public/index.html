@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ================= SEO & Google ================= -->
   <title>Mini Chatroulette – Videochat online</title>
+  <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
+  <meta name="robots" content="index, follow">
+  <!-- Google Search Console Verifizierung -->
+  <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
+
+  <!-- ================= Styles ================= -->
   <style>
     body {
       font-family: Arial, sans-serif;
       color: #fff;
       margin: 0;
       padding: 20px;
-    }
-
-    /* Gradient Hintergrund */
-    body.gradient {
       background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
       background-size: 400% 400%;
       animation: gradientBG 15s ease infinite;
@@ -23,18 +27,16 @@
       50% {background-position: 100% 50%;}
       100% {background-position: 0% 50%;}
     }
-
     header {
       font-size: 2em;
       font-weight: bold;
       margin-bottom: 20px;
       text-align: center;
       color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff;
+      text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
       letter-spacing: 2px;
     }
 
-    /* Profilbereich */
     .profile-form {
       display: flex;
       align-items: center;
@@ -49,33 +51,26 @@
       margin-left: auto;
       margin-right: auto;
     }
-
     .form-left {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       align-items: center;
     }
-
     .online-right {
-      display: flex;
-      justify-content: flex-end;
-      flex: 1;
       font-weight: bold;
       color: #0f0;
     }
-
     button.btn-start {
+      margin-left: 5px;
       background-color: #28a745;
       color: #fff;
       border-radius: 8px;
       padding: 10px 20px;
       cursor: pointer;
       font-weight: bold;
-      margin-left: 5px;
     }
 
-    /* Videos */
     .videos {
       background: rgba(50,50,50,0.95);
       padding: 15px;
@@ -84,28 +79,18 @@
       max-width: 1200px;
       margin: 10px auto;
     }
-
     .video-container {
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 10px;
     }
-
-    .video-container video {
-      flex: 1 1 calc(48% - 5px);
-      aspect-ratio: 16 / 9;
+    video {
+      width: 48%;
+      height: 360px;
       background: #000;
       border-radius: 8px;
       object-fit: cover;
-      min-width: 200px;
-    }
-
-    #remotePlaceholder {
-      flex: 1 1 calc(48% - 5px);
-      aspect-ratio: 16 / 9;
-      background: url('https://media1.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3cWRoNnF4MHE2N2Z0OXgybHd1OHA2eXhicTJkb3d4OTUwN2J3d2FvNyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/FYXUyad0PAkcAooYEJ/giphy.webp') center center / cover no-repeat;
-      border-radius: 8px;
+      margin: 5px 0;
     }
 
     .buttons {
@@ -114,7 +99,6 @@
       justify-content: flex-end;
       gap: 10px;
     }
-
     .buttons button {
       min-width: 120px;
       padding: 10px 20px;
@@ -125,16 +109,13 @@
       font-weight: bold;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-
     .buttons button:hover {
       transform: scale(1.07);
       box-shadow: 0 0 12px rgba(255,255,255,0.4);
     }
-
     .btn-stop {background-color: #dc3545; color: #fff;}
     .btn-next {background-color: #007bff; color: #fff;}
 
-    /* Chat */
     .chat-box {
       background: rgba(50,50,50,0.95);
       padding: 15px;
@@ -143,14 +124,36 @@
       max-width: 1200px;
       margin: 10px auto;
     }
-
-    .chat-messages {height: 200px; overflow-y: auto; background: #1f1f1f; padding: 10px; border-radius: 8px; margin-bottom: 10px;}
-    .chat-input {display: flex; gap: 10px;}
-    .chat-input input {flex: 1; padding: 10px; border-radius: 8px; border: none; font-size: 1em;}
-    .btn-send {background-color: #ffc107; color: #000; border-radius: 8px; padding: 10px 20px; cursor: pointer; font-weight: bold;}
+    .chat-messages {
+      height: 200px;
+      overflow-y: auto;
+      background: #1f1f1f;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1em;
+    }
+    .btn-send {
+      background-color: #ffc107;
+      color: #000;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
   </style>
 </head>
-<body class="gradient">
+<body>
 
   <header>Mini Chatroulette</header>
 
@@ -161,7 +164,7 @@
         <select id="gender"><option>Mann</option><option>Frau</option></select>
       </label>
       <label>Ich suche:
-        <select id="search"><option>Frau</option><option>Mann</option></select>
+        <select id="search"><option>Mann</option><option>Frau</option></select>
       </label>
       <label>Mein Land:
         <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
@@ -177,8 +180,7 @@
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted></video>
-      <div id="remotePlaceholder"></div>
-      <video id="remoteVideo" autoplay style="display:none;"></video>
+      <video id="remoteVideo" autoplay></video>
     </div>
     <div class="buttons">
       <button class="btn-next">⏭ Nächster</button>
@@ -195,6 +197,7 @@
     </div>
   </section>
 
+  <!-- Client-Script -->
   <script src="client.js"></script>
 </body>
 </html>
