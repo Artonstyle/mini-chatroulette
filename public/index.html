@@ -176,3 +176,10 @@
   <script src="client.js"></script>
 </body>
 </html>
+// NEU: Besucherzähler vom Server empfangen
+else if (data.type === "user-count") {
+    const onlineCountElement = document.getElementById("onlineCount");
+    if (onlineCountElement) {
+        onlineCountElement.textContent = data.count;
+    }
+}
