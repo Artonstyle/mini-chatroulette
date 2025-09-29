@@ -9,16 +9,14 @@ const wss = new WebSocket.Server({ server });
 // Dient statischen Dateien aus dem 'public' Ordner
 app.use(express.static('public')); 
 
-let waiting = null; // Speichert den einen wartenden Client
-const pairs = new Map(); // Speichert, wer mit wem verbunden ist
+let waiting = null; 
+const pairs = new Map(); 
 
 // NEU: Funktion zum Senden der aktuellen Besucherzahl an alle Clients
 function broadcastUserCount() {
-    // wss.clients.size gibt die Anzahl der aktuell verbundenen Clients
     const count = wss.clients.size;
     const message = JSON.stringify({ type: "user-count", count: count });
     
-    // Sende die Nachricht an ALLE verbundenen Clients
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(message);
@@ -29,28 +27,25 @@ function broadcastUserCount() {
 wss.on("connection", (ws) => {
     console.log("🔗 Neuer Client verbunden");
     
-    // NEU: Sende die Zahl bei JEDER Verbindung
+    // Sende die Zahl bei JEDER Verbindung
     broadcastUserCount();
 
     ws.on("message", (msg) => {
         const data = JSON.parse(msg);
 
-        // --- START-Logik: Sucht einen Partner ---
+        // --- START-Logik ---
         if (data.type === "start") {
             if (waiting && waiting !== ws) {
-                // Match gefunden
-
-                const caller = ws;        
+                const caller = ws;       
                 const answerer = waiting; 
 
                 pairs.set(caller, answerer);
                 pairs.set(answerer, caller);
-                waiting = null; // Warteschlange leeren
+                waiting = null; 
 
                 caller.send(JSON.stringify({ type: "matched", should_offer: true })); 
                 answerer.send(JSON.stringify({ type: "matched", should_offer: false }));
             } else {
-                // Keinen Partner gefunden, in die Warteschlange stellen
                 waiting = ws;
                 ws.send(JSON.stringify({ type: "no-match" }));
             }
@@ -90,7 +85,7 @@ wss.on("connection", (ws) => {
         }
         if (waiting === ws) waiting = null;
         
-        // NEU: Sende die aktualisierte Zahl nach der Trennung
+        // Sende die aktualisierte Zahl nach der Trennung
         broadcastUserCount();
     });
 });
