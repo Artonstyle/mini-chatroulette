@@ -15,14 +15,8 @@
     header {
       font-size: 2em;
       font-weight: bold;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    #onlineCount {
-      text-align: center;
       margin-bottom: 20px;
-      font-weight: bold;
-      color: #0f0; /* grün */
+      text-align: center;
     }
     .profile-form, .videos, .chat-box {
       background: rgba(50, 50, 50, 0.95);
@@ -32,8 +26,20 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
       max-width: 1200px;
     }
+    .profile-form {
+      display: flex;
+      align-items: center;
+      justify-content: space-between; /* damit Start links und Zähler rechts */
+      flex-wrap: wrap;
+      gap: 10px;
+    }
     .profile-form label {
       margin-right: 15px;
+    }
+    #onlineCount {
+      margin-left: auto;
+      font-weight: bold;
+      color: #0f0; /* grün */
     }
     video {
       width: 48%;
@@ -96,30 +102,32 @@
 </head>
 <body>
   <header>Mini Chatroulette</header>
-  <!-- Besucheranzeige -->
-  <div id="onlineCount">👥 Online: 0</div>
 
   <section class="profile-form">
-    <label>Ich bin:
-      <select id="gender">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-    <label>Ich suche:
-      <select id="search">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-    <label>Mein Land:
-      <select id="country">
-        <option>Deutschland</option>
-        <option>Österreich</option>
-        <option>Schweiz</option>
-      </select>
-    </label>
-    <button class="btn-start">Start</button>
+    <div class="form-left">
+      <label>Ich bin:
+        <select id="gender">
+          <option>Mann</option>
+          <option>Frau</option>
+        </select>
+      </label>
+      <label>Ich suche:
+        <select id="search">
+          <option>Mann</option>
+          <option>Frau</option>
+        </select>
+      </label>
+      <label>Mein Land:
+        <select id="country">
+          <option>Deutschland</option>
+          <option>Österreich</option>
+          <option>Schweiz</option>
+        </select>
+      </label>
+      <button class="btn-start">Start</button>
+    </div>
+    <!-- Online Zähler rechts -->
+    <div id="onlineCount">👥 Online: 0</div>
   </section>
 
   <section class="videos">
