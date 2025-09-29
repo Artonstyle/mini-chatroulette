@@ -1,4 +1,4 @@
-// HINWEIS: Überprüfen Sie, ob diese URL korrekt ist und auf Ihren Render-Server zeigt!
+// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
 const WS_URL = "wss://mini-chatroulette.onrender.com"; 
 const ws = new WebSocket(WS_URL); 
 
@@ -25,7 +25,8 @@ const config = {
     ] 
 };
 
-const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; // PASST DIESEN PFAD AN!
+// Platzhalter für "Suchen"-Animation
+const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; // Passen Sie den Pfad an Ihr Video an!
 
 // --- Hilfsfunktionen ---
 
@@ -161,7 +162,7 @@ ws.onmessage = async (event) => {
     } else if (data.type === "no-match") {
          addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
     } 
-    // NEUE LOGIK FÜR BESUCHERZÄHLUNG
+    // HIER: Logik für Besucherzählung vom Server
     else if (data.type === "user-count") {
         const onlineCountElement = document.getElementById("onlineCount");
         if (onlineCountElement) {
