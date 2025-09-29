@@ -30,22 +30,27 @@
     .profile-form {
         display: flex;
         align-items: center;
-        gap: 20px; /* Abstand zwischen den Hauptelementen */
-        justify-content: space-between; /* Verteilt Elemente gleichmäßig */
+        gap: 20px; 
+        justify-content: space-between; 
     }
     .profile-options {
         display: flex;
         align-items: center;
         gap: 15px;
     }
+    /* KORREKTUR: Zähler auf WEISS (#fff) gesetzt */
     .online-count-display {
-        color: #007bff; 
+        color: #fff; /* Basis-Textfarbe (z.B. "Online:") */
         font-weight: bold;
         font-size: 1.1em;
         margin-right: 10px; 
         white-space: nowrap;
     }
+    .online-count-display #onlineCount {
+        color: #fff; /* Stellt sicher, dass die Zahl weiß ist */
+    }
     /* Ende der Anpassung */
+
     .profile-form label {
       margin-right: 5px;
     }
@@ -151,13 +156,13 @@
         Online: <span id="onlineCount">0</span>
     </span>
     
-        <button class="btn-start">Start</button>
+    <button class="btn-start">Start</button>
   </section>
 
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted></video>
-            <video id="remoteVideo" autoplay loop src="/assets/searching.mp4"></video>
+      <video id="remoteVideo" autoplay loop src="/assets/searching.mp4"></video>
     </div>
     <div class="buttons">
       <button class="btn-next" disabled>Nächster</button>
@@ -176,10 +181,3 @@
   <script src="client.js"></script>
 </body>
 </html>
-// NEU: Besucherzähler vom Server empfangen
-else if (data.type === "user-count") {
-    const onlineCountElement = document.getElementById("onlineCount");
-    if (onlineCountElement) {
-        onlineCountElement.textContent = data.count;
-    }
-}
