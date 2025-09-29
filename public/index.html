@@ -15,8 +15,14 @@
     header {
       font-size: 2em;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       text-align: center;
+    }
+    #onlineCount {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #0f0; /* grün */
     }
     .profile-form, .videos, .chat-box {
       background: rgba(50, 50, 50, 0.95);
@@ -90,6 +96,8 @@
 </head>
 <body>
   <header>Mini Chatroulette</header>
+  <!-- Besucheranzeige -->
+  <div id="onlineCount">👥 Online: 0</div>
 
   <section class="profile-form">
     <label>Ich bin:
