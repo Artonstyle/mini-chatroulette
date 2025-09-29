@@ -26,28 +26,36 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
       max-width: 1200px;
     }
-    /* NEU: Flexbox für die Ausrichtung der Formulare und des Buttons */
+    /* Anpassung für die Ausrichtung der Formulare und des Zählers */
     .profile-form {
         display: flex;
         align-items: center;
-        gap: 15px; /* Abstand zwischen Elementen */
+        gap: 20px; /* Abstand zwischen den Hauptelementen */
+        justify-content: space-between; /* Verteilt Elemente gleichmäßig */
     }
-    .profile-form-options {
+    .profile-options {
         display: flex;
         align-items: center;
         gap: 15px;
-        flex-grow: 1; /* Nimmt den meisten Platz ein */
     }
     .online-count-display {
-        color: #007bff; /* Farbe für die Zahl */
+        color: #007bff; 
         font-weight: bold;
-        white-space: nowrap; /* Verhindert Zeilenumbruch */
+        font-size: 1.1em;
+        margin-right: 10px; 
+        white-space: nowrap;
     }
-    /* ENDE NEU */
-
+    /* Ende der Anpassung */
     .profile-form label {
-      margin-right: 5px; /* Etwas reduziert, da wir Gap verwenden */
+      margin-right: 5px;
     }
+    .profile-form select {
+        padding: 5px;
+        border-radius: 4px;
+        border: 1px solid #555;
+        background-color: #333;
+        color: #fff;
+    }
     video {
       width: 48%;
       height: 360px;
@@ -115,7 +123,7 @@
   <header>Mini Chatroulette</header>
 
   <section class="profile-form">
-    <div class="profile-form-options">
+    <div class="profile-options">
         <label>Ich bin:
           <select id="gender">
             <option value="Mann">Mann</option>
@@ -149,7 +157,7 @@
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay loop src="/assets/searching.mp4"></video>
+            <video id="remoteVideo" autoplay loop src="/assets/searching.mp4"></video>
     </div>
     <div class="buttons">
       <button class="btn-next" disabled>Nächster</button>
