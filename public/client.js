@@ -160,6 +160,13 @@ ws.onmessage = async (event) => {
         closePeerConnection();
     } else if (data.type === "no-match") {
          addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
+    } 
+    // NEUE LOGIK FÜR BESUCHERZÄHLUNG
+    else if (data.type === "user-count") {
+        const onlineCountElement = document.getElementById("onlineCount");
+        if (onlineCountElement) {
+            onlineCountElement.textContent = data.count;
+        }
     }
 };
 
