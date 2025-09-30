@@ -12,11 +12,11 @@ const remoteVideo = document.getElementById("remoteVideo");
 const messagesDiv = document.querySelector(".chat-messages");
 const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
+// Für zukünftige Profil-Logik
 const genderSelect = document.getElementById("gender");
 const searchSelect = document.getElementById("search");
 const countrySelect = document.getElementById("country");
 
-// Erweiterte STUN-Server für bessere Verbindung
 const config = { 
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -26,7 +26,7 @@ const config = {
 };
 
 // Platzhalter für "Suchen"-Animation
-const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; // Passen Sie den Pfad an Ihr Video an!
+const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
 
 // --- Hilfsfunktionen ---
 
@@ -56,10 +56,14 @@ async function startCamera() {
 function closePeerConnection() {
     if (peerConnection) {
         if (remoteVideo.srcObject) {
-            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            // Stoppe Tracks nur, wenn sie existieren (verhindert Fehler)
+            if (remoteVideo.srcObject.getTracks) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            }
         }
         remoteVideo.srcObject = null;
         remoteVideo.src = SEARCHING_VIDEO_SRC; // Zeige Platzhalter nach Trennung
+        remoteVideo.loop = true; // Loop für das Platzhalter-Video
         peerConnection.close();
         peerConnection = null;
     }
@@ -82,6 +86,7 @@ function createPeerConnection() {
     peerConnection.ontrack = (event) => {
         remoteVideo.src = ""; // Entferne Platzhalter-Video
         remoteVideo.srcObject = event.streams[0];
+        remoteVideo.loop = false; // Loop ausschalten, da echter Stream
         addMessage("System", "🎥 Videoanruf gestartet!", true);
         document.querySelector(".btn-next").disabled = false;
         document.querySelector(".btn-send").disabled = false;
@@ -95,12 +100,12 @@ function createPeerConnection() {
         }
     };
     
-    // DataChannel für Chat (wird vom CALLER erstellt)
+    // DataChannel für Chat (vom CALLER erstellt)
     dataChannel = peerConnection.createDataChannel("chat");
     dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
     dataChannel.onmessage = (event) => addMessage("Partner", event.data);
 
-    // DataChannel EMPFANGEN (wird vom ANSWERER empfangen)
+    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
     peerConnection.ondatachannel = (event) => { 
         dataChannel = event.channel;
         dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
@@ -162,7 +167,7 @@ ws.onmessage = async (event) => {
     } else if (data.type === "no-match") {
          addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
     } 
-    // HIER: Logik für Besucherzählung vom Server
+    // NEU: Logik für Besucherzählung vom Server
     else if (data.type === "user-count") {
         const onlineCountElement = document.getElementById("onlineCount");
         if (onlineCountElement) {
@@ -171,14 +176,14 @@ ws.onmessage = async (event) => {
     }
 };
 
-// --- Buttons mit VEREINFACHTER Logik ---
+// --- Buttons mit Logik ---
 
 document.querySelector(".btn-start").onclick = async () => {
     if (!await startCamera()) return; 
 
-    // Zeige Platzhalter und starte Suche
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
+    remoteVideo.loop = true;
     
     ws.send(JSON.stringify({ type: "start" }));
     
@@ -192,9 +197,9 @@ document.querySelector(".btn-next").onclick = () => {
         closePeerConnection(); 
     }
     
-    // Zeige Platzhalter und starte neue Suche
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
+    remoteVideo.loop = true;
 
     ws.send(JSON.stringify({ type: "start" }));
     
@@ -214,6 +219,7 @@ document.querySelector(".btn-stop").onclick = () => {
     closePeerConnection();
     remoteVideo.srcObject = null;
     remoteVideo.src = ""; // Setze Remote-Video zurück, wenn gestoppt
+    remoteVideo.loop = false;
     addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = true;
@@ -227,6 +233,6 @@ sendBtn.onclick = () => {
         addMessage("Ich", text);
         input.value = "";
     } else if (text) {
-         addMessage("System", "Chat-Kanal ist noch nicht bereit (Status: " + (dataChannel ? dataChannel.readyState : 'Nicht vorhanden') + ").", true);
+         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
     }
 };
