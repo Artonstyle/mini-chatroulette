@@ -12,7 +12,7 @@ app.use(express.static('public'));
 let waiting = null; 
 const pairs = new Map(); 
 
-// NEU: Funktion zum Senden der aktuellen Besucherzahl an alle Clients
+// Funktion zum Senden der aktuellen Besucherzahl an alle Clients
 function broadcastUserCount() {
     const count = wss.clients.size;
     const message = JSON.stringify({ type: "user-count", count: count });
