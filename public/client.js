@@ -1,241 +1,139 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Mini Chatroulette – Videochat online</title>
-  <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
-  <meta name="robots" content="index, follow">
-    <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
-
-    <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-      background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-    }
-    @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
-    }
-    header {
-      font-size: 2em;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-align: center;
-      color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
-      letter-spacing: 2px;
-    }
-
-    .profile-form {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .form-left {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .online-right {
-      font-weight: bold;
-      color: #0f0; /* Original: GRÜN */
-    }
-    button.btn-start {
-      margin-left: 5px;
-      background-color: #28a745;
-      color: #fff;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .videos {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
-    }
-    .video-container {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    video {
-      width: 48%;
-      height: 360px;
-      background: #000;
-      border-radius: 8px;
-      object-fit: cover;
-      margin: 5px 0;
-    }
-
-    .buttons {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    .buttons button {
-      min-width: 120px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1em;
-      font-weight: bold;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .buttons button:hover {
-      transform: scale(1.07);
-      box-shadow: 0 0 12px rgba(255,255,255,0.4);
-    }
-    .btn-stop {background-color: #dc3545; color: #fff;}
-    .btn-next {background-color: #007bff; color: #fff;}
-
-    .chat-box {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
-    }
-    .chat-messages {
-      height: 200px;
-      overflow-y: auto;
-      background: #1f1f1f;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1em;
-    }
-    .btn-send {
-      background-color: #ffc107;
-      color: #000;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    
-    /* ================================================= */
-    /* RESPONSIVE DESIGN: Regeln nur für kleine Bildschirme (Handys) */
-    /* Diese Regeln sind notwendig, damit die Seite auf kleinen Bildschirmen richtig dargestellt wird. */
-    @media (max-width: 768px) {
-        .profile-form {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .form-left {
-            width: 100%;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        /* Dropdowns/Labels nehmen ca. 30% der Breite */
-        .form-left label {
-            flex-basis: 30%; 
-        }
-        /* Zähler nimmt die volle Breite und ist zentriert */
-        .online-right {
-            width: 100%;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        /* Start-Button nimmt volle Breite ein */
-        button.btn-start {
-            width: 100%;
-            margin-left: 0;
-            order: 1; /* Schiebt den Start-Button ans Ende der form-left */
-        }
-        /* Videos werden untereinander angeordnet */
-        .video-container {
-            flex-direction: column;
-        }
-        video {
-            width: 100%;
-            height: 250px;
-        }
-        /* Nächster/Stop-Buttons werden nebeneinander angezeigt (in zwei Spalten) */
-        .buttons {
-            justify-content: space-between;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Chatroulette</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1c1c1c, #2e2e2e);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
     }
-  </style>
+    header {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .profile-form, .videos, .chat-box {
+      background: rgba(50, 50, 50, 0.95);
+      padding: 15px;
+      margin: 10px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      max-width: 1200px;
+    }
+    .profile-form label {
+      margin-right: 15px;
+    }
+    video {
+      width: 48%;
+      height: 360px;
+      background: #000;
+      border-radius: 8px;
+      margin: 5px 0;
+      object-fit: cover;
+    }
+    .video-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: bold;
+    }
+    .btn-start, .btn-next {
+      background-color: #007bff;
+      color: #fff;
+    }
+    .btn-stop {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    .btn-send {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .chat-messages {
+      height: 200px;
+      overflow-y: auto;
+      background: #1f1f1f;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1em;
+    }
+  </style>
 </head>
 <body>
+  <header>Mini Chatroulette</header>
 
-  <header>Mini Chatroulette</header>
+  <section class="profile-form">
+    <label>Ich bin:
+      <select id="gender">
+        <option>Mann</option>
+        <option>Frau</option>
+      </select>
+    </label>
+    <label>Ich suche:
+      <select id="search">
+        <option>Mann</option>
+        <option>Frau</option>
+      </select>
+    </label>
+    <label>Mein Land:
+      <select id="country">
+        <option>Deutschland</option>
+        <option>Österreich</option>
+        <option>Schweiz</option>
+      </select>
+    </label>
+    <button class="btn-start">Start</button>
+  </section>
 
-    <section class="profile-form">
-    <div class="form-left">
-      <label>Ich bin:
-        <select id="gender"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Ich suche:
-        <select id="search"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Mein Land:
-        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-      </label>
-      <button class="btn-start">Start</button>
-    </div>
-    
-        <div class="online-right">
-      👥 Online: <span id="onlineCount">0</span>
-    </div>
-  </section>
+  <section class="videos">
+    <div class="video-container">
+      <video id="localVideo" autoplay muted></video>
+      <video id="remoteVideo" autoplay></video>
+    </div>
+    <div class="buttons">
+      <button class="btn-next">Nächster</button>
+      <button class="btn-stop">Stop</button>
+    </div>
+  </section>
 
-    <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next">⏭ Nächster</button>
-      <button class="btn-stop">⏹ Stop</button>
-    </div>
-  </section>
+  <section class="chat-box">
+    <div class="chat-messages"></div>
+    <div class="chat-input">
+      <input type="text" placeholder="Nachricht schreiben..." />
+      <button class="btn-send">Senden</button>
+    </div>
+  </section>
 
-    <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">💬 Senden</button>
-      <button class="btn-send" disabled>💬 Senden</button>
-    </div>
-  </section>
-
-    <script src="client.js"></script>
+  <!-- jetzt nur client.js laden -->
+  <script src="client.js"></script>
 </body>
 </html>
