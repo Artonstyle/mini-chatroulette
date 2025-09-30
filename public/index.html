@@ -55,13 +55,11 @@
       align-items: center;
     }
     
-    /* ************************************** */
-    /* KORRIGIERT: Zählerfarbe auf Grau (#AAAAAA) */
+    /* WIEDERHERGESTELLT: Zählerfarbe ist wieder Grün (#0f0) */
     .online-right {
       font-weight: bold;
-      color: #AAAAAA; /* Jetzt Grau */
+      color: #0f0; /* GRÜN WIEDERHERGESTELLT */
     }
-    /* ************************************** */
     
     button.btn-start {
       margin-left: 5px;
@@ -154,7 +152,7 @@
       font-weight: bold;
     }
     
-    /* Responsive-Anpassungen (falls sie fehlen, fügen Sie die vorherigen Handy-Korrekturen hinzu) */
+    /* Responsive-Anpassungen */
     @media (max-width: 768px) {
         .profile-form {
             flex-direction: column;
@@ -176,7 +174,7 @@
         button.btn-start {
             width: 100%;
             margin-left: 0;
-            order: 1; /* Schiebt den Start-Button ans Ende der form-left */
+            order: 1;
         }
         .video-container {
             flex-direction: column;
@@ -209,6 +207,7 @@
       </label>
       <button class="btn-start">Start</button>
     </div>
+    
         <div class="online-right">
       👥 Online: <span id="onlineCount">0</span>
     </div>
