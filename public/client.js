@@ -1,157 +1,133 @@
-const socket = new WebSocket(location.origin.replace(/^http/, "ws"));
-let pc;
+// client.js
+const ws = new WebSocket(`wss://${window.location.host}`);
+let localStream;
+let peerConnection;
+const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-async function start() {
-  pc = new RTCPeerConnection();
+const startBtn = document.querySelector(".btn-start");
+const stopBtn = document.querySelector(".btn-stop");
+const nextBtn = document.querySelector(".btn-next");
+const sendBtn = document.querySelector(".btn-send");
+const inputField = document.querySelector(".chat-input input");
+const chatMessages = document.querySelector(".chat-messages");
 
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
-    }
-  };
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
 
-  pc.ontrack = (event) => {
-    document.getElementById("remoteVideo").srcObject = event.streams[0];
-  };
-
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  document.getElementById("localVideo").srcObject = stream;
-  stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-  socket.send(JSON.stringify({ type: "start" }));
-}
-
-document.getElementById("startBtn").onclick = start;
-document.getElementById("stopBtn").onclick = () => socket.send(JSON.stringify({ type: "stop" }));
-document.getElementById("nextBtn").onclick = () => socket.send(JSON.stringify({ type: "next" }));
-
-socket.onmessage = async (event) => {
-  const data = JSON.parse(event.data);
-
-  if (data.type === "matched") {
-    if (data.should_offer) {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.send(JSON.stringify({ type: "offer", offer }));
-    }
-  }
-
-  if (data.type === "offer") {
-    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.send(JSON.stringify({ type: "answer", answer }));
-  }
-
-  if (data.type === "answer") {
-    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-  }
-
-  if (data.type === "candidate") {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (err) {
-      console.error("❌ Fehler bei ICE:", err);
-    }
-  }
-
-  if (data.type === "partner-left") {
-    console.log("👋 Partner hat verlassen.");
-    pc.close();
-  }
-};// ==== WebSocket Nachrichten ====
-socket.onmessage = async (event) => {
-  const data = JSON.parse(event.data);
-  console.log("📩 Nachricht:", data);
-
-  if (data.type === "no-match") {
-    console.log("⚠️ Kein Partner gefunden, warte...");
-  }
-
-  if (data.type === "matched") {
-    console.log("✅ Partner gefunden");
-    partnerConnected = true;
-    await startVideo();
-
-    createPeerConnection();
-
-    if (data.should_offer) {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.send(JSON.stringify({ type: "offer", sdp: offer }));
-    }
-  }
-
-  if (data.type === "offer") {
-    createPeerConnection();
-    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.send(JSON.stringify({ type: "answer", sdp: answer }));
-  }
-
-  if (data.type === "answer") {
-    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-  }
-
-  if (data.type === "candidate") {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (err) {
-      console.error("ICE Fehler", err);
-    }
-  }
-
-  if (data.type === "partner-left") {
-    console.log("❌ Partner hat verlassen");
-    partnerConnected = false;
-    closeConnection();
-  }
-
-  if (data.type === "chat") {
-    chatMessages.innerHTML += `<div><b>Partner:</b> ${data.message}</div>`;
-  }
-};
-
-// ==== Video starten ====
-async function startVideo() {
-  if (!localStream) {
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideo.srcObject = localStream;
-    } catch (err) {
-      console.error("🎥 Kamera/Mikrofon Fehler:", err);
-    }
+async function initLocalStream() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideo.srcObject = localStream;
+  } catch (err) {
+    console.error("Kamera/Mikrofon Fehler:", err);
   }
 }
 
-// ==== Verbindung erstellen ====
 function createPeerConnection() {
-  pc = new RTCPeerConnection();
+  peerConnection = new RTCPeerConnection(config);
 
-  // Lokale Tracks hinzufügen
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  localStream.getTracks().forEach((track) => {
+    peerConnection.addTrack(track, localStream);
+  });
 
-  // Remote Stream empfangen
-  pc.ontrack = (event) => {
+  peerConnection.ontrack = (event) => {
     remoteVideo.srcObject = event.streams[0];
   };
 
-  // ICE-Kandidaten senden
-  pc.onicecandidate = (event) => {
+  peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
-      socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+      ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
     }
   };
 }
 
-// ==== Verbindung schließen ====
-function closeConnection() {
-  if (pc) {
-    pc.close();
-    pc = null;
+startBtn.onclick = async () => {
+  ws.send(JSON.stringify({ type: "start" }));
+};
+
+stopBtn.onclick = () => {
+  ws.send(JSON.stringify({ type: "stop" }));
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
   }
   remoteVideo.srcObject = null;
-  partnerConnected = false;
+};
+
+nextBtn.onclick = () => {
+  stopBtn.onclick();
+  setTimeout(() => {
+    startBtn.onclick();
+  }, 500);
+};
+
+sendBtn.onclick = () => {
+  const text = inputField.value.trim();
+  if (!text) return;
+  addMessage("Du", text);
+
+  if (peerConnection && peerConnection.dataChannel) {
+    peerConnection.dataChannel.send(text);
+  }
+  inputField.value = "";
+};
+
+function addMessage(sender, msg) {
+  const div = document.createElement("div");
+  div.textContent = `${sender}: ${msg}`;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// WebSocket Handling
+ws.onmessage = async (event) => {
+  const data = JSON.parse(event.data);
+
+  if (data.type === "match") {
+    createPeerConnection();
+
+    const channel = peerConnection.createDataChannel("chat");
+    channel.onmessage = (e) => addMessage("Partner", e.data);
+    peerConnection.dataChannel = channel;
+
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    ws.send(JSON.stringify({ type: "offer", offer }));
+  }
+
+  if (data.type === "offer") {
+    createPeerConnection();
+
+    peerConnection.ondatachannel = (event) => {
+      event.channel.onmessage = (e) => addMessage("Partner", e.data);
+      peerConnection.dataChannel = event.channel;
+    };
+
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    ws.send(JSON.stringify({ type: "answer", answer }));
+  }
+
+  if (data.type === "answer") {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+  }
+
+  if (data.type === "candidate") {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    } catch (err) {
+      console.error("Fehler beim ICE Candidate:", err);
+    }
+  }
+
+  if (data.type === "stop") {
+    if (peerConnection) peerConnection.close();
+    peerConnection = null;
+    remoteVideo.srcObject = null;
+    addMessage("System", "Der Partner hat die Verbindung beendet.");
+  }
+};
+
+// Init Kamera beim Laden
+initLocalStream();
