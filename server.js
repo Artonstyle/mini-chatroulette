@@ -1,73 +1,69 @@
+// server.js
+const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
-const express = require("express");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-app.use(express.static("public"));
-
-let waiting = null;
-const pairs = new Map();
+let waitingClient = null; // Zwischenspeicher für User, die warten
 
 wss.on("connection", (ws) => {
-  console.log("🔗 Neuer Client verbunden");
+  console.log("Neuer Client verbunden");
+
+  ws.partner = null;
 
   ws.on("message", (msg) => {
     const data = JSON.parse(msg);
 
-    // --- START ---
+    // Weiterleiten an Partner
+    if (data.type === "offer" || data.type === "answer" || data.type === "candidate") {
+      if (ws.partner && ws.partner.readyState === WebSocket.OPEN) {
+        ws.partner.send(JSON.stringify(data));
+      }
+    }
+
+    // Start-Matching
     if (data.type === "start") {
-      if (waiting && waiting !== ws) {
-        const caller = ws;
-        const answerer = waiting;
+      if (waitingClient && waitingClient !== ws) {
+        // Partner verbinden
+        ws.partner = waitingClient;
+        waitingClient.partner = ws;
 
-        pairs.set(caller, answerer);
-        pairs.set(answerer, caller);
-        waiting = null;
+        ws.send(JSON.stringify({ type: "match" }));
+        waitingClient.send(JSON.stringify({ type: "match" }));
 
-        caller.send(JSON.stringify({ type: "matched", should_offer: true }));
-        answerer.send(JSON.stringify({ type: "matched", should_offer: false }));
+        waitingClient = null;
       } else {
-        waiting = ws;
-        ws.send(JSON.stringify({ type: "no-match" }));
+        waitingClient = ws;
       }
     }
 
-    // --- NEXT & STOP ---
-    else if (data.type === "next" || data.type === "stop") {
-      const partner = pairs.get(ws);
-      if (partner) {
-        pairs.delete(ws);
-        pairs.delete(partner);
-        partner.send(JSON.stringify({ type: "partner-left" }));
-      }
-      if (data.type === "stop" && waiting === ws) waiting = null;
-    }
-
-    // --- WEBRTC SIGNALLING ---
-    else if (["offer", "answer", "candidate"].includes(data.type)) {
-      const partner = pairs.get(ws);
-      if (partner && partner.readyState === WebSocket.OPEN) {
-        partner.send(JSON.stringify(data));
+    // Stop Verbindung
+    if (data.type === "stop") {
+      if (ws.partner) {
+        ws.partner.send(JSON.stringify({ type: "stop" }));
+        ws.partner.partner = null;
+        ws.partner = null;
       }
     }
   });
 
   ws.on("close", () => {
-    const partner = pairs.get(ws);
-    if (partner) {
-      pairs.delete(ws);
-      pairs.delete(partner);
-      if (partner.readyState === WebSocket.OPEN) {
-        partner.send(JSON.stringify({ type: "partner-left" }));
-      }
+    console.log("Client getrennt");
+    if (ws.partner) {
+      ws.partner.send(JSON.stringify({ type: "stop" }));
+      ws.partner.partner = null;
     }
-    if (waiting === ws) waiting = null;
-    console.log("🔌 Client getrennt");
+    if (waitingClient === ws) {
+      waitingClient = null;
+    }
   });
 });
 
+app.use(express.static(path.join(__dirname, "public")));
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
+server.listen(PORT, () => console.log("Server läuft auf Port " + PORT));
