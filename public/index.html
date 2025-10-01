@@ -18,6 +18,7 @@ html, body {
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
   color: #fff;
+  overflow-x: hidden;
 }
 @keyframes gradientBG {
   0% {background-position: 0% 50%;}
@@ -57,7 +58,7 @@ header {
   font-weight: bold;
 }
 
-/* ======= Laptop/Desktop Standard ======= */
+/* Desktop */
 .videos {
   display: flex;
   justify-content: space-between;
@@ -115,15 +116,13 @@ video {
   cursor: pointer;
 }
 
-/* ======= Mobile Ansicht ======= */
+/* Mobile */
 @media (max-width: 768px) {
   body { overflow: hidden; }
 
-  /* Partner-Video fullscreen */
   #remoteVideo {
     position: fixed;
-    top: 110px;
-    left: 0;
+    top: 110px; left: 0;
     width: 100%;
     height: calc(100% - 180px);
     object-fit: cover;
@@ -131,7 +130,6 @@ video {
     z-index: 1;
   }
 
-  /* Eigenes Video klein verschiebbar */
   #localVideo {
     position: absolute;
     top: 120px; right: 10px;
@@ -140,9 +138,9 @@ video {
     border-radius: 6px;
     z-index: 10;
     cursor: move;
+    touch-action: none; /* wichtig fürs Pinch */
   }
 
-  /* Buttons unten rechts */
   .buttons {
     position: fixed;
     bottom: 80px; right: 10px;
@@ -150,7 +148,6 @@ video {
     z-index: 20;
   }
 
-  /* Chatleiste transparent unten */
   .chat-box {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -158,10 +155,7 @@ video {
     padding: 5px;
     z-index: 30;
   }
-  .chat-box input { padding: 6px; }
-  .chat-box button { padding: 6px 10px; }
 
-  /* Systemmeldungen im Video oben links */
   #systemMsg {
     position: absolute;
     top: 130px; left: 10px;
@@ -204,54 +198,4 @@ video {
 
 <!-- Buttons -->
 <div class="buttons">
-  <button class="btn-next" id="btnNext">⏭ Nächster</button>
-  <button class="btn-stop" id="btnStop">⏹ Stop</button>
-</div>
-
-<!-- Chat -->
-<div class="chat-box">
-  <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
-  <button id="btnSend">💬 Senden</button>
-</div>
-
-<!-- Systemmeldung -->
-<div id="systemMsg">✅ Verbunden mit Signalisierungsserver...</div>
-
-<script src="client.js"></script>
-<script>
-// Eigenes Video verschiebbar (Handy + PC)
-const localVideo = document.getElementById("localVideo");
-let dragging = false, offsetX=0, offsetY=0;
-
-localVideo.addEventListener("mousedown", (e) => {
-  dragging = true;
-  offsetX = e.clientX - localVideo.offsetLeft;
-  offsetY = e.clientY - localVideo.offsetTop;
-});
-document.addEventListener("mousemove", (e) => {
-  if(dragging){
-    localVideo.style.left = (e.clientX - offsetX) + "px";
-    localVideo.style.top = (e.clientY - offsetY) + "px";
-  }
-});
-document.addEventListener("mouseup", ()=> dragging=false);
-
-localVideo.addEventListener("touchstart", (e) => {
-  dragging = true;
-  offsetX = e.touches[0].clientX - localVideo.offsetLeft;
-  offsetY = e.touches[0].clientY - localVideo.offsetTop;
-});
-document.addEventListener("touchmove", (e) => {
-  if(dragging){
-    localVideo.style.left = (e.touches[0].clientX - offsetX) + "px";
-    localVideo.style.top = (e.touches[0].clientY - offsetY) + "px";
-  }
-});
-document.addEventListener("touchend", ()=> dragging=false);
-
-// Demo: Systemmeldungen
-setTimeout(()=> document.getElementById("systemMsg").innerText = "🔍 Suche nach Partner...", 2000);
-setTimeout(()=> document.getElementById("systemMsg").innerText = "✅ Partner gefunden!", 5000);
-</script>
-</body>
-</html>
+  <button class="
