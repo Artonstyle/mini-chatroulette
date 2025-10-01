@@ -45,6 +45,9 @@ header {
   border-radius: 6px;
   margin: 10px auto;
   max-width: 1200px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .form-left { display: flex; gap: 10px; flex-wrap: wrap; }
 .online-right { font-weight: bold; color: #0f0; }
@@ -116,15 +119,16 @@ video {
   cursor: pointer;
 }
 
-/* Mobile */
+/* Mobile Layout */
 @media (max-width: 768px) {
   body { overflow: hidden; }
 
   #remoteVideo {
     position: fixed;
-    top: 110px; left: 0;
+    top: 70px; /* Platz für Header + Suchleiste */
+    left: 0;
     width: 100%;
-    height: calc(100% - 180px);
+    height: calc(100% - 170px);
     object-fit: cover;
     background: #000;
     z-index: 1;
@@ -132,13 +136,13 @@ video {
 
   #localVideo {
     position: absolute;
-    top: 120px; right: 10px;
+    top: 80px; right: 10px;
     width: 120px; height: 80px;
     border: 2px solid #fff;
     border-radius: 6px;
     z-index: 10;
     cursor: move;
-    touch-action: none; /* wichtig fürs Pinch */
+    touch-action: none;
   }
 
   .buttons {
@@ -158,7 +162,7 @@ video {
 
   #systemMsg {
     position: absolute;
-    top: 130px; left: 10px;
+    top: 80px; left: 10px;
     background: rgba(0,0,0,0.5);
     color: #ff0;
     padding: 4px 6px;
@@ -192,10 +196,95 @@ video {
 
 <!-- Videos -->
 <section class="videos">
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
 </section>
 
 <!-- Buttons -->
 <div class="buttons">
-  <button class="
+  <button class="btn-next" id="btnNext">⏭ Nächster</button>
+  <button class="btn-stop" id="btnStop">⏹ Stop</button>
+</div>
+
+<!-- Chat -->
+<div class="chat-box">
+  <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
+  <button id="btnSend">💬 Senden</button>
+</div>
+
+<!-- Systemmeldung -->
+<div id="systemMsg"></div>
+
+<script src="client.js"></script>
+<script>
+// ===== Systemmeldungen aus client.js einbinden =====
+function setSystemMessage(msg) {
+  document.getElementById("systemMsg").innerText = msg;
+}
+
+// ===== Eigenes Video verschiebbar & skalierbar =====
+const localVideo = document.getElementById("localVideo");
+let dragging=false, offsetX=0, offsetY=0, scale=1;
+
+// Maus Drag
+localVideo.addEventListener("mousedown", (e)=>{
+  dragging=true;
+  offsetX = e.clientX - localVideo.offsetLeft;
+  offsetY = e.clientY - localVideo.offsetTop;
+});
+document.addEventListener("mousemove",(e)=>{
+  if(dragging){
+    localVideo.style.left = (e.clientX - offsetX) + "px";
+    localVideo.style.top  = (e.clientY - offsetY) + "px";
+  }
+});
+document.addEventListener("mouseup",()=>dragging=false);
+
+// Touch Drag & Pinch
+let initialDistance = null;
+localVideo.addEventListener("touchstart",(e)=>{
+  if(e.touches.length===1){
+    dragging=true;
+    offsetX = e.touches[0].clientX - localVideo.offsetLeft;
+    offsetY = e.touches[0].clientY - localVideo.offsetTop;
+  } else if(e.touches.length===2){
+    initialDistance = getDistance(e.touches);
+  }
+});
+localVideo.addEventListener("touchmove",(e)=>{
+  if(e.touches.length===1 && dragging){
+    localVideo.style.left = (e.touches[0].clientX - offsetX) + "px";
+    localVideo.style.top  = (e.touches[0].clientY - offsetY) + "px";
+  } else if(e.touches.length===2){
+    const newDist = getDistance(e.touches);
+    if(initialDistance){
+      scale *= newDist/initialDistance;
+      scale = Math.max(0.5, Math.min(3, scale));
+      localVideo.style.transform = `scale(${scale})`;
+      initialDistance = newDist;
+    }
+  }
+});
+localVideo.addEventListener("touchend",()=>dragging=false);
+
+function getDistance(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+// Scrollrad Zoom (Desktop)
+localVideo.addEventListener("wheel",(e)=>{
+  e.preventDefault();
+  scale += e.deltaY * -0.001;
+  scale = Math.max(0.5, Math.min(3, scale));
+  localVideo.style.transform = `scale(${scale})`;
+});
+
+// ===== Verbindungsmeldungen einfügen =====
+// Hier rufst du aus client.js z.B. setSystemMessage("🔍 Suche nach Partner...") auf
+// Beispiel:
+setSystemMessage("✅ Verbunden mit Signalisierungsserver.");
+</script>
+</body>
+</html>
