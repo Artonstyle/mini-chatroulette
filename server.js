@@ -1,60 +1,94 @@
-// server.js
-const WebSocket = require('ws');
+const http = require("http");
+const WebSocket = require("ws");
+const express = require("express");
 
-const PORT = 8080;
-const wss = new WebSocket.Server({ port: PORT });
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-let onlineCount = 0;
+// Dient statischen Dateien aus dem 'public' Ordner
+app.use(express.static('public')); 
 
-console.log(`WebSocket-Server läuft auf ws://localhost:${PORT}`);
+let waiting = null; 
+const pairs = new Map(); 
 
-// Broadcast-Funktion an alle verbundenen Clients
-function broadcast(message, exclude) {
-    const data = JSON.stringify(message);
+// Funktion zum Senden der aktuellen Besucherzahl an alle Clients
+function broadcastUserCount() {
+    const count = wss.clients.size;
+    const message = JSON.stringify({ type: "user-count", count: count });
+    
     wss.clients.forEach(client => {
-        if (client !== exclude && client.readyState === WebSocket.OPEN) {
-            client.send(data);
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
         }
     });
 }
 
-// Online-Zähler aktualisieren
-function broadcastOnlineCount() {
-    broadcast({ type: 'onlineCount', count: onlineCount });
-}
+wss.on("connection", (ws) => {
+    console.log("🔗 Neuer Client verbunden");
+    
+    // Sende die Zahl bei JEDER Verbindung
+    broadcastUserCount();
 
-// Neue Verbindung
-wss.on('connection', (ws) => {
-    onlineCount++;
-    console.log(`Neuer Client verbunden. Online: ${onlineCount}`);
-    broadcastOnlineCount();
+    ws.on("message", (msg) => {
+        const data = JSON.parse(msg);
 
-    ws.on('message', (msg) => {
-        try {
-            const data = JSON.parse(msg);
+        // --- START-Logik ---
+        if (data.type === "start") {
+            if (waiting && waiting !== ws) {
+                const caller = ws;       
+                const answerer = waiting; 
 
-            // WebRTC Signalisierung: offer, answer, candidate, hangup
-            if (['offer', 'answer', 'candidate', 'hangup'].includes(data.type)) {
-                broadcast(data, ws); // an alle außer Sender
+                pairs.set(caller, answerer);
+                pairs.set(answerer, caller);
+                waiting = null; 
+
+                caller.send(JSON.stringify({ type: "matched", should_offer: true })); 
+                answerer.send(JSON.stringify({ type: "matched", should_offer: false }));
+            } else {
+                waiting = ws;
+                ws.send(JSON.stringify({ type: "no-match" }));
             }
+        }
 
-            // Chat-Nachrichten
-            else if (data.type === 'chat') {
-                broadcast(data, ws); // an alle außer Sender
+        // --- NEXT- und STOP-Logik ---
+        else if (data.type === "next" || data.type === "stop") {
+            const partner = pairs.get(ws);
+            if (partner) {
+                pairs.delete(ws);
+                pairs.delete(partner);
+                partner.send(JSON.stringify({ type: "partner-left" }));
             }
+            if (data.type === "stop" && waiting === ws) waiting = null;
+        }
 
-        } catch (err) {
-            console.error('Fehler beim Parsen der Nachricht:', err);
+        // --- WEBRTC SIGNALING LOGIC ---
+        else if (["offer", "answer", "candidate"].includes(data.type)) {
+            const partner = pairs.get(ws);
+            if (partner && partner.readyState === WebSocket.OPEN) {
+                partner.send(JSON.stringify(data));
+            }
         }
     });
 
-    ws.on('close', () => {
-        onlineCount--;
-        console.log(`Client getrennt. Online: ${onlineCount}`);
-        broadcastOnlineCount();
-    });
-
-    ws.on('error', (err) => {
-        console.error('WebSocket Fehler:', err);
+    ws.on("close", () => {
+        console.log("🔗 Client getrennt");
+        
+        // Aufräumlogik
+        const partner = pairs.get(ws);
+        if (partner) {
+            pairs.delete(ws);
+            pairs.delete(partner);
+            if (partner.readyState === WebSocket.OPEN) {
+                partner.send(JSON.stringify({ type: "partner-left" }));
+            }
+        }
+        if (waiting === ws) waiting = null;
+        
+        // Sende die aktualisierte Zahl nach der Trennung
+        broadcastUserCount();
     });
 });
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Signalisierungsserver läuft auf Port ${PORT}`));
