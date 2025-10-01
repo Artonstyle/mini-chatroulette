@@ -25,8 +25,14 @@ html, body {
   50% {background-position: 100% 50%;}
   100% {background-position: 0% 50%;}
 }
-body { display: flex; flex-direction: column; min-height: 100vh; }
 
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header */
 header {
   font-size: 2em;
   font-weight: bold;
@@ -37,6 +43,7 @@ header {
   letter-spacing: 2px;
 }
 
+/* Profilbereich */
 .profile-form {
   display: flex;
   justify-content: space-between;
@@ -61,6 +68,7 @@ button.btn-start {
 }
 button.btn-start:hover { transform: scale(1.05); }
 
+/* Videos */
 .videos {
   display: flex;
   justify-content: space-between;
@@ -77,6 +85,7 @@ video {
   object-fit: cover;
 }
 
+/* Buttons unter Videos */
 .buttons {
   display: flex;
   justify-content: flex-end;
@@ -97,10 +106,11 @@ video {
 .btn-stop { background-color: #dc3545; color: #fff; }
 .btn-next { background-color: #007bff; color: #fff; }
 
+/* Chat unten unter Videos, kompakt */
 .chat-box {
   max-width: 1200px;
   margin: 0 auto 20px auto;
-  height: 3cm;
+  height: 3cm; /* kompakt */
   background: rgba(50,50,50,0.95);
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -137,11 +147,19 @@ video {
   font-weight: bold;
   font-size: 0.9em;
 }
-.chat-messages .system-msg { display: none; }
 
+/* Systemnachrichten ausblenden */
+.chat-messages .system-msg {
+  display: none;
+}
+
+/* ======= Mobile Anpassungen ======= */
 @media (max-width: 768px) {
   .videos { flex-direction: column; }
-  video { width: 100%; height: auto; }
+  video {
+    width: 100%;
+    height: auto; /* gleicher Größe für Partner und mich */
+  }
   .chat-box { height: 120px; }
   .chat-input input { width: 100%; }
 }
@@ -151,6 +169,7 @@ video {
 
 <header>Mini Chatroulette</header>
 
+<!-- Profilbereich -->
 <section class="profile-form">
   <div class="form-left">
     <label>Ich bin:
@@ -162,23 +181,26 @@ video {
     <label>Mein Land:
       <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
     </label>
-    <button class="btn-start" id="btnStart">Start</button>
+    <button class="btn-start">Start</button>
   </div>
   <div class="online-right">
     👥 Online: <span id="onlineCount">0</span>
   </div>
 </section>
 
+<!-- Videos -->
 <section class="videos">
   <video id="localVideo" autoplay muted></video>
   <video id="remoteVideo" autoplay></video>
 </section>
 
+<!-- Buttons unter Videos -->
 <div class="buttons">
-  <button class="btn-next" id="btnNext">⏭ Nächster</button>
-  <button class="btn-stop" id="btnStop">⏹ Stop</button>
+  <button class="btn-next">⏭ Nächster</button>
+  <button class="btn-stop">⏹ Stop</button>
 </div>
 
+<!-- Chat -->
 <section class="chat-box">
   <div class="chat-messages" id="chatMessages"></div>
   <div class="chat-input">
@@ -187,137 +209,21 @@ video {
   </div>
 </section>
 
+<script src="client.js"></script>
 <script>
-// ================== Variablen ==================
-let ws;
-let localStream;
-let peerConnection;
-let isStarted = false;
-
-const WS_SERVER_URL = 'ws://localhost:8080'; // ggf. IP/Domain anpassen
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-const onlineCountDisplay = document.getElementById('onlineCount');
-
+// Chatnachrichten hinzufügen
 const chatMessages = document.getElementById('chatMessages');
-const chatInput = document.getElementById('chatInput');
-const btnSend = document.getElementById('btnSend');
-
-const btnStart = document.getElementById('btnStart');
-const btnNext = document.getElementById('btnNext');
-const btnStop = document.getElementById('btnStop');
-
-// ================== WebSocket ==================
-function connectToServer() {
-    ws = new WebSocket(WS_SERVER_URL);
-
-    ws.onopen = () => console.log('WebSocket verbunden');
-    ws.onclose = () => {
-        console.log('Verbindung geschlossen. Reconnect in 5s...');
-        setTimeout(connectToServer, 5000);
-    };
-    ws.onerror = (err) => { console.error(err); ws.close(); };
-
-    ws.onmessage = async (event) => {
-        const message = JSON.parse(event.data);
-
-        // Online-Zähler
-        if(message.type === 'onlineCount') {
-            onlineCountDisplay.textContent = message.count;
-        }
-
-        // Chat
-        if(message.type === 'chat') addChatMessage(message.text);
-        if(message.type === 'system') addChatMessage(message.text, true);
-
-        // WebRTC Signalisierung
-        if(message.type === 'offer') {
-            if(!isStarted) startCall(false);
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(message));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            ws.send(JSON.stringify(peerConnection.localDescription));
-        }
-        if(message.type === 'answer' && isStarted) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(message));
-        }
-        if(message.type === 'candidate' && isStarted) {
-            const candidate = new RTCIceCandidate(message);
-            peerConnection.addIceCandidate(candidate).catch(e=>console.error(e));
-        }
-        if(message.type === 'hangup') stopCall();
-    };
-}
-
-// ================== Chat ==================
 function addChatMessage(msg, isSystem=false){
-    const div = document.createElement('div');
-    div.textContent = msg;
-    if(isSystem) div.classList.add('system-msg');
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+  const div = document.createElement('div');
+  div.textContent = msg;
+  if(isSystem) div.classList.add('system-msg'); // wird ausgeblendet
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-btnSend.addEventListener('click', () => {
-    const msg = chatInput.value.trim();
-    if(!msg) return;
-    ws.send(JSON.stringify({ type:'chat', text: msg }));
-    addChatMessage("Du: "+msg);
-    chatInput.value='';
-});
-chatInput.addEventListener('keydown', (e) => { if(e.key==='Enter') btnSend.click(); });
-
-// ================== WebRTC ==================
-async function startCall(isCaller){
-    isStarted = true;
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-        localVideo.srcObject = localStream;
-
-        createPeerConnection();
-        localStream.getTracks().forEach(track=>peerConnection.addTrack(track, localStream));
-
-        if(isCaller){
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            ws.send(JSON.stringify(peerConnection.localDescription));
-        }
-    } catch(e){
-        console.error("Fehler Kamera/Audio:", e);
-        alert("Kamera oder Mikrofon konnte nicht gestartet werden. Erlaubnis erteilen!");
-    }
-}
-
-function stopCall(){
-    isStarted = false;
-    if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
-    if(peerConnection){ peerConnection.close(); peerConnection=null; }
-    localVideo.srcObject=null;
-    remoteVideo.srcObject=null;
-}
-
-function createPeerConnection(){
-    const config = { iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
-    peerConnection = new RTCPeerConnection(config);
-
-    peerConnection.ontrack = e => { if(remoteVideo.srcObject!==e.streams[0]) remoteVideo.srcObject=e.streams[0]; };
-    peerConnection.onicecandidate = e => {
-        if(e.candidate) ws.send(JSON.stringify({type:'candidate', ...e.candidate}));
-    };
-}
-
-// ================== Button Events ==================
-btnStart.addEventListener('click', ()=>startCall(true));
-btnNext.addEventListener('click', ()=>{
-    if(isStarted){ ws.send(JSON.stringify({type:'hangup'})); stopCall(); }
-    startCall(true);
-});
-btnStop.addEventListener('click', ()=>{
-    if(isStarted){ ws.send(JSON.stringify({type:'hangup'})); stopCall(); }
-});
-
-// ================== Start ==================
-connectToServer();
+// Beispiel: Systemnachrichten werden ausgeblendet
+addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
+addChatMessage("Hallo, das ist eine echte Nachricht!");
 </script>
 
 </body>
