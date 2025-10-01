@@ -1,272 +1,139 @@
-// public/client.js
-// Client-seitige Logik: WebSocket + WebRTC + DataChannel + UI
-
-// WS-Protokoll automatisch wählen (wss für https, ws für http)
-const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
-
-let localStream = null;
-let peerConnection = null;
-const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-
-const startBtn = document.querySelector(".btn-start");
-const stopBtn = document.querySelector(".btn-stop");
-const nextBtn = document.querySelector(".btn-next");
-const sendBtn = document.querySelector(".btn-send");
-const inputField = document.querySelector(".chat-input input");
-const chatMessages = document.querySelector(".chat-messages");
-
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-
-// Standard: Senden deaktiviert bis DataChannel offen
-sendBtn.disabled = true;
-
-async function initLocalStream() {
-  if (localStream) return true;
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localVideo.srcObject = localStream;
-    return true;
-  } catch (err) {
-    console.error("Kamera/Mikrofon Fehler:", err);
-    alert("Fehler beim Zugriff auf Kamera und Mikrofon: " + (err.name || err.message));
-    return false;
-  }
-}
-
-function createPeerConnection() {
-  if (!localStream) {
-    console.error("PeerConnection kann nicht erstellt werden: localStream fehlt.");
-    return;
-  }
-
-  peerConnection = new RTCPeerConnection(config);
-
-  // Lokale Tracks hinzufügen
-  localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
-
-  // Remote-Stream setzen
-  peerConnection.ontrack = (event) => {
-    if (remoteVideo.srcObject !== event.streams[0]) {
-      remoteVideo.srcObject = event.streams[0];
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Chatroulette</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1c1c1c, #2e2e2e);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
     }
-  };
-
-  // ICE Candidates an Server senden
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+    header {
+      font-size: 2em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
     }
-  };
-
-  // Verbindung zustandsüberwachung
-  peerConnection.onconnectionstatechange = () => {
-    console.log("PeerConnection Zustand:", peerConnection.connectionState);
-    if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
-      addMessage("System", "Verbindung zum Partner verloren.");
-      stopConnection();
+    .profile-form, .videos, .chat-box {
+      background: rgba(50, 50, 50, 0.95);
+      padding: 15px;
+      margin: 10px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      max-width: 1200px;
     }
-  };
-}
-
-// DataChannel Setup helper
-function setupDataChannel(channel) {
-  channel.onmessage = (e) => addMessage("Partner", e.data);
-  channel.onopen = () => {
-    console.log("DataChannel offen ✅");
-    sendBtn.disabled = false;
-  };
-  channel.onclose = () => {
-    console.log("DataChannel geschlossen ❌");
-    sendBtn.disabled = true;
-  };
-  peerConnection.dataChannel = channel;
-}
-
-function stopConnection() {
-  if (peerConnection) {
-    try { peerConnection.close(); } catch {}
-    peerConnection = null;
-  }
-  remoteVideo.srcObject = null;
-  sendBtn.disabled = true;
-  // optional: Kamera freigeben, falls gewünscht:
-  // if (localStream) {
-  //   localStream.getTracks().forEach(t => t.stop());
-  //   localStream = null;
-  //   localVideo.srcObject = null;
-  // }
-}
-
-startBtn.onclick = async () => {
-  if (await initLocalStream()) {
-    ws.send(JSON.stringify({ type: "start" }));
-  }
-};
-
-stopBtn.onclick = () => {
-  ws.send(JSON.stringify({ type: "stop" }));
-  stopConnection();
-};
-
-nextBtn.onclick = () => {
-  // Klicke Stop und nach kurzer Pause Start
-  stopBtn.click();
-  setTimeout(() => startBtn.click(), 500);
-};
-
-sendBtn.onclick = () => {
-  const text = inputField.value.trim();
-  if (!text) return;
-  addMessage("Du", text);
-  if (peerConnection && peerConnection.dataChannel && peerConnection.dataChannel.readyState === "open") {
-    peerConnection.datafunction createPeerConnection() {
-  if (!localStream) {
-    console.error("PeerConnection kann nicht erstellt werden: localStream fehlt.");
-    return;
-  }
-
-  peerConnection = new RTCPeerConnection(config);
-
-  localStream.getTracks().forEach((track) => {
-    peerConnection.addTrack(track, localStream);
-  });
-
-  peerConnection.ontrack = (event) => {
-    remoteVideo.srcObject = event.streams[0];
-  };
-
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+    .profile-form label {
+      margin-right: 15px;
     }
-  };
-
-  peerConnection.onconnectionstatechange = () => {
-    console.log("PeerConnection Zustand:", peerConnection.connectionState);
-    if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
-      addMessage("System", "Verbindung zum Partner verloren.");
-      stopConnection();
+    video {
+      width: 48%;
+      height: 360px;
+      background: #000;
+      border-radius: 8px;
+      margin: 5px 0;
+      object-fit: cover;
     }
-  };
-}
-
-// ✅ Zentrale Funktion fürs DataChannel-Setup
-function setupDataChannel(channel) {
-  channel.onmessage = (e) => addMessage("Partner", e.data);
-  channel.onopen = () => {
-    console.log("DataChannel offen ✅");
-    sendBtn.disabled = false;
-  };
-  channel.onclose = () => {
-    console.log("DataChannel geschlossen ❌");
-    sendBtn.disabled = true;
-  };
-  peerConnection.dataChannel = channel;
-}
-
-// Verbindung sauber stoppen
-function stopConnection() {
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-  remoteVideo.srcObject = null;
-  sendBtn.disabled = true; // Chat wieder deaktivieren
-}
-
-startBtn.onclick = async () => {
-  if (await initLocalStream()) {
-    ws.send(JSON.stringify({ type: "start" }));
-  }
-};
-
-stopBtn.onclick = () => {
-  ws.send(JSON.stringify({ type: "stop" }));
-  stopConnection();
-};
-
-nextBtn.onclick = () => {
-  stopBtn.click();
-  setTimeout(() => startBtn.click(), 500);
-};
-
-sendBtn.onclick = () => {
-  const text = inputField.value.trim();
-  if (!text) return;
-  addMessage("Du", text);
-
-  if (peerConnection && peerConnection.dataChannel && peerConnection.dataChannel.readyState === "open") {
-    peerConnection.dataChannel.send(text);
-  }
-  inputField.value = "";
-};
-
-function addMessage(sender, msg) {
-  const div = document.createElement("div");
-  div.textContent = `${sender}: ${msg}`;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// 🕸️ WebSocket Handling
-ws.onmessage = async (event) => {
-  const data = JSON.parse(event.data);
-
-  if (data.type === "match") {
-    if (!localStream) {
-      console.error("Match empfangen, aber localStream fehlt. Breche ab.");
-      return;
+    .video-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
     }
-    createPeerConnection();
-
-    // Offerer → erstellt DataChannel
-    const channel = peerConnection.createDataChannel("chat");
-    setupDataChannel(channel);
-
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-    ws.send(JSON.stringify({ type: "offer", offer }));
-  }
-
-  if (data.type === "offer") {
-    if (!localStream) {
-      console.error("Offer empfangen, aber localStream fehlt. Breche ab.");
-      return;
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
     }
-    createPeerConnection();
-
-    // Answerer → wartet auf DataChannel
-    peerConnection.ondatachannel = (event) => {
-      setupDataChannel(event.channel);
-    };
-
-    await peerConnection.setRemoteDescription(data.offer);
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    ws.send(JSON.stringify({ type: "answer", answer }));
-  }
-
-  if (data.type === "answer") {
-    if (peerConnection) {
-      await peerConnection.setRemoteDescription(data.answer);
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: bold;
     }
-  }
-
-  if (data.type === "candidate") {
-    if (peerConnection) {
-      try {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-      } catch (err) {
-        console.error("Fehler beim ICE Candidate:", err);
-      }
+    .btn-start, .btn-next {
+      background-color: #007bff;
+      color: #fff;
     }
-  }
+    .btn-stop {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    .btn-send {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .chat-messages {
+      height: 200px;
+      overflow-y: auto;
+      background: #1f1f1f;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <header>Mini Chatroulette</header>
 
-  if (data.type === "stop") {
-    stopConnection();
-    addMessage("System", "Der Partner hat die Verbindung beendet.");
-  }
-};
+  <section class="profile-form">
+    <label>Ich bin:
+      <select id="gender">
+        <option>Mann</option>
+        <option>Frau</option>
+      </select>
+    </label>
+    <label>Ich suche:
+      <select id="search">
+        <option>Mann</option>
+        <option>Frau</option>
+      </select>
+    </label>
+    <label>Mein Land:
+      <select id="country">
+        <option>Deutschland</option>
+        <option>Österreich</option>
+        <option>Schweiz</option>
+      </select>
+    </label>
+    <button class="btn-start">Start</button>
+  </section>
 
+  <section class="videos">
+    <div class="video-container">
+      <video id="localVideo" autoplay muted></video>
+      <video id="remoteVideo" autoplay></video>
+    </div>
+    <div class="buttons">
+      <button class="btn-next">Nächster</button>
+      <button class="btn-stop">Stop</button>
+    </div>
+  </section>
+
+  <section class="chat-box">
+    <div class="chat-messages"></div>
+    <div class="chat-input">
+      <input type="text" placeholder="Nachricht schreiben..." />
+      <button class="btn-send">Senden</button>
+    </div>
+  </section>
+
+  <!-- jetzt nur client.js laden -->
+  <script src="client.js"></script>
+</body>
+</html>
