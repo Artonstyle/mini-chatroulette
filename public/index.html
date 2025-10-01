@@ -18,7 +18,6 @@ html, body {
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
   color: #fff;
-  overflow-x: hidden;
 }
 @keyframes gradientBG {
   0% {background-position: 0% 50%;}
@@ -45,9 +44,6 @@ header {
   border-radius: 6px;
   margin: 10px auto;
   max-width: 1200px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 .form-left { display: flex; gap: 10px; flex-wrap: wrap; }
 .online-right { font-weight: bold; color: #0f0; }
@@ -61,7 +57,7 @@ header {
   font-weight: bold;
 }
 
-/* Desktop */
+/* ======= Laptop/Desktop Standard ======= */
 .videos {
   display: flex;
   justify-content: space-between;
@@ -119,32 +115,34 @@ video {
   cursor: pointer;
 }
 
-/* Mobile Layout */
+/* ======= Mobile Ansicht ======= */
 @media (max-width: 768px) {
   body { overflow: hidden; }
 
+  /* Partner-Video fullscreen */
   #remoteVideo {
     position: fixed;
-    top: 70px; /* Platz für Header + Suchleiste */
+    top: 110px;
     left: 0;
     width: 100%;
-    height: calc(100% - 170px);
+    height: calc(100% - 180px);
     object-fit: cover;
     background: #000;
     z-index: 1;
   }
 
+  /* Eigenes Video klein verschiebbar */
   #localVideo {
     position: absolute;
-    top: 80px; right: 10px;
+    top: 120px; right: 10px;
     width: 120px; height: 80px;
     border: 2px solid #fff;
     border-radius: 6px;
     z-index: 10;
     cursor: move;
-    touch-action: none;
   }
 
+  /* Buttons unten rechts */
   .buttons {
     position: fixed;
     bottom: 80px; right: 10px;
@@ -152,6 +150,7 @@ video {
     z-index: 20;
   }
 
+  /* Chatleiste transparent unten */
   .chat-box {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -159,10 +158,13 @@ video {
     padding: 5px;
     z-index: 30;
   }
+  .chat-box input { padding: 6px; }
+  .chat-box button { padding: 6px 10px; }
 
+  /* Systemmeldungen im Video oben links */
   #systemMsg {
     position: absolute;
-    top: 80px; left: 10px;
+    top: 130px; left: 10px;
     background: rgba(0,0,0,0.5);
     color: #ff0;
     padding: 4px 6px;
@@ -196,8 +198,8 @@ video {
 
 <!-- Videos -->
 <section class="videos">
-  <video id="localVideo" autoplay muted playsinline></video>
-  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video>
 </section>
 
 <!-- Buttons -->
@@ -213,78 +215,43 @@ video {
 </div>
 
 <!-- Systemmeldung -->
-<div id="systemMsg"></div>
+<div id="systemMsg">✅ Verbunden mit Signalisierungsserver...</div>
 
 <script src="client.js"></script>
 <script>
-// ===== Systemmeldungen aus client.js einbinden =====
-function setSystemMessage(msg) {
-  document.getElementById("systemMsg").innerText = msg;
-}
-
-// ===== Eigenes Video verschiebbar & skalierbar =====
+// Eigenes Video verschiebbar (Handy + PC)
 const localVideo = document.getElementById("localVideo");
-let dragging=false, offsetX=0, offsetY=0, scale=1;
+let dragging = false, offsetX=0, offsetY=0;
 
-// Maus Drag
-localVideo.addEventListener("mousedown", (e)=>{
-  dragging=true;
+localVideo.addEventListener("mousedown", (e) => {
+  dragging = true;
   offsetX = e.clientX - localVideo.offsetLeft;
   offsetY = e.clientY - localVideo.offsetTop;
 });
-document.addEventListener("mousemove",(e)=>{
+document.addEventListener("mousemove", (e) => {
   if(dragging){
     localVideo.style.left = (e.clientX - offsetX) + "px";
-    localVideo.style.top  = (e.clientY - offsetY) + "px";
+    localVideo.style.top = (e.clientY - offsetY) + "px";
   }
 });
-document.addEventListener("mouseup",()=>dragging=false);
+document.addEventListener("mouseup", ()=> dragging=false);
 
-// Touch Drag & Pinch
-let initialDistance = null;
-localVideo.addEventListener("touchstart",(e)=>{
-  if(e.touches.length===1){
-    dragging=true;
-    offsetX = e.touches[0].clientX - localVideo.offsetLeft;
-    offsetY = e.touches[0].clientY - localVideo.offsetTop;
-  } else if(e.touches.length===2){
-    initialDistance = getDistance(e.touches);
-  }
+localVideo.addEventListener("touchstart", (e) => {
+  dragging = true;
+  offsetX = e.touches[0].clientX - localVideo.offsetLeft;
+  offsetY = e.touches[0].clientY - localVideo.offsetTop;
 });
-localVideo.addEventListener("touchmove",(e)=>{
-  if(e.touches.length===1 && dragging){
+document.addEventListener("touchmove", (e) => {
+  if(dragging){
     localVideo.style.left = (e.touches[0].clientX - offsetX) + "px";
-    localVideo.style.top  = (e.touches[0].clientY - offsetY) + "px";
-  } else if(e.touches.length===2){
-    const newDist = getDistance(e.touches);
-    if(initialDistance){
-      scale *= newDist/initialDistance;
-      scale = Math.max(0.5, Math.min(3, scale));
-      localVideo.style.transform = `scale(${scale})`;
-      initialDistance = newDist;
-    }
+    localVideo.style.top = (e.touches[0].clientY - offsetY) + "px";
   }
 });
-localVideo.addEventListener("touchend",()=>dragging=false);
+document.addEventListener("touchend", ()=> dragging=false);
 
-function getDistance(touches){
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.sqrt(dx*dx+dy*dy);
-}
-
-// Scrollrad Zoom (Desktop)
-localVideo.addEventListener("wheel",(e)=>{
-  e.preventDefault();
-  scale += e.deltaY * -0.001;
-  scale = Math.max(0.5, Math.min(3, scale));
-  localVideo.style.transform = `scale(${scale})`;
-});
-
-// ===== Verbindungsmeldungen einfügen =====
-// Hier rufst du aus client.js z.B. setSystemMessage("🔍 Suche nach Partner...") auf
-// Beispiel:
-setSystemMessage("✅ Verbunden mit Signalisierungsserver.");
+// Demo: Systemmeldungen
+setTimeout(()=> document.getElementById("systemMsg").innerText = "🔍 Suche nach Partner...", 2000);
+setTimeout(()=> document.getElementById("systemMsg").innerText = "✅ Partner gefunden!", 5000);
 </script>
 </body>
 </html>
