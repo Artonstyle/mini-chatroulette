@@ -26,7 +26,11 @@ html, body {
   100% {background-position: 0% 50%;}
 }
 
-body { display: flex; flex-direction: column; min-height: 100vh; }
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
 /* Header */
 header {
@@ -64,7 +68,7 @@ button.btn-start {
 }
 button.btn-start:hover { transform: scale(1.05); }
 
-/* Video-Container */
+/* Videos */
 .videos {
   display: flex;
   justify-content: space-between;
@@ -75,7 +79,7 @@ button.btn-start:hover { transform: scale(1.05); }
 }
 video {
   width: 48%;
-  aspect-ratio: 16/9;
+  height: 360px;
   background: #000;
   border-radius: 12px;
   object-fit: cover;
@@ -102,13 +106,11 @@ video {
 .btn-stop { background-color: #dc3545; color: #fff; }
 .btn-next { background-color: #007bff; color: #fff; }
 
-/* Chat unten unter Videos, flexibel */
+/* Chat unten unter Videos */
 .chat-box {
-  width: 100%;
   max-width: 1200px;
-  margin: 0 auto 10px auto;
-  min-height: 4em;  /* genug Platz zum Tippen */
-  max-height: 200px;
+  margin: 0 auto 20px auto;
+  min-height: 60px;
   background: rgba(50,50,50,0.95);
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -124,6 +126,7 @@ video {
   padding: 5px;
   border-radius: 8px;
   font-size: 0.9em;
+  max-height: 100px; /* Chatverlauf begrenzt */
 }
 .chat-input {
   display: flex;
@@ -135,7 +138,6 @@ video {
   border-radius: 8px;
   border: none;
   font-size: 1em;
-  min-height: 2em;  /* bequem tippen */
 }
 .btn-send {
   background-color: #ffc107;
@@ -150,12 +152,31 @@ video {
 /* Systemnachrichten ausblenden */
 .chat-messages .system-msg { display: none; }
 
-/* Mobile Anpassung */
+/* ======= Mobile Anpassungen ======= */
 @media (max-width: 768px) {
   .videos { flex-direction: column; }
-  video { width: 100%; height: auto; }
-  .chat-box { min-height: 60px; max-height: 150px; }
-  .chat-input input { width: 100%; min-height: 2em; }
+  video {
+    width: 100%;
+    height: auto;
+  }
+  .buttons {
+    justify-content: center;
+    gap: 15px;
+  }
+  .buttons button {
+    flex: 1;
+    padding: 14px 0;
+    font-size: 1.1em;
+  }
+  .chat-box {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    border-radius: 0;
+    max-height: 120px;
+  }
 }
 </style>
 </head>
@@ -205,7 +226,7 @@ video {
 
 <script src="client.js"></script>
 <script>
-// Chat-Nachrichten hinzufügen
+// Chatnachrichten hinzufügen
 const chatMessages = document.getElementById('chatMessages');
 function addChatMessage(msg, isSystem=false){
   const div = document.createElement('div');
@@ -215,23 +236,9 @@ function addChatMessage(msg, isSystem=false){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Testnachrichten
+// Beispiel: Systemnachrichten werden ausgeblendet
 addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
 addChatMessage("Hallo, das ist eine echte Nachricht!");
-
-// Videos gleiche Höhe
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-
-function syncVideoSizes(){
-  if(remoteVideo.videoWidth && remoteVideo.videoHeight){
-    const aspect = remoteVideo.videoWidth / remoteVideo.videoHeight;
-    localVideo.style.height = `${localVideo.offsetWidth / aspect}px`;
-    remoteVideo.style.height = `${remoteVideo.offsetWidth / aspect}px`;
-  }
-}
-remoteVideo.addEventListener('loadedmetadata', syncVideoSizes);
-window.addEventListener('resize', syncVideoSizes);
 </script>
 
 </body>
