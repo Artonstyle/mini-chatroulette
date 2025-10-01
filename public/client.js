@@ -1,49 +1,65 @@
-// ==== WebSocket-Verbindung zum Server ====
-const socket = new WebSocket(`ws://${window.location.hostname}:3000`);
+const socket = new WebSocket(location.origin.replace(/^http/, "ws"));
+let pc;
 
-// ==== WebRTC Variablen ====
-let localStream;
-let pc; // RTCPeerConnection
-let partnerConnected = false;
+async function start() {
+  pc = new RTCPeerConnection();
 
-// ==== UI-Elemente holen ====
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-const startBtn = document.querySelector(".btn-start");
-const nextBtn = document.querySelector(".btn-next");
-const stopBtn = document.querySelector(".btn-stop");
-const chatInput = document.querySelector(".chat-input input");
-const sendBtn = document.querySelector(".btn-send");
-const chatMessages = document.querySelector(".chat-messages");
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+    }
+  };
 
-// ==== Button Events ====
-startBtn.addEventListener("click", () => {
-  console.log("▶️ Suche gestartet...");
+  pc.ontrack = (event) => {
+    document.getElementById("remoteVideo").srcObject = event.streams[0];
+  };
+
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  document.getElementById("localVideo").srcObject = stream;
+  stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
   socket.send(JSON.stringify({ type: "start" }));
-});
+}
 
-nextBtn.addEventListener("click", () => {
-  console.log("⏭ Nächster angefordert");
-  socket.send(JSON.stringify({ type: "next" }));
-});
+document.getElementById("startBtn").onclick = start;
+document.getElementById("stopBtn").onclick = () => socket.send(JSON.stringify({ type: "stop" }));
+document.getElementById("nextBtn").onclick = () => socket.send(JSON.stringify({ type: "next" }));
 
-stopBtn.addEventListener("click", () => {
-  console.log("⏹ Stop gedrückt");
-  socket.send(JSON.stringify({ type: "stop" }));
-  closeConnection();
-});
+socket.onmessage = async (event) => {
+  const data = JSON.parse(event.data);
 
-// ==== Chat senden ====
-sendBtn.addEventListener("click", () => {
-  const msg = chatInput.value.trim();
-  if (msg && partnerConnected) {
-    chatMessages.innerHTML += `<div><b>Du:</b> ${msg}</div>`;
-    socket.send(JSON.stringify({ type: "chat", message: msg }));
-    chatInput.value = "";
+  if (data.type === "matched") {
+    if (data.should_offer) {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.send(JSON.stringify({ type: "offer", offer }));
+    }
   }
-});
 
-// ==== WebSocket Nachrichten ====
+  if (data.type === "offer") {
+    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.send(JSON.stringify({ type: "answer", answer }));
+  }
+
+  if (data.type === "answer") {
+    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+  }
+
+  if (data.type === "candidate") {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+    } catch (err) {
+      console.error("❌ Fehler bei ICE:", err);
+    }
+  }
+
+  if (data.type === "partner-left") {
+    console.log("👋 Partner hat verlassen.");
+    pc.close();
+  }
+};// ==== WebSocket Nachrichten ====
 socket.onmessage = async (event) => {
   const data = JSON.parse(event.data);
   console.log("📩 Nachricht:", data);
@@ -138,3 +154,4 @@ function closeConnection() {
   remoteVideo.srcObject = null;
   partnerConnected = false;
 }
+
