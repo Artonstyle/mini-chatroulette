@@ -1,139 +1,140 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Chatroulette</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1c1c1c, #2e2e2e);
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-    }
-    header {
-      font-size: 2em;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .profile-form, .videos, .chat-box {
-      background: rgba(50, 50, 50, 0.95);
-      padding: 15px;
-      margin: 10px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-    }
-    .profile-form label {
-      margin-right: 15px;
-    }
-    video {
-      width: 48%;
-      height: 360px;
-      background: #000;
-      border-radius: 8px;
-      margin: 5px 0;
-      object-fit: cover;
-    }
-    .video-container {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    .buttons {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1em;
-      font-weight: bold;
-    }
-    .btn-start, .btn-next {
-      background-color: #007bff;
-      color: #fff;
-    }
-    .btn-stop {
-      background-color: #dc3545;
-      color: #fff;
-    }
-    .btn-send {
-      background-color: #28a745;
-      color: #fff;
-    }
-    .chat-messages {
-      height: 200px;
-      overflow-y: auto;
-      background: #1f1f1f;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1em;
-    }
-  </style>
-</head>
-<body>
-  <header>Mini Chatroulette</header>
+// ==== WebSocket-Verbindung zum Server ====
+const socket = new WebSocket(`ws://${window.location.hostname}:3000`);
 
-  <section class="profile-form">
-    <label>Ich bin:
-      <select id="gender">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-    <label>Ich suche:
-      <select id="search">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-    <label>Mein Land:
-      <select id="country">
-        <option>Deutschland</option>
-        <option>Österreich</option>
-        <option>Schweiz</option>
-      </select>
-    </label>
-    <button class="btn-start">Start</button>
-  </section>
+// ==== WebRTC Variablen ====
+let localStream;
+let pc; // RTCPeerConnection
+let partnerConnected = false;
 
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next">Nächster</button>
-      <button class="btn-stop">Stop</button>
-    </div>
-  </section>
+// ==== UI-Elemente holen ====
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const startBtn = document.querySelector(".btn-start");
+const nextBtn = document.querySelector(".btn-next");
+const stopBtn = document.querySelector(".btn-stop");
+const chatInput = document.querySelector(".chat-input input");
+const sendBtn = document.querySelector(".btn-send");
+const chatMessages = document.querySelector(".chat-messages");
 
-  <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">Senden</button>
-    </div>
-  </section>
+// ==== Button Events ====
+startBtn.addEventListener("click", () => {
+  console.log("▶️ Suche gestartet...");
+  socket.send(JSON.stringify({ type: "start" }));
+});
 
-  <!-- jetzt nur client.js laden -->
-  <script src="client.js"></script>
-</body>
-</html>
+nextBtn.addEventListener("click", () => {
+  console.log("⏭ Nächster angefordert");
+  socket.send(JSON.stringify({ type: "next" }));
+});
+
+stopBtn.addEventListener("click", () => {
+  console.log("⏹ Stop gedrückt");
+  socket.send(JSON.stringify({ type: "stop" }));
+  closeConnection();
+});
+
+// ==== Chat senden ====
+sendBtn.addEventListener("click", () => {
+  const msg = chatInput.value.trim();
+  if (msg && partnerConnected) {
+    chatMessages.innerHTML += `<div><b>Du:</b> ${msg}</div>`;
+    socket.send(JSON.stringify({ type: "chat", message: msg }));
+    chatInput.value = "";
+  }
+});
+
+// ==== WebSocket Nachrichten ====
+socket.onmessage = async (event) => {
+  const data = JSON.parse(event.data);
+  console.log("📩 Nachricht:", data);
+
+  if (data.type === "no-match") {
+    console.log("⚠️ Kein Partner gefunden, warte...");
+  }
+
+  if (data.type === "matched") {
+    console.log("✅ Partner gefunden");
+    partnerConnected = true;
+    await startVideo();
+
+    createPeerConnection();
+
+    if (data.should_offer) {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.send(JSON.stringify({ type: "offer", sdp: offer }));
+    }
+  }
+
+  if (data.type === "offer") {
+    createPeerConnection();
+    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.send(JSON.stringify({ type: "answer", sdp: answer }));
+  }
+
+  if (data.type === "answer") {
+    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+  }
+
+  if (data.type === "candidate") {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+    } catch (err) {
+      console.error("ICE Fehler", err);
+    }
+  }
+
+  if (data.type === "partner-left") {
+    console.log("❌ Partner hat verlassen");
+    partnerConnected = false;
+    closeConnection();
+  }
+
+  if (data.type === "chat") {
+    chatMessages.innerHTML += `<div><b>Partner:</b> ${data.message}</div>`;
+  }
+};
+
+// ==== Video starten ====
+async function startVideo() {
+  if (!localStream) {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+    } catch (err) {
+      console.error("🎥 Kamera/Mikrofon Fehler:", err);
+    }
+  }
+}
+
+// ==== Verbindung erstellen ====
+function createPeerConnection() {
+  pc = new RTCPeerConnection();
+
+  // Lokale Tracks hinzufügen
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  // Remote Stream empfangen
+  pc.ontrack = (event) => {
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  // ICE-Kandidaten senden
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+    }
+  };
+}
+
+// ==== Verbindung schließen ====
+function closeConnection() {
+  if (pc) {
+    pc.close();
+    pc = null;
+  }
+  remoteVideo.srcObject = null;
+  partnerConnected = false;
+}
