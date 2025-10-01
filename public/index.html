@@ -13,16 +13,10 @@
 html, body {
   margin: 0; padding: 0;
   height: 100%;
+  background: #000;
   font-family: Arial, sans-serif;
-  background: linear-gradient(-45deg,#1c1c1c,#2e2e2e,#3a3a3a,#1c1c1c);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
   color: #fff;
-}
-@keyframes gradientBG {
-  0% {background-position: 0% 50%;}
-  50% {background-position: 100% 50%;}
-  100% {background-position: 0% 50%;}
+  overflow: hidden;
 }
 
 header {
@@ -31,7 +25,7 @@ header {
   font-size: 1.6em;
   font-weight: bold;
   color: #00d4ff;
-  text-shadow: 0 0 10px #00d4ff,0 0 20px #0077ff;
+  text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff;
 }
 
 /* Profilbereich */
@@ -42,7 +36,7 @@ header {
   background: rgba(50,50,50,0.95);
   padding: 10px;
   border-radius: 6px;
-  margin: 10px auto;
+  margin: 5px auto;
   max-width: 1200px;
 }
 .form-left { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -57,52 +51,47 @@ header {
   font-weight: bold;
 }
 
-/* ======= Laptop/Desktop Standard ======= */
-.videos {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  max-width: 1200px;
-  margin: 10px auto;
-}
-video {
-  width: 48%;
-  height: 360px;
-  background: #000;
-  border-radius: 12px;
+/* Fullscreen Partner-Video */
+#remoteVideo {
+  position: absolute;
+  top: 120px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 180px);
   object-fit: cover;
+  background: #000;
+  z-index: 1;
 }
-.buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  max-width: 1200px;
-  margin: 10px auto;
-}
-.buttons button {
-  min-width: 120px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.btn-stop { background: #dc3545; color: #fff; }
-.btn-next { background: #007bff; color: #fff; }
 
+/* Eigenes Video (verschiebbar + resizable) */
+#localVideo {
+  position: absolute;
+  top: 130px;
+  right: 10px;
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  cursor: move;
+  z-index: 10;
+  resize: both;
+  overflow: hidden;
+}
+
+/* Chatleiste unten */
 .chat-box {
-  max-width: 1200px;
-  margin: 10px auto;
-  background: rgba(50,50,50,0.95);
-  border-radius: 8px;
-  padding: 8px;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.6);
+  padding: 5px;
   display: flex;
   gap: 5px;
+  z-index: 20;
 }
 .chat-box input {
   flex: 1;
-  padding: 8px;
+  padding: 10px;
   border-radius: 6px;
   border: none;
 }
@@ -110,68 +99,41 @@ video {
   background: #ffc107;
   border: none;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 10px 15px;
   font-weight: bold;
   cursor: pointer;
 }
 
-/* ======= Mobile Ansicht ======= */
-@media (max-width: 768px) {
-  body { overflow: hidden; }
+/* Buttons unten rechts */
+.buttons {
+  position: fixed;
+  bottom: 70px; right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+.buttons button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-next { background: #007bff; color: #fff; }
+.btn-stop { background: #dc3545; color: #fff; }
 
-  /* Partner-Video fullscreen */
-  #remoteVideo {
-    position: fixed;
-    top: 110px;
-    left: 0;
-    width: 100%;
-    height: calc(100% - 180px);
-    object-fit: cover;
-    background: #000;
-    z-index: 1;
-  }
-
-  /* Eigenes Video klein verschiebbar */
-  #localVideo {
-    position: absolute;
-    top: 120px; right: 10px;
-    width: 120px; height: 80px;
-    border: 2px solid #fff;
-    border-radius: 6px;
-    z-index: 10;
-    cursor: move;
-  }
-
-  /* Buttons unten rechts */
-  .buttons {
-    position: fixed;
-    bottom: 80px; right: 10px;
-    gap: 8px;
-    z-index: 20;
-  }
-
-  /* Chatleiste transparent unten */
-  .chat-box {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: rgba(0,0,0,0.6);
-    padding: 5px;
-    z-index: 30;
-  }
-  .chat-box input { padding: 6px; }
-  .chat-box button { padding: 6px 10px; }
-
-  /* Systemmeldungen im Video oben links */
-  #systemMsg {
-    position: absolute;
-    top: 130px; left: 10px;
-    background: rgba(0,0,0,0.5);
-    color: #ff0;
-    padding: 4px 6px;
-    border-radius: 4px;
-    font-size: 0.9em;
-    z-index: 40;
-  }
+/* Systemmeldungen oben links */
+#systemMsg {
+  position: absolute;
+  top: 130px; left: 10px;
+  background: rgba(0,0,0,0.5);
+  color: #ff0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  z-index: 40;
+  max-width: 70%;
+  line-height: 1.4;
 }
 </style>
 </head>
@@ -179,7 +141,7 @@ video {
 
 <header>Mini Chatroulette</header>
 
-<!-- Profil -->
+<!-- Profilbereich -->
 <section class="profile-form">
   <div class="form-left">
     <label>Ich bin:
@@ -197,10 +159,8 @@ video {
 </section>
 
 <!-- Videos -->
-<section class="videos">
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
-</section>
+<video id="remoteVideo" autoplay></video>
+<video id="localVideo" autoplay muted></video>
 
 <!-- Buttons -->
 <div class="buttons">
@@ -219,39 +179,74 @@ video {
 
 <script src="client.js"></script>
 <script>
-// Eigenes Video verschiebbar (Handy + PC)
+// ================= Drag & Drop für eigenes Video =================
 const localVideo = document.getElementById("localVideo");
-let dragging = false, offsetX=0, offsetY=0;
+let isDragging = false;
+let offsetX, offsetY;
 
 localVideo.addEventListener("mousedown", (e) => {
-  dragging = true;
+  isDragging = true;
   offsetX = e.clientX - localVideo.offsetLeft;
   offsetY = e.clientY - localVideo.offsetTop;
 });
+
 document.addEventListener("mousemove", (e) => {
-  if(dragging){
+  if (isDragging) {
     localVideo.style.left = (e.clientX - offsetX) + "px";
     localVideo.style.top = (e.clientY - offsetY) + "px";
   }
 });
-document.addEventListener("mouseup", ()=> dragging=false);
 
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+});
+
+// Touch für Handy
 localVideo.addEventListener("touchstart", (e) => {
-  dragging = true;
+  isDragging = true;
   offsetX = e.touches[0].clientX - localVideo.offsetLeft;
   offsetY = e.touches[0].clientY - localVideo.offsetTop;
 });
 document.addEventListener("touchmove", (e) => {
-  if(dragging){
+  if (isDragging) {
     localVideo.style.left = (e.touches[0].clientX - offsetX) + "px";
     localVideo.style.top = (e.touches[0].clientY - offsetY) + "px";
   }
 });
-document.addEventListener("touchend", ()=> dragging=false);
+document.addEventListener("touchend", () => { isDragging = false; });
 
-// Demo: Systemmeldungen
-setTimeout(()=> document.getElementById("systemMsg").innerText = "🔍 Suche nach Partner...", 2000);
-setTimeout(()=> document.getElementById("systemMsg").innerText = "✅ Partner gefunden!", 5000);
+// ================= Resize (per Mausrad oder Doppelklick) =================
+localVideo.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  let newWidth = localVideo.offsetWidth + (e.deltaY < 0 ? 20 : -20);
+  let newHeight = (newWidth / 3) * 2; // 3:2 Verhältnis
+  if (newWidth > 60 && newWidth < 400) {
+    localVideo.style.width = newWidth + "px";
+    localVideo.style.height = newHeight + "px";
+  }
+});
+
+localVideo.addEventListener("dblclick", () => {
+  localVideo.style.width = "200px";
+  localVideo.style.height = "130px";
+});
+
+// ================= Systemmeldungen Beispiel =================
+const systemMsg = document.getElementById("systemMsg");
+setTimeout(() => systemMsg.innerText = "🔍 Suche nach Partner...", 2000);
+setTimeout(() => systemMsg.innerText = "✅ Partner gefunden!", 5000);
+
+// ================= Chat =================
+const chatInput = document.getElementById("chatInput");
+const btnSend = document.getElementById("btnSend");
+
+btnSend.addEventListener("click", () => {
+  const text = chatInput.value.trim();
+  if (text) {
+    console.log("Chat:", text); // hier an Server schicken
+    chatInput.value = "";
+  }
+});
 </script>
 </body>
 </html>
