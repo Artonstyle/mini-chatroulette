@@ -1,11 +1,12 @@
-// client.js
+// public/client.js
+// Client-seitige Logik: WebSocket + WebRTC + DataChannel + UI
 
-// ✅ Automatische Wahl zwischen ws:// und wss://
+// WS-Protokoll automatisch wählen (wss für https, ws für http)
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
 
-let localStream;
-let peerConnection;
+let localStream = null;
+let peerConnection = null;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 const startBtn = document.querySelector(".btn-start");
@@ -18,7 +19,7 @@ const chatMessages = document.querySelector(".chat-messages");
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 
-// ✅ Button standardmäßig deaktivieren
+// Standard: Senden deaktiviert bis DataChannel offen
 sendBtn.disabled = true;
 
 async function initLocalStream() {
@@ -29,12 +30,98 @@ async function initLocalStream() {
     return true;
   } catch (err) {
     console.error("Kamera/Mikrofon Fehler:", err);
-    alert("Fehler beim Zugriff auf Kamera und Mikrofon: " + err.name);
+    alert("Fehler beim Zugriff auf Kamera und Mikrofon: " + (err.name || err.message));
     return false;
   }
 }
 
 function createPeerConnection() {
+  if (!localStream) {
+    console.error("PeerConnection kann nicht erstellt werden: localStream fehlt.");
+    return;
+  }
+
+  peerConnection = new RTCPeerConnection(config);
+
+  // Lokale Tracks hinzufügen
+  localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+
+  // Remote-Stream setzen
+  peerConnection.ontrack = (event) => {
+    if (remoteVideo.srcObject !== event.streams[0]) {
+      remoteVideo.srcObject = event.streams[0];
+    }
+  };
+
+  // ICE Candidates an Server senden
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+    }
+  };
+
+  // Verbindung zustandsüberwachung
+  peerConnection.onconnectionstatechange = () => {
+    console.log("PeerConnection Zustand:", peerConnection.connectionState);
+    if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
+      addMessage("System", "Verbindung zum Partner verloren.");
+      stopConnection();
+    }
+  };
+}
+
+// DataChannel Setup helper
+function setupDataChannel(channel) {
+  channel.onmessage = (e) => addMessage("Partner", e.data);
+  channel.onopen = () => {
+    console.log("DataChannel offen ✅");
+    sendBtn.disabled = false;
+  };
+  channel.onclose = () => {
+    console.log("DataChannel geschlossen ❌");
+    sendBtn.disabled = true;
+  };
+  peerConnection.dataChannel = channel;
+}
+
+function stopConnection() {
+  if (peerConnection) {
+    try { peerConnection.close(); } catch {}
+    peerConnection = null;
+  }
+  remoteVideo.srcObject = null;
+  sendBtn.disabled = true;
+  // optional: Kamera freigeben, falls gewünscht:
+  // if (localStream) {
+  //   localStream.getTracks().forEach(t => t.stop());
+  //   localStream = null;
+  //   localVideo.srcObject = null;
+  // }
+}
+
+startBtn.onclick = async () => {
+  if (await initLocalStream()) {
+    ws.send(JSON.stringify({ type: "start" }));
+  }
+};
+
+stopBtn.onclick = () => {
+  ws.send(JSON.stringify({ type: "stop" }));
+  stopConnection();
+};
+
+nextBtn.onclick = () => {
+  // Klicke Stop und nach kurzer Pause Start
+  stopBtn.click();
+  setTimeout(() => startBtn.click(), 500);
+};
+
+sendBtn.onclick = () => {
+  const text = inputField.value.trim();
+  if (!text) return;
+  addMessage("Du", text);
+  if (peerConnection && peerConnection.dataChannel && peerConnection.dataChannel.readyState === "open") {
+    peerConnection.datafunction createPeerConnection() {
   if (!localStream) {
     console.error("PeerConnection kann nicht erstellt werden: localStream fehlt.");
     return;
@@ -182,3 +269,4 @@ ws.onmessage = async (event) => {
     addMessage("System", "Der Partner hat die Verbindung beendet.");
   }
 };
+
