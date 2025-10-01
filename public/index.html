@@ -11,235 +11,161 @@
 
 <style>
 html, body {
+  margin: 0; padding: 0;
   height: 100%;
-  margin: 0;
-  padding: 0;
+  background: #000;
   font-family: Arial, sans-serif;
-  color: #fff;
-  background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
-}
-@keyframes gradientBG {
-  0% {background-position: 0% 50%;}
-  50% {background-position: 100% 50%;}
-  100% {background-position: 0% 50%;}
 }
 
-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-/* Header */
-header {
-  font-size: 2em;
-  font-weight: bold;
-  margin-bottom: 10px;
-  text-align: center;
-  color: #00d4ff;
-  text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
-  letter-spacing: 2px;
-}
-
-/* Profilbereich */
-.profile-form {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  background: rgba(50,50,50,0.95);
-  padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+/* ===== Desktop Standard Layout ===== */
+.container {
   max-width: 1200px;
-  margin: 0 auto 10px auto;
+  margin: 0 auto;
+  padding: 10px;
 }
-.form-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.online-right { font-weight: bold; color: #0f0; }
-button.btn-start {
-  background-color: #28a745;
-  color: #fff;
-  border-radius: 12px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: transform 0.2s;
-}
-button.btn-start:hover { transform: scale(1.05); }
-
-/* Videos */
 .videos {
   display: flex;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 10px;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 video {
   width: 48%;
   height: 360px;
-  background: #000;
-  border-radius: 12px;
   object-fit: cover;
+  background: #000;
+  border-radius: 8px;
 }
-
-/* Buttons unter Videos */
 .buttons {
+  margin-top: 10px;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  max-width: 1200px;
-  margin: 10px auto;
 }
 .buttons button {
-  min-width: 120px;
-  padding: 10px 20px;
+  padding: 10px 15px;
   border: none;
-  border-radius: 12px;
-  cursor: pointer;
+  border-radius: 6px;
   font-weight: bold;
-  transition: transform 0.2s;
+  cursor: pointer;
 }
-.buttons button:hover { transform: scale(1.05); }
-.btn-stop { background-color: #dc3545; color: #fff; }
-.btn-next { background-color: #007bff; color: #fff; }
-
-/* Chat unten unter Videos */
+.btn-next { background: #007bff; color: #fff; }
+.btn-stop { background: #dc3545; color: #fff; }
 .chat-box {
-  max-width: 1200px;
-  margin: 0 auto 20px auto;
-  min-height: 60px;
+  margin-top: 10px;
   background: rgba(50,50,50,0.95);
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   padding: 5px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  background: #1f1f1f;
-  padding: 5px;
-  border-radius: 8px;
-  font-size: 0.9em;
-  max-height: 100px; /* Chatverlauf begrenzt */
-}
-.chat-input {
+  border-radius: 6px;
   display: flex;
   gap: 5px;
 }
-.chat-input input {
+.chat-box input {
   flex: 1;
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 6px;
   border: none;
-  font-size: 1em;
 }
-.btn-send {
-  background-color: #ffc107;
+.chat-box button {
+  background: #ffc107;
   border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  cursor: pointer;
+  border-radius: 6px;
+  padding: 10px 15px;
   font-weight: bold;
-  font-size: 1em;
+  cursor: pointer;
 }
 
-/* Systemnachrichten ausblenden */
-.chat-messages .system-msg { display: none; }
-
-/* ======= Mobile Anpassungen ======= */
+/* ===== Mobile Layout ===== */
 @media (max-width: 768px) {
-  .videos { flex-direction: column; }
-  video {
+  body { overflow: hidden; }
+
+  /* Partner-Video fullscreen */
+  #remoteVideo {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0; left: 0;
+    border-radius: 0;
   }
-  .buttons {
-    justify-content: center;
-    gap: 15px;
+
+  /* Eigenes Video klein als Overlay */
+  #localVideo {
+    position: absolute;
+    bottom: 70px;
+    right: 10px;
+    width: 120px;
+    height: 80px;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    object-fit: cover;
+    z-index: 10;
   }
-  .buttons button {
-    flex: 1;
-    padding: 14px 0;
-    font-size: 1.1em;
-  }
+
+  /* Chatleiste unten transparent */
   .chat-box {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
     margin: 0;
     border-radius: 0;
-    max-height: 120px;
+    background: rgba(0,0,0,0.6);
+    padding: 5px;
+    z-index: 20;
+  }
+
+  /* Buttons schweben oben rechts */
+  .buttons {
+    position: absolute;
+    top: 10px; right: 10px;
+    margin: 0;
+    gap: 8px;
+    flex-direction: column;
+    z-index: 30;
+  }
+
+  /* Systemmeldungen oben links */
+  #systemMsg {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #ff0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    z-index: 40;
   }
 }
 </style>
 </head>
 <body>
 
-<header>Mini Chatroulette</header>
+<div class="container">
+  <!-- Videos -->
+  <section class="videos">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </section>
 
-<!-- Profilbereich -->
-<section class="profile-form">
-  <div class="form-left">
-    <label>Ich bin:
-      <select id="gender"><option>Mann</option><option>Frau</option></select>
-    </label>
-    <label>Ich suche:
-      <select id="search"><option>Mann</option><option>Frau</option></select>
-    </label>
-    <label>Mein Land:
-      <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-    </label>
-    <button class="btn-start">Start</button>
+  <!-- Buttons -->
+  <div class="buttons">
+    <button class="btn-next">⏭ Nächster</button>
+    <button class="btn-stop">⏹ Stop</button>
   </div>
-  <div class="online-right">
-    👥 Online: <span id="onlineCount">0</span>
-  </div>
-</section>
 
-<!-- Videos -->
-<section class="videos">
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
-</section>
-
-<!-- Buttons unter Videos -->
-<div class="buttons">
-  <button class="btn-next">⏭ Nächster</button>
-  <button class="btn-stop">⏹ Stop</button>
-</div>
-
-<!-- Chat -->
-<section class="chat-box">
-  <div class="chat-messages" id="chatMessages"></div>
-  <div class="chat-input">
+  <!-- Chat -->
+  <div class="chat-box">
     <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
-    <button class="btn-send" id="btnSend">💬 Senden</button>
+    <button id="btnSend">💬 Senden</button>
   </div>
-</section>
+
+  <!-- Systemmeldung -->
+  <div id="systemMsg">✅ Verbunden mit Signalisierungsserver...</div>
+</div>
 
 <script src="client.js"></script>
 <script>
-// Chatnachrichten hinzufügen
-const chatMessages = document.getElementById('chatMessages');
-function addChatMessage(msg, isSystem=false){
-  const div = document.createElement('div');
-  div.textContent = msg;
-  if(isSystem) div.classList.add('system-msg'); // wird ausgeblendet
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// Beispiel: Systemnachrichten werden ausgeblendet
-addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
-addChatMessage("Hallo, das ist eine echte Nachricht!");
+// Beispiel: Systemtext wechselt
+setTimeout(() => {
+  document.getElementById('systemMsg').innerText = "🔍 Suche nach Partner...";
+}, 3000);
 </script>
-
 </body>
 </html>
