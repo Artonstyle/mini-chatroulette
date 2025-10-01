@@ -1,238 +1,179 @@
-// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
-const WS_URL = "wss://mini-chatroulette.onrender.com"; 
-const ws = new WebSocket(WS_URL); 
+// =================================================================
+// GLOBALE VARIABLEN (WebSocket, PeerConnection, etc.)
+// =================================================================
 
+// ⚠️ WICHTIG: Ersetzen Sie 'localhost:8080' durch die tatsächliche URL/IP Ihres Servers.
+const WS_SERVER_URL = 'ws://localhost:8080'; 
+
+let ws;
 let localStream;
 let peerConnection;
-let dataChannel;
+let isStarted = false;
 
-// DOM-Elemente
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-const messagesDiv = document.querySelector(".chat-messages");
-const input = document.querySelector(".chat-input input");
-const sendBtn = document.querySelector(".btn-send");
-// Für zukünftige Profil-Logik
-const genderSelect = document.getElementById("gender");
-const searchSelect = document.getElementById("search");
-const countrySelect = document.getElementById("country");
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+const btnStart = document.querySelector('.btn-start');
+const btnNext = document.querySelector('.btn-next');
+const btnStop = document.querySelector('.btn-stop');
+const onlineCountDisplay = document.getElementById('onlineCount'); // NEU: Zähler-Element
 
-const config = { 
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" }
-    ] 
-};
+// =================================================================
+// WEBSOCKET-FUNKTIONEN
+// =================================================================
 
-// Platzhalter für "Suchen"-Animation
-const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
+function connectToServer() {
+    if (ws && ws.readyState === WebSocket.OPEN) return;
+    
+    ws = new WebSocket(WS_SERVER_URL);
 
-// --- Hilfsfunktionen ---
+    ws.onopen = () => {
+        console.log('Verbunden mit dem WebSocket-Server.');
+        // Kann hier eine initiale Nachricht senden, z.B. um den Zähler zu initiieren
+    };
 
-function addMessage(sender, text, isSystem = false) {
-    const div = document.createElement("div");
-    div.textContent = `${sender}: ${text}`;
-    if (isSystem) {
-        div.style.color = '#ffc107'; 
-        div.style.fontStyle = 'italic';
-    }
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    ws.onmessage = async (event) => {
+        const message = JSON.parse(event.data);
+        console.log('Nachricht vom Server erhalten:', message.type);
+
+        // NEU: BEHANDLUNG DER ONLINE-ZÄHLER-NACHRICHT
+        if (message.type === 'onlineCount') {
+            updateOnlineCount(message.count);
+        }
+        
+        // WebRTC Signalisierung (altes Chatroulette-Projekt-Logik)
+        if (message.type === 'offer') {
+            if (!isStarted) startCall(false);
+            peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            ws.send(JSON.stringify(peerConnection.localDescription));
+        } else if (message.type === 'answer' && isStarted) {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+        } else if (message.type === 'candidate' && isStarted) {
+            const candidate = new RTCIceCandidate({
+                sdpMid: message.sdpMid,
+                sdpMLineIndex: message.sdpMLineIndex,
+                candidate: message.candidate
+            });
+            peerConnection.addIceCandidate(candidate).catch(e => console.error('Error adding received ice candidate:', e));
+        } else if (message.type === 'hangup') {
+            stopCall();
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('Verbindung zum Server geschlossen. Versuche in 5 Sekunden erneut...');
+        // Versuche nach einer Verzögerung die Wiederverbindung
+        setTimeout(connectToServer, 5000);
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket-Fehler:', error);
+        ws.close();
+    };
 }
 
-async function startCamera() {
-    if (localStream) return true;
+// =================================================================
+// NEU: HILFSFUNKTION FÜR DEN ZÄHLER
+// =================================================================
+
+function updateOnlineCount(count) {
+    if (onlineCountDisplay) {
+        onlineCountDisplay.textContent = count;
+    }
+}
+
+// =================================================================
+// WEBRTC FUNKTIONEN (Kurzfassung)
+// =================================================================
+
+async function startCall(isCaller) {
+    isStarted = true;
+    // ... WebRTC Setup Logik (Media-Zugriff, PeerConnection erstellen, Tracks hinzufügen, Offer/Answer senden) ...
+    
+    // Beispiel für Media-Zugriff
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = localStream;
-        return true;
-    } catch (err) {
-        addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
-        return false;
+        
+        createPeerConnection();
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        if (isCaller) {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            ws.send(JSON.stringify(peerConnection.localDescription));
+        }
+        
+    } catch (e) {
+        console.error('Fehler beim Starten des Streams oder Anrufs:', e);
+        alert('Konnte nicht auf Kamera und Mikrofon zugreifen. Erlaubnis erteilen!');
     }
 }
 
-function closePeerConnection() {
+function stopCall() {
+    isStarted = false;
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
     if (peerConnection) {
-        if (remoteVideo.srcObject) {
-            // Stoppe Tracks nur, wenn sie existieren (verhindert Fehler)
-            if (remoteVideo.srcObject.getTracks) {
-                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-            }
-        }
-        remoteVideo.srcObject = null;
-        remoteVideo.src = SEARCHING_VIDEO_SRC; // Zeige Platzhalter nach Trennung
-        remoteVideo.loop = true; // Loop für das Platzhalter-Video
         peerConnection.close();
         peerConnection = null;
     }
-    dataChannel = null;
-    addMessage("System", "Verbindung zum Partner beendet.", true);
-    document.querySelector(".btn-next").disabled = true;
-    document.querySelector(".btn-send").disabled = true;
-    input.disabled = true;
+    localVideo.srcObject = null;
+    remoteVideo.srcObject = null;
+    console.log('Anruf beendet.');
 }
 
 function createPeerConnection() {
-    closePeerConnection(); 
-    peerConnection = new RTCPeerConnection(config);
+    // Hier werden Google's STUN-Server verwendet, um die Verbindung herzustellen
+    const configuration = { 
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] 
+    };
+    peerConnection = new RTCPeerConnection(configuration);
 
-    if (localStream) {
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    }
-
-    // Remote-Stream empfangen
     peerConnection.ontrack = (event) => {
-        remoteVideo.src = ""; // Entferne Platzhalter-Video
-        remoteVideo.srcObject = event.streams[0];
-        remoteVideo.loop = false; // Loop ausschalten, da echter Stream
-        addMessage("System", "🎥 Videoanruf gestartet!", true);
-        document.querySelector(".btn-next").disabled = false;
-        document.querySelector(".btn-send").disabled = false;
-        input.disabled = false;
+        if (remoteVideo.srcObject !== event.streams[0]) {
+            remoteVideo.srcObject = event.streams[0];
+            console.log('Remote Stream hinzugefügt.');
+        }
     };
 
-    // ICE-Kandidaten senden
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+            ws.send(JSON.stringify({
+                type: 'candidate',
+                sdpMid: event.candidate.sdpMid,
+                sdpMLineIndex: event.candidate.sdpMLineIndex,
+                candidate: event.candidate.candidate
+            }));
         }
     };
-    
-    // DataChannel für Chat (vom CALLER erstellt)
-    dataChannel = peerConnection.createDataChannel("chat");
-    dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
-    dataChannel.onmessage = (event) => addMessage("Partner", event.data);
-
-    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
-    peerConnection.ondatachannel = (event) => { 
-        dataChannel = event.channel;
-        dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
-        dataChannel.onmessage = (e) => addMessage("Partner", e.data);
-    };
-
-    peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
-            addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
-            closePeerConnection();
-        }
-    }
 }
 
 
-// --- WebSocket Events ---
-ws.onopen = () => {
-    addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
-    document.querySelector(".btn-start").disabled = false;
-    document.querySelector(".btn-stop").disabled = false;
-};
+// =================================================================
+// EVENT LISTENER
+// =================================================================
 
-ws.onmessage = async (event) => {
-    const data = JSON.parse(event.data);
-
-    if (data.type === "matched" && data.should_offer) {
-        // CALLER: Erstelle Offer
-        createPeerConnection();
-        addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        ws.send(JSON.stringify({ type: "offer", offer }));
-
-    } else if (data.type === "matched" && !data.should_offer) {
-        // ANSWERER: Partner gefunden, warte auf Offer
-        addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
-
-    } else if (data.type === "offer") {
-        // ANSWERER: Empfange Offer
-        if (!peerConnection) createPeerConnection();
-        
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        ws.send(JSON.stringify({ type: "answer", answer }));
-
-    } else if (data.type === "answer") {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-
-    } else if (data.type === "candidate" && peerConnection) {
-        try {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (err) {
-            console.warn("Fehler beim Hinzufügen des ICE Candidate:", err);
-        }
-    } else if (data.type === "partner-left") {
-        addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
-        closePeerConnection();
-    } else if (data.type === "no-match") {
-         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
-    } 
-    // NEU: Logik für Besucherzählung vom Server
-    else if (data.type === "user-count") {
-        const onlineCountElement = document.getElementById("onlineCount");
-        if (onlineCountElement) {
-            onlineCountElement.textContent = data.count;
-        }
+btnStart.addEventListener('click', () => startCall(true));
+btnNext.addEventListener('click', () => {
+    // Logik, um den aktuellen Anruf zu beenden und einen neuen zu starten
+    if (isStarted) {
+        ws.send(JSON.stringify({ type: 'hangup' }));
+        stopCall();
     }
-};
-
-// --- Buttons mit Logik ---
-
-document.querySelector(".btn-start").onclick = async () => {
-    if (!await startCamera()) return; 
-
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
-    
-    ws.send(JSON.stringify({ type: "start" }));
-    
-    addMessage("System", "Suche nach Partner...", true);
-    document.querySelector(".btn-start").disabled = true;
-};
-
-document.querySelector(".btn-next").onclick = () => {
-    if (peerConnection) {
-        ws.send(JSON.stringify({ type: "next" })); 
-        closePeerConnection(); 
+    startCall(true); 
+});
+btnStop.addEventListener('click', () => {
+    // Signalisiert dem Partner das Ende und beendet den lokalen Stream
+    if (isStarted) {
+        ws.send(JSON.stringify({ type: 'hangup' }));
+        stopCall();
     }
-    
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
+});
 
-    ws.send(JSON.stringify({ type: "start" }));
-    
-    addMessage("System", "Suche nach neuem Partner...", true);
-    document.querySelector(".btn-next").disabled = true;
-};
 
-document.querySelector(".btn-stop").onclick = () => {
-    ws.send(JSON.stringify({ type: "stop" }));
-    
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localVideo.srcObject = null;
-        localStream = null;
-    }
-    
-    closePeerConnection();
-    remoteVideo.srcObject = null;
-    remoteVideo.src = ""; // Setze Remote-Video zurück, wenn gestoppt
-    remoteVideo.loop = false;
-    addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
-    document.querySelector(".btn-start").disabled = false;
-    document.querySelector(".btn-stop").disabled = true;
-};
-
-// Chat-Nachricht senden
-sendBtn.onclick = () => {
-    const text = input.value.trim();
-    if (text && dataChannel && dataChannel.readyState === 'open') {
-        dataChannel.send(text);
-        addMessage("Ich", text);
-        input.value = "";
-    } else if (text) {
-         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
-    }
-};
+// Starte die Verbindung, wenn die Seite geladen wird
+connectToServer();
