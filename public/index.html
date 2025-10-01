@@ -13,6 +13,7 @@
 
   <!-- ================= Styles ================= -->
   <style>
+    /* ================= Grundlayout ================= */
     body {
       font-family: Arial, sans-serif;
       color: #fff;
@@ -37,6 +38,7 @@
       letter-spacing: 2px;
     }
 
+    /* ================= Profilbereich ================= */
     .profile-form {
       display: flex;
       align-items: center;
@@ -71,6 +73,7 @@
       font-weight: bold;
     }
 
+    /* ================= Videos + Buttons ================= */
     .videos {
       background: rgba(50,50,50,0.95);
       padding: 15px;
@@ -83,14 +86,15 @@
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
+      gap: 10px;
     }
     video {
       width: 48%;
-      height: 360px;
+      height: auto;
+      min-height: 200px;
       background: #000;
       border-radius: 8px;
       object-fit: cover;
-      margin: 5px 0;
     }
 
     .buttons {
@@ -98,6 +102,7 @@
       display: flex;
       justify-content: flex-end;
       gap: 10px;
+      flex-wrap: wrap;
     }
     .buttons button {
       min-width: 120px;
@@ -116,6 +121,7 @@
     .btn-stop {background-color: #dc3545; color: #fff;}
     .btn-next {background-color: #007bff; color: #fff;}
 
+    /* ================= Chatbereich ================= */
     .chat-box {
       background: rgba(50,50,50,0.95);
       padding: 15px;
@@ -135,6 +141,7 @@
     .chat-input {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
     }
     .chat-input input {
       flex: 1;
@@ -150,6 +157,50 @@
       padding: 10px 20px;
       cursor: pointer;
       font-weight: bold;
+    }
+
+    /* ================= Responsive für Handys ================= */
+    @media (max-width: 768px) {
+      header { font-size: 1.5em; }
+
+      .profile-form {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .form-left {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .video-container video {
+        width: 100%;
+      }
+
+      .buttons {
+        flex-direction: column;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .chat-box {
+        max-width: 100%;
+        padding: 10px;
+      }
+
+      .chat-input {
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .chat-input input, .btn-send {
+        width: 100%;
+      }
+
+      button.btn-start, .buttons button {
+        font-size: 0.9em;
+        padding: 8px 16px;
+      }
     }
   </style>
 </head>
@@ -172,8 +223,8 @@
       <button class="btn-start">Start</button>
     </div>
     <div class="online-right">
-  👥 Online: <span id="onlineCount">0</span>
-</div>
+      👥 Online: <span id="onlineCount">0</span>
+    </div>
   </section>
 
   <!-- Videos + Buttons -->
