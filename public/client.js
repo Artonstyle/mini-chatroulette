@@ -1,5 +1,9 @@
 // client.js
-const ws = new WebSocket(`wss://${window.location.host}`);
+
+// ✅ Automatische Wahl zwischen ws:// und wss://
+const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
+
 let localStream;
 let peerConnection;
 const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
@@ -14,8 +18,11 @@ const chatMessages = document.querySelector(".chat-messages");
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 
+// ✅ Button standardmäßig deaktivieren
+sendBtn.disabled = true;
+
 async function initLocalStream() {
-  if (localStream) return true; // Stream ist bereits da
+  if (localStream) return true;
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = localStream;
@@ -32,7 +39,7 @@ function createPeerConnection() {
     console.error("PeerConnection kann nicht erstellt werden: localStream fehlt.");
     return;
   }
-  
+
   peerConnection = new RTCPeerConnection(config);
 
   localStream.getTracks().forEach((track) => {
@@ -40,10 +47,7 @@ function createPeerConnection() {
   });
 
   peerConnection.ontrack = (event) => {
-    // Stellt sicher, dass das Video nur gesetzt wird, wenn es noch nicht gesetzt wurde
-    if (remoteVideo.srcObject !== event.streams[0]) {
-      remoteVideo.srcObject = event.streams[0];
-    }
+    remoteVideo.srcObject = event.streams[0];
   };
 
   peerConnection.onicecandidate = (event) => {
@@ -51,35 +55,42 @@ function createPeerConnection() {
       ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
     }
   };
-  
-  // Füge onconnectionstatechange für bessere Fehlerbehandlung hinzu
+
   peerConnection.onconnectionstatechange = () => {
-    console.log('PeerConnection Zustand:', peerConnection.connectionState);
-    if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+    console.log("PeerConnection Zustand:", peerConnection.connectionState);
+    if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
       addMessage("System", "Verbindung zum Partner verloren.");
-      stopConnection(); // Rufe eine Funktion zum Beenden auf
+      stopConnection();
     }
   };
 }
 
-// Neue Funktion, um das Stoppen zu zentralisieren
+// ✅ Zentrale Funktion fürs DataChannel-Setup
+function setupDataChannel(channel) {
+  channel.onmessage = (e) => addMessage("Partner", e.data);
+  channel.onopen = () => {
+    console.log("DataChannel offen ✅");
+    sendBtn.disabled = false;
+  };
+  channel.onclose = () => {
+    console.log("DataChannel geschlossen ❌");
+    sendBtn.disabled = true;
+  };
+  peerConnection.dataChannel = channel;
+}
+
+// Verbindung sauber stoppen
 function stopConnection() {
   if (peerConnection) {
     peerConnection.close();
     peerConnection = null;
   }
   remoteVideo.srcObject = null;
-  // Optional: localStream stoppen, um Kamera freizugeben
-  // if (localStream) {
-  //   localStream.getTracks().forEach(track => track.stop());
-  //   localStream = null;
-  //   localVideo.srcObject = null;
-  // }
+  sendBtn.disabled = true; // Chat wieder deaktivieren
 }
 
-
 startBtn.onclick = async () => {
-  if (await initLocalStream()) { // Warten, bis der Stream bereit ist
+  if (await initLocalStream()) {
     ws.send(JSON.stringify({ type: "start" }));
   }
 };
@@ -90,12 +101,8 @@ stopBtn.onclick = () => {
 };
 
 nextBtn.onclick = () => {
-  stopBtn.onclick();
-  // Eine kleine Pause ist gut, aber man sollte nicht warten, 
-  // bis die "stop"-Nachricht verarbeitet wurde. 500ms sind okay.
-  setTimeout(() => {
-    startBtn.onclick();
-  }, 500);
+  stopBtn.click();
+  setTimeout(() => startBtn.click(), 500);
 };
 
 sendBtn.onclick = () => {
@@ -103,11 +110,8 @@ sendBtn.onclick = () => {
   if (!text) return;
   addMessage("Du", text);
 
-  // Stelle sicher, dass dataChannel vorhanden und bereit zum Senden ist
-  if (peerConnection && peerConnection.dataChannel && peerConnection.dataChannel.readyState === 'open') {
+  if (peerConnection && peerConnection.dataChannel && peerConnection.dataChannel.readyState === "open") {
     peerConnection.dataChannel.send(text);
-  } else {
-    addMessage("System", "Chat-Kanal ist noch nicht bereit.");
   }
   inputField.value = "";
 };
@@ -119,23 +123,20 @@ function addMessage(sender, msg) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ---
-## 🕸️ WebSocket Handling
-
+// 🕸️ WebSocket Handling
 ws.onmessage = async (event) => {
   const data = JSON.parse(event.data);
 
   if (data.type === "match") {
-    if (!localStream) { // Überprüfung für den Fall, dass start gesendet wurde, aber localStream fehlschlug
-        console.error("Match empfangen, aber localStream fehlt. Breche ab.");
-        return;
+    if (!localStream) {
+      console.error("Match empfangen, aber localStream fehlt. Breche ab.");
+      return;
     }
     createPeerConnection();
 
-    // Ersteller des Kanals (Offerer)
+    // Offerer → erstellt DataChannel
     const channel = peerConnection.createDataChannel("chat");
-    channel.onmessage = (e) => addMessage("Partner", e.data);
-    peerConnection.dataChannel = channel; // Speichern für sendBtn.onclick
+    setupDataChannel(channel);
 
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
@@ -143,19 +144,18 @@ ws.onmessage = async (event) => {
   }
 
   if (data.type === "offer") {
-    if (!localStream) { // Überprüfung für den Fall, dass localStream fehlschlug
-        console.error("Offer empfangen, aber localStream fehlt. Breche ab.");
-        return;
+    if (!localStream) {
+      console.error("Offer empfangen, aber localStream fehlt. Breche ab.");
+      return;
     }
     createPeerConnection();
 
-    // Empfänger des Kanals (Answerer)
+    // Answerer → wartet auf DataChannel
     peerConnection.ondatachannel = (event) => {
-      event.channel.onmessage = (e) => addMessage("Partner", e.data);
-      peerConnection.dataChannel = event.channel; // Speichern für sendBtn.onclick
+      setupDataChannel(event.channel);
     };
 
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+    await peerConnection.setRemoteDescription(data.offer);
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
     ws.send(JSON.stringify({ type: "answer", answer }));
@@ -163,17 +163,17 @@ ws.onmessage = async (event) => {
 
   if (data.type === "answer") {
     if (peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      await peerConnection.setRemoteDescription(data.answer);
     }
   }
 
   if (data.type === "candidate") {
     if (peerConnection) {
-        try {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (err) {
-            console.error("Fehler beim ICE Candidate:", err);
-        }
+      try {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } catch (err) {
+        console.error("Fehler beim ICE Candidate:", err);
+      }
     }
   }
 
@@ -182,6 +182,3 @@ ws.onmessage = async (event) => {
     addMessage("System", "Der Partner hat die Verbindung beendet.");
   }
 };
-
-// **Init Kamera beim Laden entfernt, da es jetzt im startBtn.onclick liegt.** // Dadurch hat der Nutzer mehr Kontrolle und der Stream wird erst 
-// beim Startversuch angefordert.
