@@ -1,254 +1,295 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ================= SEO & Google ================= -->
-  <title>Mini Chatroulette – Videochat online</title>
-  <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
-  <meta name="robots" content="index, follow">
-  <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
+<title>Mini Chatroulette – Videochat online</title>
+<meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
+<meta name="robots" content="index, follow">
+<meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
 
-  <!-- ================= Styles ================= -->
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-      background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-    }
-    @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
-    }
-    header {
-      font-size: 2em;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-align: center;
-      color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
-      letter-spacing: 2px;
-    }
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+  }
+  @keyframes gradientBG {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+  }
+  header {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #00d4ff;
+    text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
+    letter-spacing: 2px;
+  }
 
-    /* Profilbereich */
+  /* Profilbereich */
+  .profile-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    background: rgba(50,50,50,0.95);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .form-left {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .online-right {
+    font-weight: bold;
+    color: #0f0;
+  }
+  button.btn-start {
+    margin-left: 5px;
+    background-color: #28a745;
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+  }
+  button.btn-start:hover { transform: scale(1.05); }
+
+  /* Videos + Buttons */
+  .videos {
+    background: rgba(50,50,50,0.95);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    max-width: 1200px;
+    margin: 10px auto;
+    position: relative;
+  }
+  .video-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  video {
+    width: 48%;
+    height: auto;
+    min-height: 220px;
+    background: #000;
+    border-radius: 12px;
+    object-fit: cover;
+  }
+
+  .buttons {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .buttons button {
+    min-width: 130px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .buttons button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 14px rgba(255,255,255,0.5);
+  }
+  .btn-stop {background-color: #dc3545; color: #fff;}
+  .btn-next {background-color: #007bff; color: #fff;}
+  .btn-toggle-chat {background-color: #ff8800; color: #fff;}
+
+  /* Chatbereich */
+  .chat-box {
+    background: rgba(50,50,50,0.95);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    max-width: 1200px;
+    margin: 10px auto;
+  }
+  .chat-messages {
+    height: 220px;
+    overflow-y: auto;
+    background: #1f1f1f;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+  .chat-input {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .chat-input input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-size: 1em;
+  }
+  .btn-send {
+    background-color: #ffc107;
+    color: #000;
+    border-radius: 12px;
+    padding: 12px 24px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+  }
+  .btn-send:hover { transform: scale(1.05); }
+
+  /* ================= Responsive + Vollbild für Handys ================= */
+  @media (max-width: 768px) {
+    header { font-size: 1.5em; }
+
     .profile-form {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
+      flex-direction: column;
+      gap: 12px;
     }
-    .form-left {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .online-right {
-      font-weight: bold;
-      color: #0f0;
-    }
-    button.btn-start {
-      margin-left: 5px;
-      background-color: #28a745;
-      color: #fff;
-      border-radius: 12px;
-      padding: 12px 24px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: transform 0.2s;
-    }
-    button.btn-start:hover { transform: scale(1.05); }
 
-    /* Videos + Buttons */
+    .form-left {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Vollbildmodus für Video */
     .videos {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
+      padding: 0;
+      border-radius: 0;
+      background: #000;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      margin: 0;
     }
     .video-container {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 10px;
+      height: 100%;
+      justify-content: center;
+      align-items: center;
     }
     video {
-      width: 48%;
+      width: 100%;
       height: auto;
-      min-height: 220px;
-      background: #000;
-      border-radius: 12px;
+      border-radius: 0;
+      max-height: 50%;
       object-fit: cover;
     }
 
+    /* Buttons unten überlagert */
     .buttons {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      justify-content: space-around;
+      flex-wrap: nowrap;
       gap: 10px;
-      flex-wrap: wrap;
     }
     .buttons button {
-      min-width: 130px;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
+      width: 30%;
       font-size: 1em;
-      font-weight: bold;
-      transition: transform 0.2s, box-shadow 0.2s;
+      padding: 14px 0;
     }
-    .buttons button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 14px rgba(255,255,255,0.5);
-    }
-    .btn-stop {background-color: #dc3545; color: #fff;}
-    .btn-next {background-color: #007bff; color: #fff;}
 
-    /* Chatbereich */
+    /* Chat auf Handy ausblendbar */
     .chat-box {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      z-index: 10;
+      margin: 0;
+      border-radius: 0;
     }
-    .chat-messages {
-      height: 220px;
-      overflow-y: auto;
-      background: #1f1f1f;
-      padding: 12px;
-      border-radius: 12px;
-      margin-bottom: 10px;
+
+    .chat-box.show {
+      display: block;
     }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 12px;
-      border-radius: 12px;
-      border: none;
-      font-size: 1em;
-    }
-    .btn-send {
-      background-color: #ffc107;
-      color: #000;
-      border-radius: 12px;
-      padding: 12px 24px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: transform 0.2s;
-    }
-    .btn-send:hover { transform: scale(1.05); }
-
-    /* ================= Responsive für Handys ================= */
-    @media (max-width: 768px) {
-      header { font-size: 1.5em; }
-
-      .profile-form {
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .form-left {
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .video-container video {
-        width: 100%;
-        min-height: 180px;
-      }
-
-      .buttons {
-        flex-direction: column;
-        gap: 12px;
-        justify-content: center;
-      }
-
-      .chat-box {
-        max-width: 100%;
-        padding: 12px;
-      }
-
-      .chat-input {
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .chat-input input, .btn-send, .buttons button, .btn-start {
-        width: 100%;
-        font-size: 1em;
-        padding: 14px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
 
-  <header>Mini Chatroulette</header>
+<header>Mini Chatroulette</header>
 
-  <!-- Profilbereich -->
-  <section class="profile-form">
-    <div class="form-left">
-      <label>Ich bin:
-        <select id="gender"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Ich suche:
-        <select id="search"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Mein Land:
-        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-      </label>
-      <button class="btn-start">Start</button>
-    </div>
-    <div class="online-right">
-      👥 Online: <span id="onlineCount">0</span>
-    </div>
-  </section>
+<section class="profile-form">
+  <div class="form-left">
+    <label>Ich bin:
+      <select id="gender"><option>Mann</option><option>Frau</option></select>
+    </label>
+    <label>Ich suche:
+      <select id="search"><option>Mann</option><option>Frau</option></select>
+    </label>
+    <label>Mein Land:
+      <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+    </label>
+    <button class="btn-start">Start</button>
+  </div>
+  <div class="online-right">
+    👥 Online: <span id="onlineCount">0</span>
+  </div>
+</section>
 
-  <!-- Videos + Buttons -->
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next">⏭ Nächster</button>
-      <button class="btn-stop">⏹ Stop</button>
-    </div>
-  </section>
+<section class="videos">
+  <div class="video-container">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </div>
+  <div class="buttons">
+    <button class="btn-next">⏭ Nächster</button>
+    <button class="btn-stop">⏹ Stop</button>
+    <button class="btn-toggle-chat">💬 Chat</button>
+  </div>
+</section>
 
-  <!-- Chat -->
-  <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">💬 Senden</button>
-    </div>
-  </section>
+<section class="chat-box">
+  <div class="chat-messages"></div>
+  <div class="chat-input">
+    <input type="text" placeholder="Nachricht schreiben..." />
+    <button class="btn-send">💬 Senden</button>
+  </div>
+</section>
 
-  <!-- Client-Script -->
-  <script src="client.js"></script>
+<script src="client.js"></script>
+<script>
+  // Toggle Chat auf Handys
+  const btnToggleChat = document.querySelector('.btn-toggle-chat');
+  const chatBox = document.querySelector('.chat-box');
+
+  btnToggleChat.addEventListener('click', () => {
+    chatBox.classList.toggle('show');
+  });
+</script>
+
 </body>
 </html>
