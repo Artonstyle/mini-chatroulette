@@ -29,7 +29,7 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100vh;
 }
 
 /* Header */
@@ -70,41 +70,36 @@ button.btn-start {
 }
 button.btn-start:hover { transform: scale(1.05); }
 
-/* Video + Buttons */
-.main-content {
+/* Videos */
+.videos {
   display: flex;
-  flex: 1; /* füllt den restlichen Platz */
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   max-width: 1200px;
   margin: 0 auto;
 }
-
-.videos {
-  flex: 2; /* Videos nehmen mehr Platz */
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.video-container {
-  display: flex;
-  gap: 10px;
-  flex: 1; /* füllt den verfügbaren Platz */
-}
 video {
-  width: 100%;
-  object-fit: cover;
+  width: 48%;
+  height: 360px;
+  background: #000;
   border-radius: 12px;
+  object-fit: cover;
 }
 
+/* Buttons unter Videos */
 .buttons {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  max-width: 1200px;
+  margin: 10px auto;
 }
 .buttons button {
+  min-width: 120px;
   padding: 10px 20px;
-  border-radius: 12px;
   border: none;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: bold;
   transition: transform 0.2s;
@@ -112,79 +107,59 @@ video {
 .buttons button:hover { transform: scale(1.05); }
 .btn-stop { background-color: #dc3545; color: #fff; }
 .btn-next { background-color: #007bff; color: #fff; }
-.btn-toggle-chat { background-color: #ff8800; color: #fff; }
+.btn-toggle-chat { display: none; }
 
-/* Chat */
+/* Chat unten unter Videos, kompakt */
 .chat-box {
-  flex: 1; /* Chat nimmt den restlichen Platz */
-  display: flex;
-  flex-direction: column;
+  max-width: 1200px;
+  margin: 0 auto 20px auto;
+  height: 3cm; /* kompakt */
   background: rgba(50,50,50,0.95);
-  padding: 10px;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  max-height: 100%;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .chat-messages {
-  flex: 1; /* füllt die Höhe */
+  flex: 1;
   overflow-y: auto;
   background: #1f1f1f;
-  padding: 10px;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  padding: 5px;
+  border-radius: 8px;
+  font-size: 0.9em;
 }
 .chat-input {
   display: flex;
-  gap: 10px;
+  gap: 5px;
 }
 .chat-input input {
   flex: 1;
-  padding: 10px;
-  border-radius: 12px;
+  padding: 4px 6px;
+  border-radius: 8px;
   border: none;
+  font-size: 0.9em;
 }
 .btn-send {
   background-color: #ffc107;
-  color: #000;
-  border-radius: 12px;
-  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
   font-weight: bold;
+  font-size: 0.9em;
 }
 
-/* ================= Responsive für Handys ================= */
+/* Systemnachrichten ausblenden */
+.chat-messages .system-msg {
+  display: none;
+}
+
+/* Handys: Videos und Chat responsiv */
 @media (max-width: 768px) {
-  .main-content {
-    flex-direction: column;
-  }
-  .videos { flex: none; }
-  .video-container { flex-direction: column; }
-  video { max-height: 50vh; width: 100%; border-radius: 0; }
-
-  .chat-box {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    transform: translateY(100%);
-    opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-    border-radius: 0;
-    z-index: 10;
-  }
-  .chat-box.show {
-    transform: translateY(0);
-    opacity: 1;
-  }
-
-  .buttons {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    justify-content: space-around;
-  }
+  video { width: 100%; height: auto; margin-bottom: 5px; }
+  .chat-box { height: 150px; } /* kompakt auf Handy */
 }
 </style>
 </head>
@@ -192,6 +167,7 @@ video {
 
 <header>Mini Chatroulette</header>
 
+<!-- Profilbereich -->
 <section class="profile-form">
   <div class="form-left">
     <label>Ich bin:
@@ -210,34 +186,42 @@ video {
   </div>
 </section>
 
-<div class="main-content">
-  <div class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next">⏭ Nächster</button>
-      <button class="btn-stop">⏹ Stop</button>
-      <button class="btn-toggle-chat">💬 Chat</button>
-    </div>
-  </div>
-  <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">💬 Senden</button>
-    </div>
-  </section>
+<!-- Videos -->
+<section class="videos">
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video>
+</section>
+
+<!-- Buttons unter Videos -->
+<div class="buttons">
+  <button class="btn-next">⏭ Nächster</button>
+  <button class="btn-stop">⏹ Stop</button>
 </div>
+
+<!-- Chat -->
+<section class="chat-box">
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input">
+    <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
+    <button class="btn-send" id="btnSend">💬 Senden</button>
+  </div>
+</section>
 
 <script src="client.js"></script>
 <script>
-const btnToggleChat = document.querySelector('.btn-toggle-chat');
-const chatBox = document.querySelector('.chat-box');
-btnToggleChat.addEventListener('click', () => {
-  chatBox.classList.toggle('show');
-});
+// Beispiel: Funktion zum Hinzufügen einer Chatnachricht
+const chatMessages = document.getElementById('chatMessages');
+function addChatMessage(msg, isSystem=false) {
+  const div = document.createElement('div');
+  div.textContent = msg;
+  if(isSystem) div.classList.add('system-msg'); // wird ausgeblendet
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Test: Systemnachrichten werden ausgeblendet
+addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
+addChatMessage("Hallo, das ist eine echte Nachricht!");
 </script>
 
 </body>
