@@ -1,90 +1,81 @@
-// server.js
-// Minimaler HTTP + WebSocket Server mit einfacher Matchmaking-Logik
 const http = require("http");
 const WebSocket = require("ws");
 const express = require("express");
-const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Statische Dateien (public/index.html, public/client.js)
-app.use(express.static(path.join(__dirname, "public")));
-
-// Erzeuge HTTP-Server
 const server = http.createServer(app);
-
-// WebSocket-Server auf dem selben HTTP-Server (Upgrade wird durch Nginx weitergereicht)
 const wss = new WebSocket.Server({ server });
 
-let waitingClient = null;
+// Dient statischen Dateien aus dem 'public' Ordner, falls Sie die index.html auf Render hosten.
+app.use(express.static('public')); 
 
-wss.on("connection", (ws, req) => {
-  console.log("👤 Neuer Client verbunden");
+let waiting = null; // Speichert den einen wartenden Client
+const pairs = new Map(); // Speichert, wer mit wem verbunden ist
 
-  ws.on("message", (message) => {
-    let data;
-    try {
-      data = JSON.parse(message);
-    } catch (err) {
-      console.error("Ungültige Nachricht:", message);
-      return;
-    }
+wss.on("connection", (ws) => {
+    console.log("🔗 Neuer Client verbunden");
 
-    // Start-Matchmaking
-    if (data.type === "start") {
-      console.log("Start erhalten");
-      if (waitingClient && waitingClient.readyState === WebSocket.OPEN) {
-        // Match gefunden
-        ws.partner = waitingClient;
-        waitingClient.partner = ws;
+    ws.on("message", (msg) => {
+        const data = JSON.parse(msg);
 
-        ws.send(JSON.stringify({ type: "match" }));
-        waitingClient.send(JSON.stringify({ type: "match" }));
+        // --- START-Logik: Sucht einen Partner (ersetzt 'join') ---
+        if (data.type === "start") {
+            if (waiting && waiting !== ws) {
+                // Match gefunden
 
-        waitingClient = null;
-        console.log("🔗 Match erstellt");
-      } else {
-        // setze als wartender Client
-        waitingClient = ws;
-        console.log("⏳ Client in Warteschlange");
-      }
-    }
+                const caller = ws;        // Der Client, der gerade gestartet hat, wird der Anrufer (Offer)
+                const answerer = waiting; // Der wartende Client wird der Antworter (Answer)
 
-    // Stop: Trenne Partner / Entferne aus Warteschlange
-    if (data.type === "stop") {
-      console.log("Stop erhalten");
-      if (ws.partner && ws.partner.readyState === WebSocket.OPEN) {
-        ws.partner.send(JSON.stringify({ type: "stop" }));
-        ws.partner.partner = null;
-      }
-      if (waitingClient === ws) waitingClient = null;
-      ws.partner = null;
-    }
+                pairs.set(caller, answerer);
+                pairs.set(answerer, caller);
+                waiting = null; // Warteschlange leeren
 
-    // Signal-Forwarding (offer/answer/candidate)
-    if (["offer", "answer", "candidate"].includes(data.type)) {
-      if (ws.partner && ws.partner.readyState === WebSocket.OPEN) {
-        ws.partner.send(JSON.stringify(data));
-      }
-    }
-  });
+                // 1. Signal an den Caller: Erstelle Offer (soll_angebot_machen: true)
+                caller.send(JSON.stringify({ type: "matched", should_offer: true })); 
+                
+                // 2. Signal an den Answerer: Warte auf Offer (soll_angebot_machen: false)
+                answerer.send(JSON.stringify({ type: "matched", should_offer: false }));
+            } else {
+                // Keinen Partner gefunden, in die Warteschlange stellen
+                waiting = ws;
+                ws.send(JSON.stringify({ type: "no-match" }));
+            }
+        }
 
-  ws.on("close", () => {
-    console.log("❌ Client getrennt");
-    // Wenn Partner da ist → informieren
-    if (ws.partner && ws.partner.readyState === WebSocket.OPEN) {
-      ws.partner.send(JSON.stringify({ type: "stop" }));
-      ws.partner.partner = null;
-    }
-    if (waitingClient === ws) waitingClient = null;
-  });
+        // --- NEXT- und STOP-Logik ---
+        else if (data.type === "next" || data.type === "stop") {
+            const partner = pairs.get(ws);
+            if (partner) {
+                pairs.delete(ws);
+                pairs.delete(partner);
+                partner.send(JSON.stringify({ type: "partner-left" }));
+            }
+            // Bei 'next' startet der Client eine neue Suche mit 'start'
+            if (data.type === "stop" && waiting === ws) waiting = null;
+        }
 
-  ws.on("error", (err) => {
-    console.error("WebSocket Fehler:", err);
-  });
+        // --- WEBRTC SIGNALING LOGIC ---
+        else if (["offer", "answer", "candidate"].includes(data.type)) {
+            const partner = pairs.get(ws);
+            if (partner && partner.readyState === WebSocket.OPEN) {
+                partner.send(JSON.stringify(data));
+            }
+        }
+    });
+
+    ws.on("close", () => {
+        const partner = pairs.get(ws);
+        if (partner) {
+            pairs.delete(ws);
+            pairs.delete(partner);
+            if (partner.readyState === WebSocket.OPEN) {
+                partner.send(JSON.stringify({ type: "partner-left" }));
+            }
+        }
+        if (waiting === ws) waiting = null;
+        console.log("🔗 Client getrennt");
+    });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server läuft auf http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Signalisierungsserver läuft auf Port ${PORT}`));
