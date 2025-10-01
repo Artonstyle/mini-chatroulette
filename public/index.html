@@ -26,11 +26,7 @@ html, body {
   100% {background-position: 0% 50%;}
 }
 
-body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
+body { display: flex; flex-direction: column; min-height: 100vh; }
 
 /* Header */
 header {
@@ -108,9 +104,10 @@ video {
 
 /* Chat unten unter Videos, kompakt */
 .chat-box {
+  width: 100%;
   max-width: 1200px;
-  margin: 0 auto 20px auto;
-  height: 3cm; /* kompakt */
+  margin: 0 auto 10px auto;
+  height: 2cm; /* kompakt */
   background: rgba(50,50,50,0.95);
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -149,18 +146,16 @@ video {
 }
 
 /* Systemnachrichten ausblenden */
-.chat-messages .system-msg {
-  display: none;
-}
+.chat-messages .system-msg { display: none; }
 
 /* ======= Mobile Anpassungen ======= */
 @media (max-width: 768px) {
   .videos { flex-direction: column; }
   video {
-    width: 100%;
-    height: auto; /* gleicher Größe für Partner und mich */
+    width: 100%; /* gleiche Breite wie Partner */
+    height: auto; /* gleiche Größe wie Partner */
   }
-  .chat-box { height: 120px; }
+  .chat-box { height: 2cm; } /* 2cm hoch */
   .chat-input input { width: 100%; }
 }
 </style>
@@ -211,7 +206,7 @@ video {
 
 <script src="client.js"></script>
 <script>
-// Chatnachrichten hinzufügen
+// Beispiel für Chat-Nachrichten
 const chatMessages = document.getElementById('chatMessages');
 function addChatMessage(msg, isSystem=false){
   const div = document.createElement('div');
@@ -221,7 +216,7 @@ function addChatMessage(msg, isSystem=false){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Beispiel: Systemnachrichten werden ausgeblendet
+// Testnachrichten
 addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
 addChatMessage("Hallo, das ist eine echte Nachricht!");
 </script>
