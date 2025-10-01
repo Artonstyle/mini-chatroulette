@@ -1,3 +1,4 @@
+// server.js
 const WebSocket = require('ws');
 
 const PORT = 8080;
@@ -7,11 +8,11 @@ let onlineCount = 0;
 
 console.log(`WebSocket-Server läuft auf ws://localhost:${PORT}`);
 
-// Broadcast an alle
-function broadcast(message) {
+// Broadcast-Funktion an alle verbundenen Clients
+function broadcast(message, exclude) {
     const data = JSON.stringify(message);
     wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
+        if (client !== exclude && client.readyState === WebSocket.OPEN) {
             client.send(data);
         }
     });
@@ -22,29 +23,38 @@ function broadcastOnlineCount() {
     broadcast({ type: 'onlineCount', count: onlineCount });
 }
 
+// Neue Verbindung
 wss.on('connection', (ws) => {
     onlineCount++;
-    broadcastOnlineCount(); // direkt beim Verbinden
+    console.log(`Neuer Client verbunden. Online: ${onlineCount}`);
+    broadcastOnlineCount();
 
     ws.on('message', (msg) => {
         try {
             const data = JSON.parse(msg);
 
-            // Weiterleiten aller WebRTC-Nachrichten an andere Clients
+            // WebRTC Signalisierung: offer, answer, candidate, hangup
             if (['offer', 'answer', 'candidate', 'hangup'].includes(data.type)) {
-                wss.clients.forEach(client => {
-                    if (client !== ws && client.readyState === WebSocket.OPEN) {
-                        client.send(JSON.stringify(data));
-                    }
-                });
+                broadcast(data, ws); // an alle außer Sender
             }
+
+            // Chat-Nachrichten
+            else if (data.type === 'chat') {
+                broadcast(data, ws); // an alle außer Sender
+            }
+
         } catch (err) {
-            console.error('Fehler beim Parsen:', err);
+            console.error('Fehler beim Parsen der Nachricht:', err);
         }
     });
 
     ws.on('close', () => {
         onlineCount--;
-        broadcastOnlineCount(); // direkt beim Trennen
+        console.log(`Client getrennt. Online: ${onlineCount}`);
+        broadcastOnlineCount();
+    });
+
+    ws.on('error', (err) => {
+        console.error('WebSocket Fehler:', err);
     });
 });
