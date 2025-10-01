@@ -41,7 +41,6 @@ header {
   color: #00d4ff;
   text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
   letter-spacing: 2px;
-  flex-shrink: 0;
 }
 
 /* Profilbereich */
@@ -55,7 +54,6 @@ header {
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   max-width: 1200px;
   margin: 0 auto 10px auto;
-  flex-shrink: 0;
 }
 .form-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .online-right { font-weight: bold; color: #0f0; }
@@ -107,7 +105,6 @@ video {
 .buttons button:hover { transform: scale(1.05); }
 .btn-stop { background-color: #dc3545; color: #fff; }
 .btn-next { background-color: #007bff; color: #fff; }
-.btn-toggle-chat { display: none; }
 
 /* Chat unten unter Videos, kompakt */
 .chat-box {
@@ -156,10 +153,15 @@ video {
   display: none;
 }
 
-/* Handys: Videos und Chat responsiv */
+/* ======= Mobile Anpassungen ======= */
 @media (max-width: 768px) {
-  video { width: 100%; height: auto; margin-bottom: 5px; }
-  .chat-box { height: 150px; } /* kompakt auf Handy */
+  .videos { flex-direction: column; }
+  video {
+    width: 100%;
+    height: auto; /* gleicher Größe für Partner und mich */
+  }
+  .chat-box { height: 120px; }
+  .chat-input input { width: 100%; }
 }
 </style>
 </head>
@@ -209,9 +211,9 @@ video {
 
 <script src="client.js"></script>
 <script>
-// Beispiel: Funktion zum Hinzufügen einer Chatnachricht
+// Chatnachrichten hinzufügen
 const chatMessages = document.getElementById('chatMessages');
-function addChatMessage(msg, isSystem=false) {
+function addChatMessage(msg, isSystem=false){
   const div = document.createElement('div');
   div.textContent = msg;
   if(isSystem) div.classList.add('system-msg'); // wird ausgeblendet
@@ -219,7 +221,7 @@ function addChatMessage(msg, isSystem=false) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Test: Systemnachrichten werden ausgeblendet
+// Beispiel: Systemnachrichten werden ausgeblendet
 addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
 addChatMessage("Hallo, das ist eine echte Nachricht!");
 </script>
