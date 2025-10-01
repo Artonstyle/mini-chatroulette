@@ -137,7 +137,6 @@ video {
   font-weight: bold;
   font-size: 0.9em;
 }
-
 .chat-messages .system-msg { display: none; }
 
 @media (max-width: 768px) {
@@ -163,7 +162,7 @@ video {
     <label>Mein Land:
       <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
     </label>
-    <button class="btn-start">Start</button>
+    <button class="btn-start" id="btnStart">Start</button>
   </div>
   <div class="online-right">
     👥 Online: <span id="onlineCount">0</span>
@@ -176,8 +175,8 @@ video {
 </section>
 
 <div class="buttons">
-  <button class="btn-next">⏭ Nächster</button>
-  <button class="btn-stop">⏹ Stop</button>
+  <button class="btn-next" id="btnNext">⏭ Nächster</button>
+  <button class="btn-stop" id="btnStop">⏹ Stop</button>
 </div>
 
 <section class="chat-box">
@@ -189,44 +188,136 @@ video {
 </section>
 
 <script>
-// === WebSocket & Chat-Logik Beispiel ===
+// ================== Variablen ==================
+let ws;
+let localStream;
+let peerConnection;
+let isStarted = false;
+
+const WS_SERVER_URL = 'ws://localhost:8080'; // ggf. IP/Domain anpassen
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+const onlineCountDisplay = document.getElementById('onlineCount');
+
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const btnSend = document.getElementById('btnSend');
 
-// Beispiel-WebSocket (ersetzen mit echtem Server)
-let ws = new WebSocket('ws://localhost:8080');
+const btnStart = document.getElementById('btnStart');
+const btnNext = document.getElementById('btnNext');
+const btnStop = document.getElementById('btnStop');
 
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  if (message.type === 'system') {
-    addChatMessage(message.text, true); // ausgeblendet
-  } else if (message.type === 'chat') {
-    addChatMessage(message.text); // sichtbar
-  }
-};
+// ================== WebSocket ==================
+function connectToServer() {
+    ws = new WebSocket(WS_SERVER_URL);
 
-// Nachricht hinzufügen
-function addChatMessage(msg, isSystem=false) {
-  const div = document.createElement('div');
-  div.textContent = msg;
-  if (isSystem) div.classList.add('system-msg');
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+    ws.onopen = () => console.log('WebSocket verbunden');
+    ws.onclose = () => {
+        console.log('Verbindung geschlossen. Reconnect in 5s...');
+        setTimeout(connectToServer, 5000);
+    };
+    ws.onerror = (err) => { console.error(err); ws.close(); };
+
+    ws.onmessage = async (event) => {
+        const message = JSON.parse(event.data);
+
+        // Online-Zähler
+        if(message.type === 'onlineCount') {
+            onlineCountDisplay.textContent = message.count;
+        }
+
+        // Chat
+        if(message.type === 'chat') addChatMessage(message.text);
+        if(message.type === 'system') addChatMessage(message.text, true);
+
+        // WebRTC Signalisierung
+        if(message.type === 'offer') {
+            if(!isStarted) startCall(false);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            ws.send(JSON.stringify(peerConnection.localDescription));
+        }
+        if(message.type === 'answer' && isStarted) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(message));
+        }
+        if(message.type === 'candidate' && isStarted) {
+            const candidate = new RTCIceCandidate(message);
+            peerConnection.addIceCandidate(candidate).catch(e=>console.error(e));
+        }
+        if(message.type === 'hangup') stopCall();
+    };
 }
 
-// Nachricht senden
+// ================== Chat ==================
+function addChatMessage(msg, isSystem=false){
+    const div = document.createElement('div');
+    div.textContent = msg;
+    if(isSystem) div.classList.add('system-msg');
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 btnSend.addEventListener('click', () => {
-  const msg = chatInput.value.trim();
-  if (!msg) return;
-  ws.send(JSON.stringify({ type: 'chat', text: msg }));
-  addChatMessage("Du: " + msg);
-  chatInput.value = '';
+    const msg = chatInput.value.trim();
+    if(!msg) return;
+    ws.send(JSON.stringify({ type:'chat', text: msg }));
+    addChatMessage("Du: "+msg);
+    chatInput.value='';
+});
+chatInput.addEventListener('keydown', (e) => { if(e.key==='Enter') btnSend.click(); });
+
+// ================== WebRTC ==================
+async function startCall(isCaller){
+    isStarted = true;
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+        localVideo.srcObject = localStream;
+
+        createPeerConnection();
+        localStream.getTracks().forEach(track=>peerConnection.addTrack(track, localStream));
+
+        if(isCaller){
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            ws.send(JSON.stringify(peerConnection.localDescription));
+        }
+    } catch(e){
+        console.error("Fehler Kamera/Audio:", e);
+        alert("Kamera oder Mikrofon konnte nicht gestartet werden. Erlaubnis erteilen!");
+    }
+}
+
+function stopCall(){
+    isStarted = false;
+    if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+    if(peerConnection){ peerConnection.close(); peerConnection=null; }
+    localVideo.srcObject=null;
+    remoteVideo.srcObject=null;
+}
+
+function createPeerConnection(){
+    const config = { iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+    peerConnection = new RTCPeerConnection(config);
+
+    peerConnection.ontrack = e => { if(remoteVideo.srcObject!==e.streams[0]) remoteVideo.srcObject=e.streams[0]; };
+    peerConnection.onicecandidate = e => {
+        if(e.candidate) ws.send(JSON.stringify({type:'candidate', ...e.candidate}));
+    };
+}
+
+// ================== Button Events ==================
+btnStart.addEventListener('click', ()=>startCall(true));
+btnNext.addEventListener('click', ()=>{
+    if(isStarted){ ws.send(JSON.stringify({type:'hangup'})); stopCall(); }
+    startCall(true);
+});
+btnStop.addEventListener('click', ()=>{
+    if(isStarted){ ws.send(JSON.stringify({type:'hangup'})); stopCall(); }
 });
 
-chatInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') btnSend.click();
-});
+// ================== Start ==================
+connectToServer();
 </script>
 
 </body>
