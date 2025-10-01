@@ -64,7 +64,7 @@ button.btn-start {
 }
 button.btn-start:hover { transform: scale(1.05); }
 
-/* Videos */
+/* Video-Container */
 .videos {
   display: flex;
   justify-content: space-between;
@@ -75,7 +75,7 @@ button.btn-start:hover { transform: scale(1.05); }
 }
 video {
   width: 48%;
-  height: 360px;
+  aspect-ratio: 16/9;
   background: #000;
   border-radius: 12px;
   object-fit: cover;
@@ -102,12 +102,13 @@ video {
 .btn-stop { background-color: #dc3545; color: #fff; }
 .btn-next { background-color: #007bff; color: #fff; }
 
-/* Chat unten unter Videos, kompakt */
+/* Chat unten unter Videos, flexibel */
 .chat-box {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto 10px auto;
-  height: 2cm; /* kompakt */
+  min-height: 4em;  /* genug Platz zum Tippen */
+  max-height: 200px;
   background: rgba(50,50,50,0.95);
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -130,33 +131,31 @@ video {
 }
 .chat-input input {
   flex: 1;
-  padding: 4px 6px;
+  padding: 6px 8px;
   border-radius: 8px;
   border: none;
-  font-size: 0.9em;
+  font-size: 1em;
+  min-height: 2em;  /* bequem tippen */
 }
 .btn-send {
   background-color: #ffc107;
   border: none;
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 6px 12px;
   cursor: pointer;
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: 1em;
 }
 
 /* Systemnachrichten ausblenden */
 .chat-messages .system-msg { display: none; }
 
-/* ======= Mobile Anpassungen ======= */
+/* Mobile Anpassung */
 @media (max-width: 768px) {
   .videos { flex-direction: column; }
-  video {
-    width: 100%; /* gleiche Breite wie Partner */
-    height: auto; /* gleiche Größe wie Partner */
-  }
-  .chat-box { height: 2cm; } /* 2cm hoch */
-  .chat-input input { width: 100%; }
+  video { width: 100%; height: auto; }
+  .chat-box { min-height: 60px; max-height: 150px; }
+  .chat-input input { width: 100%; min-height: 2em; }
 }
 </style>
 </head>
@@ -206,7 +205,7 @@ video {
 
 <script src="client.js"></script>
 <script>
-// Beispiel für Chat-Nachrichten
+// Chat-Nachrichten hinzufügen
 const chatMessages = document.getElementById('chatMessages');
 function addChatMessage(msg, isSystem=false){
   const div = document.createElement('div');
@@ -219,6 +218,20 @@ function addChatMessage(msg, isSystem=false){
 // Testnachrichten
 addChatMessage("✅ Verbunden mit Signalisierungsserver...", true);
 addChatMessage("Hallo, das ist eine echte Nachricht!");
+
+// Videos gleiche Höhe
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+
+function syncVideoSizes(){
+  if(remoteVideo.videoWidth && remoteVideo.videoHeight){
+    const aspect = remoteVideo.videoWidth / remoteVideo.videoHeight;
+    localVideo.style.height = `${localVideo.offsetWidth / aspect}px`;
+    remoteVideo.style.height = `${remoteVideo.offsetWidth / aspect}px`;
+  }
+}
+remoteVideo.addEventListener('loadedmetadata', syncVideoSizes);
+window.addEventListener('resize', syncVideoSizes);
 </script>
 
 </body>
