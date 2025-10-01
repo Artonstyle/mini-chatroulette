@@ -1,139 +1,238 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Chatroulette</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1c1c1c, #2e2e2e);
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-    }
-    header {
-      font-size: 2em;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .profile-form, .videos, .chat-box {
-      background: rgba(50, 50, 50, 0.95);
-      padding: 15px;
-      margin: 10px auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-    }
-    .profile-form label {
-      margin-right: 15px;
-    }
-    video {
-      width: 48%;
-      height: 360px;
-      background: #000;
-      border-radius: 8px;
-      margin: 5px 0;
-      object-fit: cover;
-    }
-    .video-container {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    .buttons {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1em;
-      font-weight: bold;
-    }
-    .btn-start, .btn-next {
-      background-color: #007bff;
-      color: #fff;
-    }
-    .btn-stop {
-      background-color: #dc3545;
-      color: #fff;
-    }
-    .btn-send {
-      background-color: #28a745;
-      color: #fff;
-    }
-    .chat-messages {
-      height: 200px;
-      overflow-y: auto;
-      background: #1f1f1f;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1em;
-    }
-  </style>
-</head>
-<body>
-  <header>Mini Chatroulette</header>
+// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
+const WS_URL = "wss://mini-chatroulette.onrender.com"; 
+const ws = new WebSocket(WS_URL); 
 
-  <section class="profile-form">
-    <label>Ich bin:
-      <select id="gender">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-    <label>Ich suche:
-      <select id="search">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-    <label>Mein Land:
-      <select id="country">
-        <option>Deutschland</option>
-        <option>Österreich</option>
-        <option>Schweiz</option>
-      </select>
-    </label>
-    <button class="btn-start">Start</button>
-  </section>
+let localStream;
+let peerConnection;
+let dataChannel;
 
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next">Nächster</button>
-      <button class="btn-stop">Stop</button>
-    </div>
-  </section>
+// DOM-Elemente
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const messagesDiv = document.querySelector(".chat-messages");
+const input = document.querySelector(".chat-input input");
+const sendBtn = document.querySelector(".btn-send");
+// Für zukünftige Profil-Logik
+const genderSelect = document.getElementById("gender");
+const searchSelect = document.getElementById("search");
+const countrySelect = document.getElementById("country");
 
-  <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">Senden</button>
-    </div>
-  </section>
+const config = { 
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" }
+    ] 
+};
 
-  <!-- jetzt nur client.js laden -->
-  <script src="client.js"></script>
-</body>
-</html>
+// Platzhalter für "Suchen"-Animation
+const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
+
+// --- Hilfsfunktionen ---
+
+function addMessage(sender, text, isSystem = false) {
+    const div = document.createElement("div");
+    div.textContent = `${sender}: ${text}`;
+    if (isSystem) {
+        div.style.color = '#ffc107'; 
+        div.style.fontStyle = 'italic';
+    }
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+async function startCamera() {
+    if (localStream) return true;
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
+        return true;
+    } catch (err) {
+        addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
+        return false;
+    }
+}
+
+function closePeerConnection() {
+    if (peerConnection) {
+        if (remoteVideo.srcObject) {
+            // Stoppe Tracks nur, wenn sie existieren (verhindert Fehler)
+            if (remoteVideo.srcObject.getTracks) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+        remoteVideo.srcObject = null;
+        remoteVideo.src = SEARCHING_VIDEO_SRC; // Zeige Platzhalter nach Trennung
+        remoteVideo.loop = true; // Loop für das Platzhalter-Video
+        peerConnection.close();
+        peerConnection = null;
+    }
+    dataChannel = null;
+    addMessage("System", "Verbindung zum Partner beendet.", true);
+    document.querySelector(".btn-next").disabled = true;
+    document.querySelector(".btn-send").disabled = true;
+    input.disabled = true;
+}
+
+function createPeerConnection() {
+    closePeerConnection(); 
+    peerConnection = new RTCPeerConnection(config);
+
+    if (localStream) {
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    }
+
+    // Remote-Stream empfangen
+    peerConnection.ontrack = (event) => {
+        remoteVideo.src = ""; // Entferne Platzhalter-Video
+        remoteVideo.srcObject = event.streams[0];
+        remoteVideo.loop = false; // Loop ausschalten, da echter Stream
+        addMessage("System", "🎥 Videoanruf gestartet!", true);
+        document.querySelector(".btn-next").disabled = false;
+        document.querySelector(".btn-send").disabled = false;
+        input.disabled = false;
+    };
+
+    // ICE-Kandidaten senden
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+        }
+    };
+    
+    // DataChannel für Chat (vom CALLER erstellt)
+    dataChannel = peerConnection.createDataChannel("chat");
+    dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
+    dataChannel.onmessage = (event) => addMessage("Partner", event.data);
+
+    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
+    peerConnection.ondatachannel = (event) => { 
+        dataChannel = event.channel;
+        dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
+        dataChannel.onmessage = (e) => addMessage("Partner", e.data);
+    };
+
+    peerConnection.oniceconnectionstatechange = () => {
+        if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+            addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
+            closePeerConnection();
+        }
+    }
+}
+
+
+// --- WebSocket Events ---
+ws.onopen = () => {
+    addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
+    document.querySelector(".btn-start").disabled = false;
+    document.querySelector(".btn-stop").disabled = false;
+};
+
+ws.onmessage = async (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === "matched" && data.should_offer) {
+        // CALLER: Erstelle Offer
+        createPeerConnection();
+        addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        ws.send(JSON.stringify({ type: "offer", offer }));
+
+    } else if (data.type === "matched" && !data.should_offer) {
+        // ANSWERER: Partner gefunden, warte auf Offer
+        addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
+
+    } else if (data.type === "offer") {
+        // ANSWERER: Empfange Offer
+        if (!peerConnection) createPeerConnection();
+        
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        ws.send(JSON.stringify({ type: "answer", answer }));
+
+    } else if (data.type === "answer") {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+    } else if (data.type === "candidate" && peerConnection) {
+        try {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (err) {
+            console.warn("Fehler beim Hinzufügen des ICE Candidate:", err);
+        }
+    } else if (data.type === "partner-left") {
+        addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
+        closePeerConnection();
+    } else if (data.type === "no-match") {
+         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
+    } 
+    // NEU: Logik für Besucherzählung vom Server
+    else if (data.type === "user-count") {
+        const onlineCountElement = document.getElementById("onlineCount");
+        if (onlineCountElement) {
+            onlineCountElement.textContent = data.count;
+        }
+    }
+};
+
+// --- Buttons mit Logik ---
+
+document.querySelector(".btn-start").onclick = async () => {
+    if (!await startCamera()) return; 
+
+    remoteVideo.srcObject = null;
+    remoteVideo.src = SEARCHING_VIDEO_SRC;
+    remoteVideo.loop = true;
+    
+    ws.send(JSON.stringify({ type: "start" }));
+    
+    addMessage("System", "Suche nach Partner...", true);
+    document.querySelector(".btn-start").disabled = true;
+};
+
+document.querySelector(".btn-next").onclick = () => {
+    if (peerConnection) {
+        ws.send(JSON.stringify({ type: "next" })); 
+        closePeerConnection(); 
+    }
+    
+    remoteVideo.srcObject = null;
+    remoteVideo.src = SEARCHING_VIDEO_SRC;
+    remoteVideo.loop = true;
+
+    ws.send(JSON.stringify({ type: "start" }));
+    
+    addMessage("System", "Suche nach neuem Partner...", true);
+    document.querySelector(".btn-next").disabled = true;
+};
+
+document.querySelector(".btn-stop").onclick = () => {
+    ws.send(JSON.stringify({ type: "stop" }));
+    
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localVideo.srcObject = null;
+        localStream = null;
+    }
+    
+    closePeerConnection();
+    remoteVideo.srcObject = null;
+    remoteVideo.src = ""; // Setze Remote-Video zurück, wenn gestoppt
+    remoteVideo.loop = false;
+    addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
+    document.querySelector(".btn-start").disabled = false;
+    document.querySelector(".btn-stop").disabled = true;
+};
+
+// Chat-Nachricht senden
+sendBtn.onclick = () => {
+    const text = input.value.trim();
+    if (text && dataChannel && dataChannel.readyState === 'open') {
+        dataChannel.send(text);
+        addMessage("Ich", text);
+        input.value = "";
+    } else if (text) {
+         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
+    }
+};
