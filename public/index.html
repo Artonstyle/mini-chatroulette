@@ -3,11 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Mini Chatroulette – Videochat online</title>
   <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
   <meta name="robots" content="index, follow">
-  <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
+
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data:;
+    connect-src 'self' ws:;
+    font-src 'self';
+  ">
+
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
 
   <style>
     body {
@@ -113,7 +123,7 @@
     .btn-stop {background-color: #dc3545; color: #fff;}
     .btn-next {background-color: #007bff; color: #fff;}
     .btn-report {background-color: #ffc107; color: #000;} 
-    
+
     .chat-box {
       background: rgba(50,50,50,0.95);
       padding: 15px;
@@ -157,48 +167,46 @@
 </head>
 <body>
 
-  <header>Mini Chatroulette</header>
+<header>Mini Chatroulette</header>
 
-  <section class="profile-form">
-    <div class="form-left">
-      <label>Ich bin:
-        <select id="gender"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Ich suche:
-        <select id="search"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Mein Land:
-        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-      </label>
-      <button class="btn-start" id="btnStart">Start</button>
-    </div>
-    <div class="online-right">
-      👥 Online: <span id="onlineCount">0</span>
-    </div>
-  </section>
+<section class="profile-form">
+  <div class="form-left">
+    <label>Ich bin:
+      <select id="gender"><option>Mann</option><option>Frau</option></select>
+    </label>
+    <label>Ich suche:
+      <select id="search"><option>Mann</option><option>Frau</option></select>
+    </label>
+    <label>Mein Land:
+      <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+    </label>
+    <button class="btn-start" id="btnStart">Start</button>
+  </div>
+  <div class="online-right">
+    👥 Online: <span id="onlineCount">0</span>
+  </div>
+</section>
 
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next" id="btnNext" disabled>⏭ Nächster</button>
-      <button class="btn-stop" id="btnStop" disabled>⏹ Stop</button>
-      <button class="btn-report" id="btnReport" disabled>🚨 Melden</button>
-    </div>
-  </section>
+<section class="videos">
+  <div class="video-container">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay loop src="/assets/searching.mp4"></video>
+  </div>
+  <div class="buttons">
+    <button class="btn-next" id="btnNext" disabled>⏭ Nächster</button>
+    <button class="btn-stop" id="btnStop" disabled>⏹ Stop</button>
+    <button class="btn-report" id="btnReport" disabled>Melden</button>
+  </div>
+</section>
 
-  <!-- ✅ Chatbox hinzugefügt -->
-  <section class="chat-box">
-    <div id="systemMsg" class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" id="chatInput" placeholder="Nachricht eingeben..." disabled>
-      <button id="btnSend" class="btn-send" disabled>📩 Senden</button>
-    </div>
-  </section>
+<section class="chat-box">
+  <div class="chat-messages" id="systemMsg"></div>
+  <div class="chat-input">
+    <input type="text" id="chatInput" placeholder="Nachricht...">
+    <button id="btnSend" class="btn-send">Senden</button>
+  </div>
+</section>
 
-  <!-- Script am Ende, damit DOM schon geladen ist -->
-  <script src="client.js"></script>
+<script src="client.js"></script>
 </body>
 </html>
