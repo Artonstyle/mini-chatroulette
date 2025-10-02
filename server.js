@@ -9,7 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Statische Dateien (z.B. index.html, client.js, style.css)
+// Statische Dateien (z.B. index.html, client.js)
 app.use(express.static(path.join(__dirname, "/")));
 
 let waiting = null;
@@ -30,12 +30,12 @@ function logReport(ws) {
   const ip = ws._socket.remoteAddress;
   const entry = `${new Date().toISOString()} - Report gegen IP: ${ip}\n`;
   fs.appendFileSync(reportsFile, entry);
-  console.log("⚠️ Report gespeichert:", entry.trim());
+  console.log("Report gespeichert:", entry.trim());
 }
 
 // WebSocket Logik
 wss.on("connection", (ws) => {
-  console.log("🔗 Neuer Client verbunden");
+  console.log("Neuer Client verbunden");
   broadcastUserCount();
 
   ws.on("message", (msg) => {
@@ -43,7 +43,7 @@ wss.on("connection", (ws) => {
     try {
       data = JSON.parse(msg);
     } catch (e) {
-      console.error("❌ Ungültige Nachricht:", msg);
+      console.error("Ungueltige Nachricht:", msg);
       return;
     }
 
@@ -87,7 +87,7 @@ wss.on("connection", (ws) => {
         partner.send(JSON.stringify({ type: "partner-left" }));
         partner.send(JSON.stringify({
           type: "system",
-          message: "⚠️ Du wurdest gemeldet und getrennt."
+          message: "Du wurdest gemeldet und getrennt."
         }));
         pairs.delete(ws);
         pairs.delete(partner);
@@ -96,4 +96,57 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
-    console.log("❌ Client getren
+    console.log("Client getrennt");
+    const partner = pairs.get(ws);
+    if (partner) {
+      pairs.delete(ws);
+      pairs.delete(partner);
+      if (partner.readyState === WebSocket.OPEN) {
+        partner.send(JSON.stringify({ type: "partner-left" }));
+      }
+    }
+    if (waiting === ws) waiting = null;
+    broadcastUserCount();
+  });
+});
+
+// **********************************************
+// ADMIN-BEREICH
+// **********************************************
+
+const adminCredentials = {
+  username: "admin",
+  password: "Arton.190388"
+};
+
+// Middleware zur Absicherung des /admin Pfads
+app.use("/admin", (req, res, next) => {
+  const user = auth(req);
+  if (!user || user.name !== adminCredentials.username || user.pass !== adminCredentials.password) {
+    res.setHeader("WWW-Authenticate", 'Basic realm="Admin Area"');
+    return res.status(401).send("Zugang verweigert");
+  }
+  next();
+});
+
+// Admin Dashboard
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+// Endpunkt für Reports
+app.get("/admin/reports", (req, res) => {
+  const reportsPath = path.join(__dirname, "reports.log");
+  if (fs.existsSync(reportsPath)) {
+    res.sendFile(reportsPath);
+  } else {
+    res.type("text/plain").send("Noch keine Reports vorhanden.");
+  }
+});
+
+// **********************************************
+// SERVER STARTEN
+// **********************************************
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log("Server läuft auf Port " + PORT));
