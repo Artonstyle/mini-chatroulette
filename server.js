@@ -10,23 +10,20 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// 📂 Public-Folder für Client-Dateien
 app.use(express.static(path.join(__dirname, "public")));
 
 let waiting = null;
 const pairs = new Map();
 const reportsFile = path.join(__dirname, "reports.log");
 
-// 🔔 Funktion zum Senden der Userzahl
 function broadcastUserCount() {
   const count = wss.clients.size;
   const message = JSON.stringify({ type: "user-count", count });
-  wss.clients.forEach((client) => {
+  wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) client.send(message);
   });
 }
 
-// 📝 Reports speichern
 function logReport(ws) {
   const ip = ws._socket?.remoteAddress || "unknown";
   const entry = `${new Date().toISOString()} - Report gegen IP: ${ip}\n`;
@@ -34,7 +31,6 @@ function logReport(ws) {
   console.log("⚠️ Report gespeichert:", entry.trim());
 }
 
-// 🟢 WebSocket-Logik
 wss.on("connection", (ws) => {
   console.log("🔗 Neuer Client");
   broadcastUserCount();
@@ -43,8 +39,8 @@ wss.on("connection", (ws) => {
     let data;
     try {
       data = JSON.parse(msg);
-    } catch (e) {
-      console.warn("⚠️ Ungültige Nachricht empfangen:", msg.toString());
+    } catch (err) {
+      console.warn("⚠️ Ungültige Nachricht:", msg.toString());
       return;
     }
 
@@ -68,9 +64,7 @@ wss.on("connection", (ws) => {
       if (partner) {
         pairs.delete(ws);
         pairs.delete(partner);
-        if (partner.readyState === WebSocket.OPEN) {
-          partner.send(JSON.stringify({ type: "partner-left" }));
-        }
+        partner.send(JSON.stringify({ type: "partner-left" }));
       }
       if (data.type === "stop" && waiting === ws) waiting = null;
     }
@@ -109,15 +103,12 @@ wss.on("connection", (ws) => {
   });
 });
 
-// **********************************************
-// 🔐 ADMIN-BEREICH
-// **********************************************
+// Admin Bereich
 const adminCredentials = {
   username: process.env.ADMIN_USER || "admin",
   password: process.env.ADMIN_PASS || "changeme"
 };
 
-// Middleware Basic Auth
 app.use("/admin", (req, res, next) => {
   const user = auth(req);
   if (!user || user.name !== adminCredentials.username || user.pass !== adminCredentials.password) {
@@ -127,12 +118,10 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
-// Dashboard
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-// Reports
 app.get("/admin/reports", (req, res) => {
   if (fs.existsSync(reportsFile)) {
     res.sendFile(reportsFile);
@@ -141,6 +130,5 @@ app.get("/admin/reports", (req, res) => {
   }
 });
 
-// 🚀 Server starten
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
