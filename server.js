@@ -2,20 +2,67 @@ const http = require("http");
 const WebSocket = require("ws");
 const express = require("express");
 const fs = require("fs");
-const path = require("path");      // Wichtig für Pfad-Logik (Admin, Static)
-const auth = require('basic-auth'); // Wichtig für Admin Basic Auth
+const path = require("path");      // Modul für Pfad-Logik
+const auth = require('basic-auth'); // Modul für Admin Basic Auth
 
 const app = express();
 
-
-
+// NEU: CSP-Header (Behebt den F12/Favicon-Fehler)
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    // Erlaubt lokale Dateien ('self'), Inline-Styles und die Websocket-Verbindung
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' wss://mini-chatroulette.onrender.com"
+  );
+  next();
+});
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// KRITISCHE KORREKTUR: Statische Dateien aus dem Hauptverzeichnis laden
-// (Stellt index.html, client.js, style.css, etc. bereit)
+// KRITISCHE KORREKTUR: Statische Dateien aus dem aktuellen Verzeichnis bereitstellen
+// Dadurch werden index.html, client.js, style.css etc. gefunden.
 app.use(express.static(path.join(__dirname, '/'))); 
+
+// **********************************************
+// ADMIN-BEREICH (Muss VOR der Server-Start-Zeile stehen)
+// **********************************************
+
+const adminCredentials = {
+  username: 'admin',
+  password: 'Arton.190388' // ⚠️ SICHERES PASSWORT VERWENDEN!
+};
+
+// 1. Middleware zur Absicherung des /admin Pfades (Basic Auth)
+app.use('/admin', (req, res, next) => {
+  const user = auth(req);
+  if (!user || user.name !== adminCredentials.username || user.pass !== adminCredentials.password) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
+    return res.status(401).send('Zugriff verweigert');
+  }
+  next();
+});
+
+// 2. Admin Dashboard anzeigen
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// 3. Endpunkt, um die Reports zu laden
+app.get("/admin/reports", (req, res) => {
+    const reportsPath = path.join(__dirname, "reports.log");
+    
+    if (fs.existsSync(reportsPath)) {
+        res.sendFile(reportsPath); 
+    } else {
+        res.type('text/plain').send("Noch keine Reports vorhanden.");
+    }
+});
+
+
+// **********************************************
+// WEBSOCKET LOGIK
+// **********************************************
 
 let waiting = null; 
 const pairs = new Map(); 
@@ -77,12 +124,10 @@ wss.on("connection", (ws) => {
             }
         }
 
-        // Korrigierte Report-Logik
         else if (data.type === "report") {
             logReport(ws);
             const partner = pairs.get(ws);
             if (partner) {
-                // Trennt den Partner und informiert ihn
                 partner.send(JSON.stringify({ type: "partner-left" })); 
                 partner.send(JSON.stringify({ type: "system", message: "⚠️ Du wurdest gemeldet und getrennt." }));
                 pairs.delete(ws);
@@ -106,41 +151,5 @@ wss.on("connection", (ws) => {
     });
 });
 
-// **********************************************
-// ADMIN-BEREICH (Muss VOR server.listen stehen)
-// **********************************************
-
-const adminCredentials = {
-  username: 'admin',
-  password: 'Arton.190388' // ⚠️ SICHERES PASSWORT VERWENDEN!
-};
-
-// 1. Middleware zur Absicherung des /admin Pfades (Basic Auth)
-app.use('/admin', (req, res, next) => {
-  const user = auth(req);
-  if (!user || user.name !== adminCredentials.username || user.pass !== adminCredentials.password) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
-    return res.status(401).send('Zugriff verweigert');
-  }
-  next();
-});
-
-// 2. Admin Dashboard anzeigen
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
-
-// 3. Endpunkt, um die Reports zu laden
-app.get("/admin/reports", (req, res) => {
-    const reportsPath = path.join(__dirname, "reports.log");
-    
-    if (fs.existsSync(reportsPath)) {
-        res.sendFile(reportsPath); 
-    } else {
-        res.type('text/plain').send("Noch keine Reports vorhanden.");
-    }
-});
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
-
