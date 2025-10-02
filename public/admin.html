@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Moderations-Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #ff9800;
+    }
+    #logs {
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button {
+      background: #ff9800;
+      border: none;
+      padding: 10px 15px;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #e68900;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚨 Moderations-Dashboard</h1>
+  <p>Hier siehst du alle gemeldeten Nutzer.</p>
+  
+  <div id="logs">Lade Reports...</div>
+  <button onclick="loadLogs()">🔄 Aktualisieren</button>
+
+  <script>
+    async function loadLogs() {
+      try {
+        const res = await fetch("/admin/reports");
+        const text = await res.text();
+        document.getElementById("logs").textContent = text;
+      } catch (err) {
+        document.getElementById("logs").textContent = "Fehler beim Laden.";
+      }
+    }
+
+    // Alle 5 Sekunden automatisch aktualisieren
+    setInterval(loadLogs, 5000);
+    loadLogs();
+  </script>
+</body>
+</html>
