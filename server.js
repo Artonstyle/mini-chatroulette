@@ -7,16 +7,7 @@ const auth = require('basic-auth'); // Wichtig für Admin Basic Auth
 
 const app = express();
 
-// NEU: CSP-Header (Behebt den F12/Favicon-Fehler und andere Ladefehler)
-app.use((req, res, next) => {
-  res.setHeader(
-    'Content-Security-Policy',
-    // Erlaubt lokale Dateien ('self') und Inline-Styles (wegen des <style>-Tags in index.html)
-    // Erlaubt Websocket-Verbindung zur Render-URL
-    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' wss://mini-chatroulette.onrender.com"
-  );
-  next();
-});
+
 
 
 const server = http.createServer(app);
@@ -152,3 +143,4 @@ app.get("/admin/reports", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
+
