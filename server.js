@@ -2,12 +2,15 @@ const http = require("http");
 const WebSocket = require("ws");
 const express = require("express");
 const fs = require("fs");
+const path = require("path"); 
+const auth = require('basic-auth'); // Benötigt für Basic Authentication
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-app.use(express.static('public')); 
+// Statische Dateien (z.B. index.html, client.js, style.css)
+app.use(express.static(path.join(__dirname, '/'))); 
 
 let waiting = null; 
 const pairs = new Map(); 
@@ -73,7 +76,11 @@ wss.on("connection", (ws) => {
             logReport(ws);
             const partner = pairs.get(ws);
             if (partner) {
-                partner.send(JSON.stringify({ type: "system", message: "⚠️ Du wurdest gemeldet." }));
+                // Korrektur: Partner wird nach Report getrennt
+                partner.send(JSON.stringify({ type: "partner-left" })); 
+                partner.send(JSON.stringify({ type: "system", message: "⚠️ Du wurdest gemeldet und getrennt." }));
+                pairs.delete(ws); 
+                pairs.delete(partner); 
             }
         }
     });
@@ -93,18 +100,16 @@ wss.on("connection", (ws) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
-
-const path = require("path");
-
-const auth = require('basic-auth');
+// **********************************************
+// ADMIN-BEREICH
+// **********************************************
 
 const adminCredentials = {
   username: 'admin',
-  password: 'Arton.190388' // Ersetze dies durch ein sicheres Passwort
+  password: 'Arton.190388' // ⚠️ SICHERES PASSWORT VERWENDEN
 };
 
+// 1. Middleware zur Absicherung des /admin Pfades (Basic Auth)
 app.use('/admin', (req, res, next) => {
   const user = auth(req);
   if (!user || user.name !== adminCredentials.username || user.pass !== adminCredentials.password) {
@@ -113,3 +118,22 @@ app.use('/admin', (req, res, next) => {
   }
   next();
 });
+
+// 2. Admin Dashboard anzeigen
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// 3. Endpunkt, um die Reports zu laden
+app.get("/admin/reports", (req, res) => {
+    const reportsPath = path.join(__dirname, "reports.log");
+    
+    if (fs.existsSync(reportsPath)) {
+        res.sendFile(reportsPath); 
+    } else {
+        res.type('text/plain').send("Noch keine Reports vorhanden.");
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
