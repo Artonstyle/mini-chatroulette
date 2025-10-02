@@ -1,48 +1,66 @@
 const http = require("http");
 const WebSocket = require("ws");
 const express = require("express");
+const fs = require("fs");
+const path = require("path");      // Wichtig für Pfad-Logik (Admin, Static)
+const auth = require('basic-auth'); // Wichtig für Admin Basic Auth
 
 const app = express();
+
+// NEU: CSP-Header (Behebt den F12/Favicon-Fehler und andere Ladefehler)
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    // Erlaubt lokale Dateien ('self') und Inline-Styles (wegen des <style>-Tags in index.html)
+    // Erlaubt Websocket-Verbindung zur Render-URL
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' wss://mini-chatroulette.onrender.com"
+  );
+  next();
+});
+
+
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Dient statischen Dateien aus dem 'public' Ordner
-app.use(express.static('public')); 
+// KRITISCHE KORREKTUR: Statische Dateien aus dem Hauptverzeichnis laden
+// (Stellt index.html, client.js, style.css, etc. bereit)
+app.use(express.static(path.join(__dirname, '/'))); 
 
 let waiting = null; 
 const pairs = new Map(); 
+const reportsFile = "reports.log";
 
-// Funktion zum Senden der aktuellen Besucherzahl an alle Clients
+// Funktion zum Senden der Userzahl
 function broadcastUserCount() {
     const count = wss.clients.size;
-    const message = JSON.stringify({ type: "user-count", count: count });
-    
+    const message = JSON.stringify({ type: "user-count", count });
     wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
+        if (client.readyState === WebSocket.OPEN) client.send(message);
     });
 }
 
+// Reports speichern
+function logReport(ws) {
+    const ip = ws._socket.remoteAddress;
+    const entry = `${new Date().toISOString()} - Report gegen IP: ${ip}\n`;
+    fs.appendFileSync(reportsFile, entry);
+    console.log("⚠️ Report gespeichert:", entry.trim());
+}
+
 wss.on("connection", (ws) => {
-    console.log("🔗 Neuer Client verbunden");
-    
-    // Sende die Zahl bei JEDER Verbindung
+    console.log("🔗 Neuer Client");
     broadcastUserCount();
 
     ws.on("message", (msg) => {
         const data = JSON.parse(msg);
 
-        // --- START-Logik ---
         if (data.type === "start") {
             if (waiting && waiting !== ws) {
                 const caller = ws;       
                 const answerer = waiting; 
-
                 pairs.set(caller, answerer);
                 pairs.set(answerer, caller);
                 waiting = null; 
-
                 caller.send(JSON.stringify({ type: "matched", should_offer: true })); 
                 answerer.send(JSON.stringify({ type: "matched", should_offer: false }));
             } else {
@@ -51,7 +69,6 @@ wss.on("connection", (ws) => {
             }
         }
 
-        // --- NEXT- und STOP-Logik ---
         else if (data.type === "next" || data.type === "stop") {
             const partner = pairs.get(ws);
             if (partner) {
@@ -62,19 +79,29 @@ wss.on("connection", (ws) => {
             if (data.type === "stop" && waiting === ws) waiting = null;
         }
 
-        // --- WEBRTC SIGNALING LOGIC ---
         else if (["offer", "answer", "candidate"].includes(data.type)) {
             const partner = pairs.get(ws);
             if (partner && partner.readyState === WebSocket.OPEN) {
                 partner.send(JSON.stringify(data));
             }
         }
+
+        // Korrigierte Report-Logik
+        else if (data.type === "report") {
+            logReport(ws);
+            const partner = pairs.get(ws);
+            if (partner) {
+                // Trennt den Partner und informiert ihn
+                partner.send(JSON.stringify({ type: "partner-left" })); 
+                partner.send(JSON.stringify({ type: "system", message: "⚠️ Du wurdest gemeldet und getrennt." }));
+                pairs.delete(ws);
+                pairs.delete(partner);
+            }
+        }
     });
 
     ws.on("close", () => {
         console.log("🔗 Client getrennt");
-        
-        // Aufräumlogik
         const partner = pairs.get(ws);
         if (partner) {
             pairs.delete(ws);
@@ -84,11 +111,44 @@ wss.on("connection", (ws) => {
             }
         }
         if (waiting === ws) waiting = null;
-        
-        // Sende die aktualisierte Zahl nach der Trennung
         broadcastUserCount();
     });
 });
 
+// **********************************************
+// ADMIN-BEREICH (Muss VOR server.listen stehen)
+// **********************************************
+
+const adminCredentials = {
+  username: 'admin',
+  password: 'Arton.190388' // ⚠️ SICHERES PASSWORT VERWENDEN!
+};
+
+// 1. Middleware zur Absicherung des /admin Pfades (Basic Auth)
+app.use('/admin', (req, res, next) => {
+  const user = auth(req);
+  if (!user || user.name !== adminCredentials.username || user.pass !== adminCredentials.password) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Area"');
+    return res.status(401).send('Zugriff verweigert');
+  }
+  next();
+});
+
+// 2. Admin Dashboard anzeigen
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// 3. Endpunkt, um die Reports zu laden
+app.get("/admin/reports", (req, res) => {
+    const reportsPath = path.join(__dirname, "reports.log");
+    
+    if (fs.existsSync(reportsPath)) {
+        res.sendFile(reportsPath); 
+    } else {
+        res.type('text/plain').send("Noch keine Reports vorhanden.");
+    }
+});
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Signalisierungsserver läuft auf Port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
