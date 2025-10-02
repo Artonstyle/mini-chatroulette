@@ -9,13 +9,13 @@ let dataChannel;
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
-const messagesDiv = document.querySelector(".chat-messages");
-const input = document.querySelector(".chat-input input");
-const sendBtn = document.querySelector(".btn-send");
-// Für zukünftige Profil-Logik
-const genderSelect = document.getElementById("gender");
-const searchSelect = document.getElementById("search");
-const countrySelect = document.getElementById("country");
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("btnSend");
+const btnStart = document.getElementById("btnStart");
+const btnNext = document.getElementById("btnNext");
+const btnStop = document.getElementById("btnStop");
+const btnReport = document.getElementById("btnReport");
+const onlineCountElement = document.getElementById("onlineCount");
 
 const config = { 
     iceServers: [
@@ -25,11 +25,12 @@ const config = {
     ] 
 };
 
-// Platzhalter für "Suchen"-Animation
 const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
 
-// --- Hilfsfunktionen ---
+// Banned Words (einfaches Filter-System)
+const bannedWords = ["fuck", "sex", "nazi", "hitler", "porn", "xxx"];
 
+// --- Hilfsfunktionen ---
 function addMessage(sender, text, isSystem = false) {
     const div = document.createElement("div");
     div.textContent = `${sender}: ${text}`;
@@ -37,10 +38,10 @@ function addMessage(sender, text, isSystem = false) {
         div.style.color = '#ffc107'; 
         div.style.fontStyle = 'italic';
     }
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    document.getElementById("systemMsg").appendChild(div);
 }
 
+// Kamera starten
 async function startCamera() {
     if (localStream) return true;
     try {
@@ -48,29 +49,26 @@ async function startCamera() {
         localVideo.srcObject = localStream;
         return true;
     } catch (err) {
-        addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
+        addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben.", true);
         return false;
     }
 }
 
 function closePeerConnection() {
     if (peerConnection) {
-        if (remoteVideo.srcObject) {
-            // Stoppe Tracks nur, wenn sie existieren (verhindert Fehler)
-            if (remoteVideo.srcObject.getTracks) {
-                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-            }
+        if (remoteVideo.srcObject && remoteVideo.srcObject.getTracks) {
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
         }
         remoteVideo.srcObject = null;
-        remoteVideo.src = SEARCHING_VIDEO_SRC; // Zeige Platzhalter nach Trennung
-        remoteVideo.loop = true; // Loop für das Platzhalter-Video
+        remoteVideo.src = SEARCHING_VIDEO_SRC;
+        remoteVideo.loop = true;
         peerConnection.close();
         peerConnection = null;
     }
     dataChannel = null;
     addMessage("System", "Verbindung zum Partner beendet.", true);
-    document.querySelector(".btn-next").disabled = true;
-    document.querySelector(".btn-send").disabled = true;
+    btnNext.disabled = true;
+    sendBtn.disabled = true;
     input.disabled = true;
 }
 
@@ -82,30 +80,27 @@ function createPeerConnection() {
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
     }
 
-    // Remote-Stream empfangen
     peerConnection.ontrack = (event) => {
-        remoteVideo.src = ""; // Entferne Platzhalter-Video
+        remoteVideo.src = "";
         remoteVideo.srcObject = event.streams[0];
-        remoteVideo.loop = false; // Loop ausschalten, da echter Stream
+        remoteVideo.loop = false;
         addMessage("System", "🎥 Videoanruf gestartet!", true);
-        document.querySelector(".btn-next").disabled = false;
-        document.querySelector(".btn-send").disabled = false;
+        btnNext.disabled = false;
+        sendBtn.disabled = false;
         input.disabled = false;
     };
 
-    // ICE-Kandidaten senden
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
         }
     };
     
-    // DataChannel für Chat (vom CALLER erstellt)
+    // DataChannel
     dataChannel = peerConnection.createDataChannel("chat");
     dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
     dataChannel.onmessage = (event) => addMessage("Partner", event.data);
 
-    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
     peerConnection.ondatachannel = (event) => { 
         dataChannel = event.channel;
         dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
@@ -113,40 +108,35 @@ function createPeerConnection() {
     };
 
     peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+        if (["disconnected", "failed"].includes(peerConnection.iceConnectionState)) {
             addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
             closePeerConnection();
         }
     }
 }
 
-
 // --- WebSocket Events ---
 ws.onopen = () => {
-    addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
-    document.querySelector(".btn-start").disabled = false;
-    document.querySelector(".btn-stop").disabled = false;
+    addMessage("System", "✅ Verbunden mit Server. Klicke auf Start.", true);
+    btnStart.disabled = false;
+    btnStop.disabled = false;
 };
 
 ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
 
     if (data.type === "matched" && data.should_offer) {
-        // CALLER: Erstelle Offer
         createPeerConnection();
-        addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
+        addMessage("System", "Partner gefunden. Sende Offer...", true);
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
-        // ANSWERER: Partner gefunden, warte auf Offer
-        addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
+        addMessage("System", "Partner gefunden. Warte auf Offer...", true);
 
     } else if (data.type === "offer") {
-        // ANSWERER: Empfange Offer
         if (!peerConnection) createPeerConnection();
-        
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
@@ -159,80 +149,81 @@ ws.onmessage = async (event) => {
         try {
             await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (err) {
-            console.warn("Fehler beim Hinzufügen des ICE Candidate:", err);
+            console.warn("ICE Candidate Fehler:", err);
         }
     } else if (data.type === "partner-left") {
-        addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
+        addMessage("System", "Partner hat beendet.", true);
         closePeerConnection();
     } else if (data.type === "no-match") {
-         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
-    } 
-    // NEU: Logik für Besucherzählung vom Server
-    else if (data.type === "user-count") {
-        const onlineCountElement = document.getElementById("onlineCount");
-        if (onlineCountElement) {
-            onlineCountElement.textContent = data.count;
-        }
+        addMessage("System", "Kein Partner gefunden, wir warten...", true);
+    } else if (data.type === "user-count" && onlineCountElement) {
+        onlineCountElement.textContent = data.count;
     }
 };
 
-// --- Buttons mit Logik ---
-
-document.querySelector(".btn-start").onclick = async () => {
+// --- Button Events ---
+btnStart.onclick = async () => {
     if (!await startCamera()) return; 
-
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
-    
     ws.send(JSON.stringify({ type: "start" }));
-    
-    addMessage("System", "Suche nach Partner...", true);
-    document.querySelector(".btn-start").disabled = true;
+    addMessage("System", "🔎 Suche nach Partner...", true);
+    btnStart.disabled = true;
 };
 
-document.querySelector(".btn-next").onclick = () => {
+btnNext.onclick = () => {
     if (peerConnection) {
         ws.send(JSON.stringify({ type: "next" })); 
         closePeerConnection(); 
     }
-    
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
-
     ws.send(JSON.stringify({ type: "start" }));
-    
-    addMessage("System", "Suche nach neuem Partner...", true);
-    document.querySelector(".btn-next").disabled = true;
+    addMessage("System", "🔎 Suche nach neuem Partner...", true);
+    btnNext.disabled = true;
 };
 
-document.querySelector(".btn-stop").onclick = () => {
+btnStop.onclick = () => {
     ws.send(JSON.stringify({ type: "stop" }));
-    
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localVideo.srcObject = null;
         localStream = null;
     }
-    
     closePeerConnection();
     remoteVideo.srcObject = null;
-    remoteVideo.src = ""; // Setze Remote-Video zurück, wenn gestoppt
+    remoteVideo.src = "";
     remoteVideo.loop = false;
-    addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
-    document.querySelector(".btn-start").disabled = false;
-    document.querySelector(".btn-stop").disabled = true;
+    addMessage("System", "⏹ Chat beendet.", true);
+    btnStart.disabled = false;
+    btnStop.disabled = true;
 };
 
-// Chat-Nachricht senden
+// 🚨 Melden
+btnReport.onclick = () => {
+    ws.send(JSON.stringify({ type: "report" }));
+    addMessage("System", "🚨 Partner gemeldet.", true);
+};
+
+// Chat
 sendBtn.onclick = () => {
     const text = input.value.trim();
-    if (text && dataChannel && dataChannel.readyState === 'open') {
+    if (!text) return;
+
+    // 🔎 Content Filter
+    if (bannedWords.some(w => text.toLowerCase().includes(w))) {
+        addMessage("System", "⚠️ Nachricht blockiert (unangemessen)", true);
+        input.value = "";
+        return;
+    }
+
+    if (dataChannel && dataChannel.readyState === 'open') {
         dataChannel.send(text);
         addMessage("Ich", text);
         input.value = "";
-    } else if (text) {
-         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
+    } else {
+        addMessage("System", "Chat nicht bereit.", true);
     }
 };
