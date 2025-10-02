@@ -1,174 +1,179 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Chatroulette – Videochat online</title>
-  <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
-  <meta name="robots" content="index, follow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self';
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' data:;
-    connect-src 'self' ws:;
-    font-src 'self';
-  ">
+<title>Mini Chatroulette – Videochat online</title>
+<meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
+<meta name="robots" content="index, follow">
+<meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
 
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+<style>
+html, body {
+  margin: 0; padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(-45deg,#1c1c1c,#2e2e2e,#3a3a3a,#1c1c1c);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  color: #fff;
+  overflow-x: hidden;
+}
+@keyframes gradientBG {
+  0% {background-position: 0% 50%;}
+  50% {background-position: 100% 50%;}
+  100% {background-position: 0% 50%;}
+}
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-      background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-    }
-    @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
-    }
-    header {
-      font-size: 2em;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-align: center;
-      color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
-      letter-spacing: 2px;
-    }
+header {
+  text-align: center;
+  padding: 10px;
+  font-size: 1.6em;
+  font-weight: bold;
+  color: #00d4ff;
+  text-shadow: 0 0 10px #00d4ff,0 0 20px #0077ff;
+}
 
-    .profile-form {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .form-left {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .online-right {
-      font-weight: bold;
-      color: #0f0;
-    }
-    button.btn-start {
-      margin-left: 5px;
-      background-color: #28a745;
-      color: #fff;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-    }
+/* Profilbereich */
+.profile-form {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  background: rgba(50,50,50,0.95);
+  padding: 10px;
+  border-radius: 6px;
+  margin: 10px auto;
+  max-width: 1200px;
+}
+.form-left { display: flex; gap: 10px; flex-wrap: wrap; }
+.online-right { font-weight: bold; color: #0f0; }
+.btn-start {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
 
-    .videos {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
-    }
-    .video-container {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    video {
-      width: 48%;
-      height: 360px;
-      background: #000;
-      border-radius: 8px;
-      object-fit: cover;
-      margin: 5px 0;
-    }
+/* Desktop */
+.videos {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 10px auto;
+}
+video {
+  width: 48%;
+  height: 360px;
+  background: #000;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 10px auto;
+}
+.buttons button {
+  min-width: 120px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-stop { background: #dc3545; color: #fff; }
+.btn-next { background: #007bff; color: #fff; }
 
-    .buttons {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    .buttons button {
-      min-width: 120px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1em;
-      font-weight: bold;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .buttons button:hover {
-      transform: scale(1.07);
-      box-shadow: 0 0 12px rgba(255,255,255,0.4);
-    }
-    .btn-stop {background-color: #dc3545; color: #fff;}
-    .btn-next {background-color: #007bff; color: #fff;}
-    .btn-report {background-color: #ffc107; color: #000;} 
+.chat-box {
+  max-width: 1200px;
+  margin: 10px auto;
+  background: rgba(50,50,50,0.95);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  gap: 5px;
+}
+.chat-box input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+}
+.chat-box button {
+  background: #ffc107;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-    .chat-box {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
-    }
-    .chat-messages {
-      height: 200px;
-      overflow-y: auto;
-      background: #1f1f1f;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1em;
-    }
-    .btn-send {
-      background-color: #ffc107;
-      color: #000;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:disabled, input:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  </style>
+/* Mobile */
+@media (max-width: 768px) {
+  body { overflow: hidden; }
+
+  #remoteVideo {
+    position: fixed;
+    top: 110px; left: 0;
+    width: 100%;
+    height: calc(100% - 180px);
+    object-fit: cover;
+    background: #000;
+    z-index: 1;
+  }
+
+  #localVideo {
+    position: absolute;
+    top: 120px; right: 10px;
+    width: 120px; height: 80px;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    z-index: 10;
+    cursor: move;
+    touch-action: none; /* wichtig fürs Pinch */
+  }
+
+  .buttons {
+    position: fixed;
+    bottom: 80px; right: 10px;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .chat-box {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.6);
+    padding: 5px;
+    z-index: 30;
+  }
+
+  #systemMsg {
+    position: absolute;
+    top: 130px; left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #ff0;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    z-index: 40;
+  }
+}
+</style>
 </head>
 <body>
 
 <header>Mini Chatroulette</header>
 
+<!-- Profil -->
 <section class="profile-form">
   <div class="form-left">
     <label>Ich bin:
@@ -182,31 +187,94 @@
     </label>
     <button class="btn-start" id="btnStart">Start</button>
   </div>
-  <div class="online-right">
-    👥 Online: <span id="onlineCount">0</span>
-  </div>
+  <div class="online-right">👥 Online: <span id="onlineCount">0</span></div>
 </section>
 
+<!-- Videos -->
 <section class="videos">
-  <div class="video-container">
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay loop src="/assets/searching.mp4"></video>
-  </div>
-  <div class="buttons">
-    <button class="btn-next" id="btnNext" disabled>⏭ Nächster</button>
-    <button class="btn-stop" id="btnStop" disabled>⏹ Stop</button>
-    <button class="btn-report" id="btnReport" disabled>Melden</button>
-  </div>
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video>
 </section>
 
-<section class="chat-box">
-  <div class="chat-messages" id="systemMsg"></div>
-  <div class="chat-input">
-    <input type="text" id="chatInput" placeholder="Nachricht...">
-    <button id="btnSend" class="btn-send">Senden</button>
-  </div>
-</section>
+<!-- Buttons -->
+<div class="buttons">
+  <button class="btn-next" id="btnNext">⏭ Nächster</button>
+  <button class="btn-stop" id="btnStop">⏹ Stop</button>
+</div>
+
+<!-- Chat -->
+<div class="chat-box">
+  <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
+  <button id="btnSend">💬 Senden</button>
+</div>
+
+<!-- Systemmeldung -->
+<div id="systemMsg">✅ Verbunden mit Signalisierungsserver...</div>
 
 <script src="client.js"></script>
+<script>
+// ===== Eigenes Video verschiebbar & skalierbar =====
+const localVideo = document.getElementById("localVideo");
+let dragging=false, offsetX=0, offsetY=0, scale=1;
+
+// Drag mit Maus
+localVideo.addEventListener("mousedown", (e)=>{
+  dragging=true;
+  offsetX = e.clientX - localVideo.offsetLeft;
+  offsetY = e.clientY - localVideo.offsetTop;
+});
+document.addEventListener("mousemove",(e)=>{
+  if(dragging){
+    localVideo.style.left = (e.clientX - offsetX) + "px";
+    localVideo.style.top  = (e.clientY - offsetY) + "px";
+  }
+});
+document.addEventListener("mouseup",()=>dragging=false);
+
+// Touch drag & pinch zoom
+let initialDistance = null;
+localVideo.addEventListener("touchstart",(e)=>{
+  if(e.touches.length===1){
+    dragging=true;
+    offsetX = e.touches[0].clientX - localVideo.offsetLeft;
+    offsetY = e.touches[0].clientY - localVideo.offsetTop;
+  } else if(e.touches.length===2){
+    initialDistance = getDistance(e.touches);
+  }
+});
+localVideo.addEventListener("touchmove",(e)=>{
+  if(e.touches.length===1 && dragging){
+    localVideo.style.left = (e.touches[0].clientX - offsetX) + "px";
+    localVideo.style.top  = (e.touches[0].clientY - offsetY) + "px";
+  } else if(e.touches.length===2){
+    const newDist = getDistance(e.touches);
+    if(initialDistance){
+      scale *= newDist/initialDistance;
+      scale = Math.max(0.5, Math.min(3, scale));
+      localVideo.style.transform = `scale(${scale})`;
+      initialDistance = newDist;
+    }
+  }
+});
+localVideo.addEventListener("touchend",()=>dragging=false);
+
+function getDistance(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+// Scrollrad Zoom (Desktop)
+localVideo.addEventListener("wheel",(e)=>{
+  e.preventDefault();
+  scale += e.deltaY * -0.001;
+  scale = Math.max(0.5, Math.min(3, scale));
+  localVideo.style.transform = `scale(${scale})`;
+});
+
+// ===== Demo Systemmeldungen =====
+setTimeout(()=> document.getElementById("systemMsg").innerText="🔍 Suche nach Partner...",2000);
+setTimeout(()=> document.getElementById("systemMsg").innerText="✅ Partner gefunden!",5000);
+</script>
 </body>
 </html>
