@@ -6,7 +6,7 @@ let localStream;
 let peerConnection;
 let dataChannel;
 
-// DOM-Elemente
+// DOM-Elemente (Funktionieren jetzt dank korrigierter index.html)
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 const input = document.getElementById("chatInput");
@@ -38,7 +38,13 @@ function addMessage(sender, text, isSystem = false) {
         div.style.color = '#ffc107'; 
         div.style.fontStyle = 'italic';
     }
-    document.getElementById("systemMsg").appendChild(div);
+    // Korrektur: Nutzt die korrekte ID des Nachrichten-Containers
+    const chatBox = document.getElementById("systemMsg");
+    if (chatBox) {
+        chatBox.appendChild(div);
+        // Automatisches Scrollen nach unten
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 }
 
 // Kamera starten
@@ -67,13 +73,17 @@ function closePeerConnection() {
     }
     dataChannel = null;
     addMessage("System", "Verbindung zum Partner beendet.", true);
+    // Korrektur: Buttons richtig disablen/enablen
+    btnStart.disabled = false; // Start wieder erlauben
     btnNext.disabled = true;
+    btnStop.disabled = false; // Stop muss aktiv bleiben, solange Kamera läuft
     sendBtn.disabled = true;
     input.disabled = true;
+    btnReport.disabled = true; // Report disablen
 }
 
 function createPeerConnection() {
-    closePeerConnection(); 
+    //closePeerConnection(); // closePeerConnection wird im 'matched' block aufgerufen.
     peerConnection = new RTCPeerConnection(config);
 
     if (localStream) {
@@ -85,9 +95,13 @@ function createPeerConnection() {
         remoteVideo.srcObject = event.streams[0];
         remoteVideo.loop = false;
         addMessage("System", "🎥 Videoanruf gestartet!", true);
+        // Korrektur: Buttons richtig enablen nach Match
         btnNext.disabled = false;
+        btnStop.disabled = false; 
         sendBtn.disabled = false;
         input.disabled = false;
+        btnReport.disabled = false;
+        btnStart.disabled = true; // Start muss jetzt disablen
     };
 
     peerConnection.onicecandidate = (event) => {
@@ -119,7 +133,7 @@ function createPeerConnection() {
 ws.onopen = () => {
     addMessage("System", "✅ Verbunden mit Server. Klicke auf Start.", true);
     btnStart.disabled = false;
-    btnStop.disabled = false;
+    btnStop.disabled = true; // Stop sollte erst aktiv sein, wenn Kamera läuft
 };
 
 ws.onmessage = async (event) => {
@@ -133,6 +147,8 @@ ws.onmessage = async (event) => {
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
+        // Korrektur: createPeerConnection muss hier auch aufgerufen werden
+        createPeerConnection(); 
         addMessage("System", "Partner gefunden. Warte auf Offer...", true);
 
     } else if (data.type === "offer") {
@@ -158,6 +174,8 @@ ws.onmessage = async (event) => {
         addMessage("System", "Kein Partner gefunden, wir warten...", true);
     } else if (data.type === "user-count" && onlineCountElement) {
         onlineCountElement.textContent = data.count;
+    } else if (data.type === "system") { 
+        addMessage("System", data.message, true);
     }
 };
 
@@ -170,6 +188,7 @@ btnStart.onclick = async () => {
     ws.send(JSON.stringify({ type: "start" }));
     addMessage("System", "🔎 Suche nach Partner...", true);
     btnStart.disabled = true;
+    btnStop.disabled = false; // Stop jetzt enablen, da Kamera läuft
 };
 
 btnNext.onclick = () => {
@@ -177,12 +196,15 @@ btnNext.onclick = () => {
         ws.send(JSON.stringify({ type: "next" })); 
         closePeerConnection(); 
     }
+    // Startet sofort neue Suche
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
     ws.send(JSON.stringify({ type: "start" }));
     addMessage("System", "🔎 Suche nach neuem Partner...", true);
-    btnNext.disabled = true;
+    btnNext.disabled = true; // Bis Match gefunden
+    btnStart.disabled = true;
+    btnReport.disabled = true;
 };
 
 btnStop.onclick = () => {
@@ -196,15 +218,30 @@ btnStop.onclick = () => {
     remoteVideo.srcObject = null;
     remoteVideo.src = "";
     remoteVideo.loop = false;
-    addMessage("System", "⏹ Chat beendet.", true);
+    addMessage("System", "⏹ Chat beendet. Kamera/Mikrofon ausgeschaltet.", true);
+    // Korrektur: Buttons zurücksetzen
     btnStart.disabled = false;
     btnStop.disabled = true;
+    btnReport.disabled = true;
 };
 
 // 🚨 Melden
 btnReport.onclick = () => {
     ws.send(JSON.stringify({ type: "report" }));
-    addMessage("System", "🚨 Partner gemeldet.", true);
+    addMessage("System", "🚨 Partner gemeldet. Du wirst jetzt getrennt und es wird neu gesucht.", true);
+    
+    // Automatisch "Next" auslösen nach Report
+    if (peerConnection) {
+        ws.send(JSON.stringify({ type: "next" })); 
+        closePeerConnection(); 
+    }
+    remoteVideo.srcObject = null;
+    remoteVideo.src = SEARCHING_VIDEO_SRC;
+    remoteVideo.loop = true;
+    ws.send(JSON.stringify({ type: "start" }));
+    btnNext.disabled = true;
+    btnStart.disabled = true;
+    btnReport.disabled = true;
 };
 
 // Chat
@@ -227,3 +264,11 @@ sendBtn.onclick = () => {
         addMessage("System", "Chat nicht bereit.", true);
     }
 };
+
+// Enter-Taste für Chat
+input.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        event.preventDefault(); // Verhindert das Hinzufügen einer neuen Zeile
+        sendBtn.click();
+    }
+});
