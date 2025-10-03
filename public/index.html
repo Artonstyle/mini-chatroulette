@@ -192,6 +192,394 @@ video {
 
 <!-- Videos -->
 <section class="videos">
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+</section>
+
+<!-- Buttons -->
+<div class="buttons">
+  <button class="btn-next" id="btnNext">⏭ Nächster</button>
+  <button class="btn-stop" id="btnStop">⏹ Stop</button>
+</div>
+
+<!-- Chat -->
+<div class="chat-box">
+  <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
+  <button id="btnSend">💬 Senden</button>
+</div>
+
+<!-- Systemmeldung -->
+<div id="systemMsg">✅ Verbunden mit Signalisierungsserver...</div>
+
+<!-- Socket.IO client (wichtig: vom Server bereitgestellt) -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+
+<script>
+// ===== Eigenes Video verschiebbar & skalierbar =====
+const localVideo = document.getElementById("localVideo");
+let dragging = false;
+let startX = 0, startY = 0;   // start coordinates for drag (mouse/touch)
+let posX = 0, posY = 0;       // current translation
+let scale = 1;                // current scale
+const minScale = 0.5, maxScale = 3;
+let lastTouchDistance = null;
+let lastMidpoint = null;
+
+// Initialize transform so later calculations are consistent
+function applyTransform() {
+  localVideo.style.transform = `translate3d(${posX}px, ${posY}px, 0) scale(${scale})`;
+  localVideo.style.transformOrigin = 'center center';
+}
+applyTransform();
+
+// Helpers
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function getTouchDistance(t1, t2) {
+  const dx = t2.clientX - t1.clientX;
+  const dy = t2.clientY - t1.clientY;
+  return Math.hypot(dx, dy);
+}
+function getMidpoint(t1, t2) {
+  return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+}
+
+// MOUSE EVENTS (desktop)
+localVideo.addEventListener("mousedown", (e) => {
+  // Only react to left button
+  if (e.button !== 0) return;
+  dragging = true;
+  startX = e.clientX;
+  startY = e.clientY;
+  document.body.style.userSelect = 'none';
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!dragging) return;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  startX = e.clientX;
+  startY = e.clientY;
+  posX += dx;
+  posY += dy;
+  applyTransform();
+});
+
+window.addEventListener("mouseup", () => {
+  if (dragging) {
+    dragging = false;
+    document.body.style.userSelect = '';
+    constrainToViewport();
+  }
+});
+
+// WHEEL FOR ZOOM (desktop)
+localVideo.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const delta = -e.deltaY;
+  const zoomFactor = delta > 0 ? 1.05 : 0.95;
+  const newScale = clamp(scale * zoomFactor, minScale, maxScale);
+
+  const rect = localVideo.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const relX = (cx - rect.width / 2) / scale;
+  const relY = (cy - rect.height / 2) / scale;
+
+  posX -= relX * (newScale - scale);
+  posY -= relY * (newScale - scale);
+  scale = newScale;
+  applyTransform();
+  constrainToViewport();
+}, { passive: false });
+
+// TOUCH EVENTS (mobile)
+localVideo.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 1) {
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+  } else if (e.touches.length === 2) {
+    lastTouchDistance = getTouchDistance(e.touches[0], e.touches[1]);
+    lastMidpoint = getMidpoint(e.touches[0], e.touches[1]);
+  }
+}, { passive: false });
+
+localVideo.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1 && lastTouchDistance === null) {
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    startX = t.clientX;
+    startY = t.clientY;
+    posX += dx;
+    posY += dy;
+    applyTransform();
+  } else if (e.touches.length === 2) {
+    const dist = getTouchDistance(e.touches[0], e.touches[1]);
+    const midpoint = getMidpoint(e.touches[0], e.touches[1]);
+
+    if (lastTouchDistance !== null) {
+      const zoom = dist / lastTouchDistance;
+      const newScale = clamp(scale * zoom, minScale, maxScale);
+
+      const rect = localVideo.getBoundingClientRect();
+      const mx = midpoint.x - rect.left;
+      const my = midpoint.y - rect.top;
+      const relX = (mx - rect.width / 2) / scale;
+      const relY = (my - rect.height / 2) / scale;
+
+      posX -= relX * (newScale - scale);
+      posY -= relY * (newScale - scale);
+
+      scale = newScale;
+    }
+
+    if (lastMidpoint) {
+      const dx = midpoint.x - lastMidpoint.x;
+      const dy = midpoint.y - lastMidpoint.y;
+      posX += dx;
+      posY += dy;
+    }
+
+    lastTouchDistance = dist;
+    lastMidpoint = midpoint;
+    applyTransform();
+  }
+}, { passive: false });
+
+localVideo.addEventListener("touchend", (e) => {
+  if (e.touches.length < 2) {
+    lastTouchDistance = null;
+    lastMidpoint = null;
+  }
+  if (e.touches.length === 0) {
+    constrainToViewport();
+  }
+});
+
+function constrainToViewport() {
+  const rect = localVideo.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const visibleFraction = 0.2;
+  const minVisibleW = rect.width * visibleFraction;
+  const minVisibleH = rect.height * visibleFraction;
+
+  const width = rect.width;
+  const height = rect.height;
+
+  let left = rect.left;
+  let top = rect.top;
+
+  const minLeft = -width + minVisibleW;
+  const maxLeft = vw - minVisibleW;
+  const minTop = -height + minVisibleH;
+  const maxTop = vh - minVisibleH;
+
+  let dx = 0, dy = 0;
+  if (left < minLeft) dx = minLeft - left;
+  if (left > maxLeft) dx = maxLeft - left;
+  if (top < minTop) dy = minTop - top;
+  if (top > maxTop) dy = maxTop - top;
+
+  posX += dx;
+  posY += dy;
+
+  applyTransform();
+}
+
+let lastTap = 0;
+localVideo.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTap < 300) {
+    resetPositionAndScale();
+  }
+  lastTap = now;
+});
+
+function resetPositionAndScale() {
+  scale = 1;
+  const defaultRight = 10;
+  const defaultTop = 120;
+  localVideo.style.transform = 'none';
+  const w = localVideo.offsetWidth;
+  const h = localVideo.offsetHeight;
+  const left = window.innerWidth - defaultRight - w;
+  const top = defaultTop;
+  const rect = localVideo.getBoundingClientRect();
+  posX += (left - rect.left);
+  posY += (top - rect.top);
+  applyTransform();
+}
+
+window.addEventListener('resize', () => {
+  constrainToViewport();
+});
+
+localVideo.addEventListener('dragstart', (e) => e.preventDefault());
+</script>
+</body>
+</html>
+/* Profilbereich */
+.profile-form {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  background: rgba(50,50,50,0.95);
+  padding: 10px;
+  border-radius: 6px;
+  margin: 10px auto;
+  max-width: 1200px;
+}
+.form-left { display: flex; gap: 10px; flex-wrap: wrap; }
+.online-right { font-weight: bold; color: #0f0; }
+.btn-start {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Desktop */
+.videos {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 10px auto;
+}
+video {
+  width: 48%;
+  height: 360px;
+  background: #000;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 1200px;
+  margin: 10px auto;
+}
+.buttons button {
+  min-width: 120px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-stop { background: #dc3545; color: #fff; }
+.btn-next { background: #007bff; color: #fff; }
+
+.chat-box {
+  max-width: 1200px;
+  margin: 10px auto;
+  background: rgba(50,50,50,0.95);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  gap: 5px;
+}
+.chat-box input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+}
+.chat-box button {
+  background: #ffc107;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  body { overflow: hidden; }
+
+  #remoteVideo {
+    position: fixed;
+    top: 110px; left: 0;
+    width: 100%;
+    height: calc(100% - 180px);
+    object-fit: cover;
+    background: #000;
+    z-index: 1;
+  }
+
+  #localVideo {
+    position: absolute;
+    top: 120px; right: 10px;
+    width: 120px; height: 80px;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    z-index: 10;
+    cursor: move;
+    touch-action: none; /* wichtig fürs Pinch */
+  }
+
+  .buttons {
+    position: fixed;
+    bottom: 80px; right: 10px;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .chat-box {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.6);
+    padding: 5px;
+    z-index: 30;
+  }
+
+  #systemMsg {
+    position: absolute;
+    top: 130px; left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #ff0;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    z-index: 40;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>Mini Chatroulette</header>
+
+<!-- Profil -->
+<section class="profile-form">
+  <div class="form-left">
+    <label>Ich bin:
+      <select id="gender"><option>Mann</option><option>Frau</option></select>
+    </label>
+    <label>Ich suche:
+      <select id="search"><option>Mann</option><option>Frau</option></select>
+    </label>
+    <label>Mein Land:
+      <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+    </label>
+    <button class="btn-start" id="btnStart">Start</button>
+  </div>
+  <div class="online-right">👥 Online: <span id="onlineCount">0</span></div>
+</section>
+
+<!-- Videos -->
+<section class="videos">
   <video id="localVideo" autoplay muted></video>
   <video id="remoteVideo" autoplay></video>
 </section>
@@ -278,3 +666,4 @@ setTimeout(()=> document.getElementById("systemMsg").innerText="✅ Partner gefu
 </script>
 </body>
 </html>
+
