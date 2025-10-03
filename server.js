@@ -76,6 +76,48 @@ wss.on("connection",(ws)=>{
 });
 
 const PORT=process.env.PORT||3000;
+server.listen(PORT,()=>console.log(`🚀 Server läuft auf Port ${PORT}`));        caller.send(JSON.stringify({type:"matched",should_offer:true}));
+        answerer.send(JSON.stringify({type:"matched",should_offer:false}));
+      } else {
+        waiting=ws;
+        ws.send(JSON.stringify({type:"no-match"}));
+      }
+    }
+
+    else if (data.type==="next" || data.type==="stop") {
+      const partner=pairs.get(ws);
+      if (partner) {
+        pairs.delete(ws);
+        pairs.delete(partner);
+        partner.send(JSON.stringify({type:"partner-left"}));
+      }
+      if (data.type==="stop" && waiting===ws) waiting=null;
+    }
+
+    else if (["offer","answer","candidate"].includes(data.type)) {
+      const partner=pairs.get(ws);
+      if (partner && partner.readyState===WebSocket.OPEN) {
+        partner.send(JSON.stringify(data));
+      }
+    }
+  });
+
+  ws.on("close",()=>{
+    console.log("🔗 Client getrennt");
+    const partner=pairs.get(ws);
+    if (partner) {
+      pairs.delete(ws);
+      pairs.delete(partner);
+      if (partner.readyState===WebSocket.OPEN) {
+        partner.send(JSON.stringify({type:"partner-left"}));
+      }
+    }
+    if (waiting===ws) waiting=null;
+    broadcastUserCount();
+  });
+});
+
+const PORT=process.env.PORT||3000;
 server.listen(PORT,()=>console.log(`🚀 Server läuft auf Port ${PORT}`));
 // --- Hilfsfunktionen ---
 function sys(msg) {
@@ -751,5 +793,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('Server listening on', PORT);
 });
+
 
 
