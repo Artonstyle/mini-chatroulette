@@ -149,6 +149,121 @@ header button {
 
 <script src="client.js"></script>
 </body>
+</html>  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+#btnStart { background: #28a745; color: #fff; }
+#btnNext { background: #007bff; color: #fff; }
+#btnStop { background: #dc3545; color: #fff; }
+
+/* Hauptbereich */
+.main {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+.videos {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  position: relative;
+}
+#remoteVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+#localVideo {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 180px;
+  height: 120px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #111;
+}
+
+/* Chat */
+.chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #ccc;
+  background: #fff;
+}
+.chat-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 0.9em;
+}
+.chat-messages div {
+  margin-bottom: 6px;
+}
+.chat-input {
+  display: flex;
+  border-top: 1px solid #ccc;
+}
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  outline: none;
+}
+.chat-input button {
+  background: #ffc107;
+  border: none;
+  padding: 10px 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Online Counter */
+.online-counter {
+  font-size: 0.9em;
+  color: #ccc;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Mini Chatroulette</h1>
+  <div class="controls">
+    <button id="btnStart">Start</button>
+    <button id="btnNext" disabled>Nächster</button>
+    <button id="btnStop" disabled>Stop</button>
+  </div>
+  <div class="online-counter">👥 Online: <span id="onlineCount">0</span></div>
+</header>
+
+<div class="main">
+  <!-- Videos -->
+  <section class="videos">
+    <video id="remoteVideo" autoplay></video>
+    <video id="localVideo" autoplay muted></video>
+  </section>
+
+  <!-- Chat -->
+  <section class="chat">
+    <div class="chat-messages" id="systemMsg"></div>
+    <div class="chat-input">
+      <input type="text" id="chatInput" placeholder="Nachricht schreiben...">
+      <button id="btnSend">Senden</button>
+    </div>
+  </section>
+</div>
+
+<script src="client.js"></script>
+</body>
 </html>
 /* Profilbereich */
 .profile-form {
@@ -781,5 +896,6 @@ setTimeout(()=> document.getElementById("systemMsg").innerText="✅ Partner gefu
 </script>
 </body>
 </html>
+
 
 
