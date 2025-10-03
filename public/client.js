@@ -1,40 +1,231 @@
-// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
-const WS_URL = "wss://mini-chatroulette.onrender.com"; 
-const ws = new WebSocket(WS_URL); 
+// client.js - Signalisierung + WebRTC + UI-Handling
+// erwartet: socket.io client verfügbar als io()
 
-let localStream;
-let peerConnection;
-let dataChannel;
+const socket = io();
 
-// DOM-Elemente (Funktionieren jetzt dank korrigierter index.html)
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-const input = document.getElementById("chatInput");
-const sendBtn = document.getElementById("btnSend");
-const btnStart = document.getElementById("btnStart");
-const btnNext = document.getElementById("btnNext");
-const btnStop = document.getElementById("btnStop");
-const btnReport = document.getElementById("btnReport");
-const onlineCountElement = document.getElementById("onlineCount");
+// UI Elemente (benutze andere Namen, damit dein Inline-Skript localVideo nicht konfligiert)
+const btnStart = document.getElementById('btnStart');
+const btnNext = document.getElementById('btnNext');
+const btnStop = document.getElementById('btnStop');
+const btnSend = document.getElementById('btnSend');
+const chatInput = document.getElementById('chatInput');
+const localVideoEl = document.getElementById('localVideo');   // avoids naming clash
+const remoteVideoEl = document.getElementById('remoteVideo');
+const onlineCountEl = document.getElementById('onlineCount');
+const systemMsgEl = document.getElementById('systemMsg');
 
-const config = { 
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" }
-    ] 
+// system message helper uses setSystemMessage if provided by page
+function sys(msg) {
+  if (typeof window.setSystemMessage === 'function') {
+    window.setSystemMessage(msg);
+  } else {
+    if (systemMsgEl) systemMsgEl.textContent = msg;
+  }
+  console.log('[SYS]', msg);
+}
+
+function showOnlineCount(n) {
+  if (onlineCountEl) onlineCountEl.textContent = n;
+}
+
+// get profile from form
+function getProfile() {
+  const gender = document.getElementById('gender')?.value || '';
+  const search = document.getElementById('search')?.value || '';
+  const country = document.getElementById('country')?.value || '';
+  return { gender, search, country };
+}
+
+let localStream = null;
+let pc = null;
+let peerId = null;
+let isInitiator = false;
+let iceCandidatesQueue = [];
+
+const configuration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' }
+  ]
 };
 
-const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
+async function startLocalStream() {
+  if (localStream) return localStream;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+    if (localVideoEl) localVideoEl.srcObject = localStream;
+    return localStream;
+  } catch (err) {
+    console.error('getUserMedia error', err);
+    sys('Kamera/Mikrofon Zugriff verweigert oder nicht verfügbar.');
+    throw err;
+  }
+}
 
-// Banned Words (einfaches Filter-System)
-const bannedWords = ["fuck", "sex", "nazi", "hitler", "porn", "xxx"];
+function createPeerConnection(remoteSocketId) {
+  pc = new RTCPeerConnection(configuration);
+  peerId = remoteSocketId;
 
-// --- Hilfsfunktionen ---
-function addMessage(sender, text, isSystem = false) {
-    const div = document.createElement("div");
-    div.textContent = `${sender}: ${text}`;
-    if (isSystem) {
+  pc.onicecandidate = (evt) => {
+    if (evt.candidate) {
+      socket.emit('signal', { to: peerId, data: { type: 'candidate', candidate: evt.candidate } });
+    }
+  };
+
+  pc.ontrack = (evt) => {
+    if (remoteVideoEl) remoteVideoEl.srcObject = evt.streams[0];
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.log('pc state', pc.connectionState);
+    // optional extra handling could be added here
+  };
+
+  if (localStream) {
+    for (const t of localStream.getTracks()) {
+      pc.addTrack(t, localStream);
+    }
+  }
+
+  if (iceCandidatesQueue.length > 0) {
+    iceCandidatesQueue.forEach(c => {
+      try { pc.addIceCandidate(c).catch(e => console.warn('addIceCandidate failed', e)); } catch (e) { console.warn(e); }
+    });
+    iceCandidatesQueue = [];
+  }
+}
+
+function closePeerConnection() {
+  if (pc) {
+    try { pc.close(); } catch (e) {}
+    pc = null;
+  }
+  peerId = null;
+  if (remoteVideoEl) remoteVideoEl.srcObject = null;
+}
+
+// START
+btnStart?.addEventListener('click', async () => {
+  try {
+    await startLocalStream();
+    sys('Kamera gestartet. Verbinde...');
+    const profile = getProfile();
+    socket.emit('join', profile);
+  } catch (e) {
+    // handled in startLocalStream
+  }
+});
+
+// NEXT
+btnNext?.addEventListener('click', async () => {
+  sys('Nächster wird gesucht...');
+  if (peerId) {
+    socket.emit('leave');
+    closePeerConnection();
+  }
+  const profile = getProfile();
+  socket.emit('next', profile);
+});
+
+// STOP
+btnStop?.addEventListener('click', () => {
+  sys('Verbindung beendet.');
+  socket.emit('leave');
+  closePeerConnection();
+});
+
+// SEND chat
+btnSend?.addEventListener('click', () => {
+  const txt = chatInput.value.trim();
+  if (!txt || !peerId) return;
+  socket.emit('chat', { to: peerId, message: txt });
+  chatInput.value = '';
+});
+
+// socket handlers
+socket.on('connect', () => {
+  sys('Verbunden mit Signalisierungsserver...');
+  showOnlineCount(0);
+});
+
+socket.on('onlineCount', (n) => {
+  showOnlineCount(n);
+});
+
+socket.on('waiting', () => {
+  sys('Warte auf Partner...');
+});
+
+socket.on('matched', async ({ peerId: otherId, initiator }) => {
+  sys('Partner gefunden. Verbinde...');
+  isInitiator = !!initiator;
+  try {
+    await startLocalStream();
+  } catch (e) {
+    return;
+  }
+
+  createPeerConnection(otherId);
+
+  if (isInitiator) {
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('signal', { to: otherId, data: { type: 'sdp', sdp: pc.localDescription } });
+    } catch (err) {
+      console.error('offer error', err);
+      sys('Fehler beim Erstellen des Angebots.');
+    }
+  } else {
+    // responder waits for offer via 'signal'
+  }
+});
+
+socket.on('signal', async ({ from, data }) => {
+  try {
+    if (!pc && data && data.type === 'sdp' && data.sdp && data.sdp.type === 'offer') {
+      await startLocalStream().catch(()=>{});
+      createPeerConnection(from);
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('signal', { to: from, data: { type: 'sdp', sdp: pc.localDescription } });
+      return;
+    }
+
+    if (!pc && data && data.type === 'candidate') {
+      iceCandidatesQueue.push(data.candidate);
+      return;
+    }
+
+    if (pc) {
+      if (data.type === 'sdp') {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      } else if (data.type === 'candidate') {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (e) {
+          console.warn('addIceCandidate failed', e);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('signal handling error', err);
+  }
+});
+
+socket.on('chat', ({ from, message }) => {
+  sys(`Nachricht von Partner: ${message}`);
+});
+
+socket.on('peerDisconnected', () => {
+  sys('Partner hat die Verbindung beendet.');
+  closePeerConnection();
+});
+
+socket.on('disconnect', () => {
+  sys('Vom Signalisierungsserver getrennt.');
+  closePeerConnection();
+});    if (isSystem) {
         div.style.color = '#ffc107'; 
         div.style.fontStyle = 'italic';
     }
@@ -272,3 +463,4 @@ input.addEventListener("keypress", (event) => {
         sendBtn.click();
     }
 });
+
