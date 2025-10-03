@@ -1,40 +1,82 @@
-// client.js - Signalisierung + WebRTC + Chat + Drag/Pinch-to-Zoom
-// Sprache: Deutsch
-// Erwartet: socket.io client verfügbar als io()
+const http = require("http");
+const WebSocket = require("ws");
+const express = require("express");
 
-'use strict';
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-console.info('client.js geladen');
+// Statische Dateien
+app.use(express.static('public'));
 
-const socket = io();
+let waiting = null;
+const pairs = new Map();
 
-// --- DOM Elemente ---
-const btnStart = document.getElementById('btnStart');
-const btnNext = document.getElementById('btnNext');
-const btnStop = document.getElementById('btnStop');
-const btnSend = document.getElementById('btnSend');
-const chatInput = document.getElementById('chatInput');
-const localVideoEl = document.getElementById('localVideo');   // vermeidet Konflikt mit Inline-Skript
-const remoteVideoEl = document.getElementById('remoteVideo');
-const onlineCountEl = document.getElementById('onlineCount');
-const systemMsgEl = document.getElementById('systemMsg');
-const chatBoxEl = document.querySelector('.chat-box');
-
-// Falls kein Nachrichten-Container vorhanden, anlegen (wird in .chat-box vor Input eingefügt)
-let messagesEl = document.getElementById('messagesContainer');
-if (!messagesEl && chatBoxEl) {
-  messagesEl = document.createElement('div');
-  messagesEl.id = 'messagesContainer';
-  messagesEl.style.display = 'flex';
-  messagesEl.style.flexDirection = 'column';
-  messagesEl.style.gap = '4px';
-  messagesEl.style.maxHeight = '160px';
-  messagesEl.style.overflowY = 'auto';
-  messagesEl.style.marginRight = '8px';
-  // Insert vor dem input
-  chatBoxEl.insertBefore(messagesEl, chatInput);
+// Besucherzahl broadcasten
+function broadcastUserCount() {
+  const count = wss.clients.size;
+  const message = JSON.stringify({ type: "user-count", count });
+  wss.clients.forEach(c=>{
+    if (c.readyState === WebSocket.OPEN) c.send(message);
+  });
 }
 
+wss.on("connection",(ws)=>{
+  console.log("🔗 Neuer Client");
+  broadcastUserCount();
+
+  ws.on("message",(msg)=>{
+    const data = JSON.parse(msg);
+
+    if (data.type==="start") {
+      if (waiting && waiting!==ws) {
+        const caller=ws, answerer=waiting;
+        pairs.set(caller,answerer);
+        pairs.set(answerer,caller);
+        waiting=null;
+        caller.send(JSON.stringify({type:"matched",should_offer:true}));
+        answerer.send(JSON.stringify({type:"matched",should_offer:false}));
+      } else {
+        waiting=ws;
+        ws.send(JSON.stringify({type:"no-match"}));
+      }
+    }
+
+    else if (data.type==="next" || data.type==="stop") {
+      const partner=pairs.get(ws);
+      if (partner) {
+        pairs.delete(ws);
+        pairs.delete(partner);
+        partner.send(JSON.stringify({type:"partner-left"}));
+      }
+      if (data.type==="stop" && waiting===ws) waiting=null;
+    }
+
+    else if (["offer","answer","candidate"].includes(data.type)) {
+      const partner=pairs.get(ws);
+      if (partner && partner.readyState===WebSocket.OPEN) {
+        partner.send(JSON.stringify(data));
+      }
+    }
+  });
+
+  ws.on("close",()=>{
+    console.log("🔗 Client getrennt");
+    const partner=pairs.get(ws);
+    if (partner) {
+      pairs.delete(ws);
+      pairs.delete(partner);
+      if (partner.readyState===WebSocket.OPEN) {
+        partner.send(JSON.stringify({type:"partner-left"}));
+      }
+    }
+    if (waiting===ws) waiting=null;
+    broadcastUserCount();
+  });
+});
+
+const PORT=process.env.PORT||3000;
+server.listen(PORT,()=>console.log(`🚀 Server läuft auf Port ${PORT}`));
 // --- Hilfsfunktionen ---
 function sys(msg) {
   if (typeof window.setSystemMessage === 'function') {
@@ -709,4 +751,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('Server listening on', PORT);
 });
+
 
