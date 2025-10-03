@@ -1,34 +1,613 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+// client.js - Signalisierung + WebRTC + Chat + Drag/Pinch-to-Zoom
+// Sprache: Deutsch
+// Erwartet: socket.io client verfügbar als io()
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+'use strict';
 
-// statische Dateien aus /public
-app.use(express.static('public'));
+console.info('client.js geladen');
 
-// Warteschlange für Matching (Eintrag: { socketId, profile })
-const waiting = [];
-// Paare: socketId -> peerSocketId
-const pairs = new Map();
+const socket = io();
 
-function updateOnlineCount() {
-  io.emit('onlineCount', io.engine.clientsCount || 0);
+// --- DOM Elemente ---
+const btnStart = document.getElementById('btnStart');
+const btnNext = document.getElementById('btnNext');
+const btnStop = document.getElementById('btnStop');
+const btnSend = document.getElementById('btnSend');
+const chatInput = document.getElementById('chatInput');
+const localVideoEl = document.getElementById('localVideo');   // vermeidet Konflikt mit Inline-Skript
+const remoteVideoEl = document.getElementById('remoteVideo');
+const onlineCountEl = document.getElementById('onlineCount');
+const systemMsgEl = document.getElementById('systemMsg');
+const chatBoxEl = document.querySelector('.chat-box');
+
+// Falls kein Nachrichten-Container vorhanden, anlegen (wird in .chat-box vor Input eingefügt)
+let messagesEl = document.getElementById('messagesContainer');
+if (!messagesEl && chatBoxEl) {
+  messagesEl = document.createElement('div');
+  messagesEl.id = 'messagesContainer';
+  messagesEl.style.display = 'flex';
+  messagesEl.style.flexDirection = 'column';
+  messagesEl.style.gap = '4px';
+  messagesEl.style.maxHeight = '160px';
+  messagesEl.style.overflowY = 'auto';
+  messagesEl.style.marginRight = '8px';
+  // Insert vor dem input
+  chatBoxEl.insertBefore(messagesEl, chatInput);
 }
 
-function isCompatible(a, b) {
-  if (!a || !b) return false;
-  if (a.profile && b.profile) {
-    const A = a.profile;
-    const B = b.profile;
-    const genderMatch = (A.gender === B.search) && (B.gender === A.search);
-    const countryMatch = (!A.country || !B.country) || (A.country === B.country);
-    return genderMatch && countryMatch;
+// --- Hilfsfunktionen ---
+function sys(msg) {
+  if (typeof window.setSystemMessage === 'function') {
+    window.setSystemMessage(msg);
+  } else if (systemMsgEl) {
+    systemMsgEl.textContent = msg;
   }
-  return false;
+  console.info('[SYS]', msg);
 }
+
+function showOnlineCount(n) {
+  if (onlineCountEl) onlineCountEl.textContent = n;
+}
+
+function appendMessage(text, klass = 'info') {
+  if (!messagesEl) return;
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.fontSize = '0.9em';
+  el.style.padding = '4px 6px';
+  el.style.borderRadius = '6px';
+  el.style.maxWidth = '75%';
+  el.style.wordBreak = 'break-word';
+  if (klass === 'me') {
+    el.style.background = 'rgba(255,193,7,0.9)';
+    el.style.color = '#000';
+    el.style.alignSelf = 'flex-end';
+  } else if (klass === 'peer') {
+    el.style.background = 'rgba(0,123,255,0.9)';
+    el.style.color = '#fff';
+    el.style.alignSelf = 'flex-start';
+  } else {
+    el.style.background = 'rgba(100,100,100,0.5)';
+    el.style.color = '#fff';
+    el.style.alignSelf = 'center';
+  }
+  messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function getProfile() {
+  const gender = document.getElementById('gender')?.value || '';
+  const search = document.getElementById('search')?.value || '';
+  const country = document.getElementById('country')?.value || '';
+  return { gender, search, country };
+}
+
+// --- State ---
+let localStream = null;
+let pc = null;
+let currentPeerId = null;
+let isInitiator = false;
+
+// Buffer für ICE Kandidaten pro peerId (Map<string, RTCIceCandidateInit[]>)
+const iceCandidatesMap = new Map();
+
+// WebRTC STUN config
+const configuration = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+};
+
+// --- Media (start/stop) ---
+async function startLocalStream() {
+  if (localStream) return localStream;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+    if (localVideoEl) {
+      localVideoEl.srcObject = localStream;
+    }
+    sys('Kamera/Mikrofon aktiv.');
+    return localStream;
+  } catch (err) {
+    console.error('getUserMedia error', err);
+    sys('Fehler: Zugriff auf Kamera/Mikrofon verweigert oder nicht verfügbar.');
+    throw err;
+  }
+}
+
+function stopLocalStream() {
+  if (!localStream) return;
+  try {
+    for (const t of localStream.getTracks()) {
+      try { t.stop(); } catch (e) { /* ignore */ }
+    }
+  } finally {
+    localStream = null;
+    if (localVideoEl) localVideoEl.srcObject = null;
+    sys('Lokale Medien gestoppt.');
+  }
+}
+
+// --- PeerConnection Management ---
+function createPeerConnection(remoteSocketId) {
+  // Schließe ggf. bestehende Verbindung vorher sauber
+  if (pc) {
+    try { pc.close(); } catch (e) {}
+    pc = null;
+  }
+
+  console.debug('createPeerConnection ->', remoteSocketId);
+  pc = new RTCPeerConnection(configuration);
+  currentPeerId = remoteSocketId;
+
+  // ICE Kandidaten -> zum Peer senden
+  pc.onicecandidate = (evt) => {
+    if (evt.candidate) {
+      console.debug('onicecandidate -> senden', evt.candidate);
+      socket.emit('signal', { to: currentPeerId, data: { type: 'candidate', candidate: evt.candidate } });
+    }
+  };
+
+  // Remote Track empfangen
+  pc.ontrack = (evt) => {
+    console.debug('ontrack', evt);
+    if (remoteVideoEl) remoteVideoEl.srcObject = evt.streams[0];
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.info('PC connectionState', pc.connectionState);
+    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+      sys('Peer-Verbindung verloren.');
+      // leave peer connection; server wird ggf. als getrennt melden
+    }
+  };
+
+  // Lokale Tracks hinzufügen (wenn vorhanden)
+  if (localStream) {
+    for (const t of localStream.getTracks()) {
+      try {
+        pc.addTrack(t, localStream);
+      } catch (e) {
+        console.warn('addTrack failed', e);
+      }
+    }
+  }
+
+  // Falls bereits Kandidaten für diesen Peer gepuffert sind, hinzufügen
+  const buffered = iceCandidatesMap.get(currentPeerId);
+  if (buffered && buffered.length) {
+    (async () => {
+      for (const c of buffered) {
+        try {
+          await pc.addIceCandidate(c);
+          console.debug('Buffered ICE candidate added');
+        } catch (err) {
+          console.warn('Fehler beim addIceCandidate (buffered):', err);
+        }
+      }
+    })();
+    iceCandidatesMap.delete(currentPeerId);
+  }
+
+  return pc;
+}
+
+async function closePeerConnection() {
+  if (pc) {
+    try {
+      // Entferne lokale Sender-Tracks von der Verbindung (clean teardown)
+      try {
+        const senders = pc.getSenders ? pc.getSenders() : [];
+        for (const s of senders) {
+          try { pc.removeTrack(s); } catch (e) { /* ignore */ }
+        }
+      } catch (e) { /* ignore */ }
+
+      pc.close();
+    } catch (e) {
+      console.warn('pc.close error', e);
+    }
+    pc = null;
+  }
+
+  // Remote Video zurücksetzen
+  if (remoteVideoEl) remoteVideoEl.srcObject = null;
+
+  // Lösche candidate-buffer für aktuellen Peer
+  if (currentPeerId) {
+    iceCandidatesMap.delete(currentPeerId);
+  }
+
+  currentPeerId = null;
+  isInitiator = false;
+  sys('Peer-Verbindung geschlossen.');
+}
+
+// --- Socket.IO Event-Handler & Signalisierung ---
+// Reconnect-Strategie (manuell ergänzend; Socket.IO hat selbst reconnect - wir zeigen Status & versuchen Verbindung ggf. neu aufzubauen)
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
+
+socket.on('connect', () => {
+  console.info('Socket connected', socket.id);
+  sys('Verbunden mit Signalisierungsserver.');
+  reconnectAttempts = 0;
+});
+
+socket.on('onlineCount', (n) => {
+  showOnlineCount(n);
+});
+
+socket.on('waiting', () => {
+  sys('Warte auf Partner...');
+  appendMessage('Warte auf Partner...', 'info');
+});
+
+socket.on('matched', async ({ peerId: otherId, initiator }) => {
+  console.info('matched with', otherId, 'initiator:', initiator);
+  sys('Partner gefunden. Verbinden...');
+  appendMessage('Partner gefunden — verbinde...', 'info');
+  isInitiator = !!initiator;
+
+  try {
+    await startLocalStream();
+  } catch (e) {
+    return;
+  }
+
+  createPeerConnection(otherId);
+
+  if (isInitiator) {
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('signal', { to: otherId, data: { type: 'sdp', sdp: pc.localDescription } });
+      console.debug('Offer gesendet');
+    } catch (err) {
+      console.error('Fehler beim Erstellen/Versenden des Offers', err);
+      sys('Fehler beim Erstellen des Angebots.');
+    }
+  } else {
+    // Responder wartet auf eingehendes Offer via 'signal'
+    console.debug('Responder wartet auf Offer');
+  }
+});
+
+// Generische Signalisierungsnachrichten (sdp / candidate)
+socket.on('signal', async ({ from, data }) => {
+  console.debug('signal empfangen von', from, data && data.type);
+  if (!data || !from) return;
+
+  try {
+    if (data.type === 'sdp' && data.sdp) {
+      const sdpType = data.sdp.type;
+      if (sdpType === 'offer') {
+        // Wenn keine PC existiert, erstellen
+        if (!pc) {
+          await startLocalStream().catch(e => { throw e; });
+          createPeerConnection(from);
+        }
+        // Set remote offer
+        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        console.debug('Remote Offer gesetzt');
+        // Antwort erzeugen
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit('signal', { to: from, data: { type: 'sdp', sdp: pc.localDescription } });
+        console.debug('Answer gesendet');
+      } else if (sdpType === 'answer') {
+        if (!pc) {
+          console.warn('Antwort empfangen, aber keine PeerConnection vorhanden');
+          return;
+        }
+        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        console.debug('Remote Answer gesetzt');
+      } else {
+        console.warn('Unbekannter SDP-Typ', sdpType);
+      }
+    } else if (data.type === 'candidate' && data.candidate) {
+      const cand = data.candidate;
+      // Wenn PC existiert, direkt hinzufügen sonst puffer nach peerId
+      if (pc && from === currentPeerId) {
+        try {
+          await pc.addIceCandidate(cand);
+          console.debug('ICE candidate hinzugefügt');
+        } catch (err) {
+          console.warn('addIceCandidate failed', err);
+        }
+      } else {
+        // Pufferer: Kandidaten nach PeerId speichern
+        const arr = iceCandidatesMap.get(from) || [];
+        arr.push(cand);
+        iceCandidatesMap.set(from, arr);
+        console.debug('ICE candidate gepuffert für', from);
+      }
+    } else {
+      console.warn('signal: unbekannte data', data);
+    }
+  } catch (err) {
+    console.error('Fehler in signal-handler', err);
+  }
+});
+
+socket.on('chat', ({ from, message }) => {
+  const label = from ? `Remote (${from.slice(0,6)}):` : 'Remote:';
+  appendMessage(`${label} ${message}`, 'peer');
+});
+
+socket.on('peerDisconnected', () => {
+  sys('Gegenstelle hat die Verbindung beendet.');
+  appendMessage('Gegenstelle hat die Verbindung beendet.', 'info');
+  closePeerConnection();
+});
+
+socket.on('disconnect', (reason) => {
+  console.warn('Socket disconnected:', reason);
+  sys('Verbindung zum Signalisierungsserver unterbrochen. Versuche erneut...');
+  // Manuelle reconnect-Logik (zusätzlich zu socket.io internem Mechanismus)
+  attemptReconnect();
+});
+
+socket.on('connect_error', (err) => {
+  console.error('connect_error', err);
+  sys('Signalisierungsserver nicht erreichbar.');
+  attemptReconnect();
+});
+
+// --- Reconnect helper ---
+function attemptReconnect() {
+  if (reconnectAttempts >= maxReconnectAttempts) {
+    sys('Keine Verbindung zum Server möglich. Bitte Seite neu laden.');
+    return;
+  }
+  reconnectAttempts++;
+  const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+  sys(`Reconnect Versuch ${reconnectAttempts}/${maxReconnectAttempts} in ${Math.round(delay/1000)}s...`);
+  setTimeout(() => {
+    console.debug('Versuche socket.connect() nach', delay);
+    try {
+      socket.connect();
+    } catch (e) {
+      console.error('socket.connect() Fehler', e);
+    }
+  }, delay);
+}
+
+// --- UI Aktionen ---
+btnStart?.addEventListener('click', async () => {
+  try {
+    await startLocalStream();
+    sys('Kamera gestartet. Suche Partner...');
+    appendMessage('Kamera gestartet. Suche Partner...', 'info');
+    const profile = getProfile();
+    socket.emit('join', profile);
+  } catch (e) {
+    // Fehler bereits gemeldet
+  }
+});
+
+btnNext?.addEventListener('click', async () => {
+  sys('Nächster Partner wird gesucht...');
+  appendMessage('Wechsle zu nächstem Partner...', 'info');
+  // Signalisiere dem Server, dass wir wechseln wollen. Server trennt ggf. Peer.
+  try {
+    socket.emit('next', getProfile());
+  } catch (e) {
+    console.warn('next emit failed', e);
+  }
+  // Lokal aufräumen
+  closePeerConnection();
+});
+
+btnStop?.addEventListener('click', () => {
+  sys('Verbindung gestoppt.');
+  appendMessage('Verbindung gestoppt.', 'info');
+  try {
+    socket.emit('leave');
+  } catch (e) { /* ignore */ }
+  closePeerConnection();
+  stopLocalStream();
+});
+
+btnSend?.addEventListener('click', () => {
+  const txt = chatInput.value?.trim();
+  if (!txt) return;
+  if (!currentPeerId) {
+    appendMessage('Kein Peer verbunden. Nachricht nicht gesendet.', 'info');
+    sys('Kein Peer verbunden.');
+    return;
+  }
+  try {
+    socket.emit('chat', { to: currentPeerId, message: txt });
+    appendMessage(`Du: ${txt}`, 'me');
+    chatInput.value = '';
+  } catch (e) {
+    console.error('chat emit failed', e);
+    appendMessage('Fehler beim Senden der Nachricht.', 'info');
+  }
+});
+
+// Auch Enter im Input drücken soll senden
+chatInput?.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+    btnSend?.click();
+  }
+});
+
+// --- Drag & Pinch-to-Zoom für localVideoEl ---
+// Nutze transform: translate(tx,ty) scale(s)
+(function initLocalVideoTransform() {
+  if (!localVideoEl) return;
+
+  let tx = 0, ty = 0, scale = 1;
+  let startTx = 0, startTy = 0, startX = 0, startY = 0;
+  let activePointerId = null;
+
+  // For touch pinch
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let lastCenter = null;
+
+  const minScale = 0.6, maxScale = 3;
+
+  // Apply transform
+  function applyTransform() {
+    localVideoEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+
+  // Clamp position so video stays at least partially visible
+  function clampPosition() {
+    const rect = localVideoEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Allow some overflow margin
+    const margin = 20;
+    let left = rect.left;
+    let top = rect.top;
+    // Calculate expected width/height after scale
+    const w = rect.width;
+    const h = rect.height;
+    // Ensure center remains within viewport (simple)
+    if (rect.right < margin) tx += (margin - rect.right);
+    if (rect.left > vw - margin) tx -= (rect.left - (vw - margin));
+    if (rect.bottom < margin) ty += (margin - rect.bottom);
+    if (rect.top > vh - margin) ty -= (rect.top - (vh - margin));
+  }
+
+  // Pointer events (mouse and pointer-enabled touch)
+  localVideoEl.style.touchAction = 'none'; // wichtig für Touch-Gesten
+
+  localVideoEl.addEventListener('pointerdown', (ev) => {
+    if (ev.isPrimary === false) return;
+    activePointerId = ev.pointerId;
+    startX = ev.clientX;
+    startY = ev.clientY;
+    startTx = tx;
+    startTy = ty;
+    localVideoEl.setPointerCapture(activePointerId);
+  });
+
+  localVideoEl.addEventListener('pointermove', (ev) => {
+    if (activePointerId !== ev.pointerId) return;
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    tx = startTx + dx;
+    ty = startTy + dy;
+    applyTransform();
+  });
+
+  localVideoEl.addEventListener('pointerup', (ev) => {
+    if (activePointerId !== ev.pointerId) return;
+    localVideoEl.releasePointerCapture(activePointerId);
+    activePointerId = null;
+    clampPosition();
+    applyTransform();
+  });
+
+  localVideoEl.addEventListener('pointercancel', (ev) => {
+    if (activePointerId !== ev.pointerId) return;
+    activePointerId = null;
+    clampPosition();
+    applyTransform();
+  });
+
+  // Touch events for pinch (two-finger)
+  localVideoEl.addEventListener('touchstart', (ev) => {
+    if (ev.touches.length === 2) {
+      ev.preventDefault();
+      const t1 = ev.touches[0], t2 = ev.touches[1];
+      pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      pinchStartScale = scale;
+      lastCenter = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+    } else if (ev.touches.length === 1) {
+      // start single touch drag
+      startX = ev.touches[0].clientX;
+      startY = ev.touches[0].clientY;
+      startTx = tx;
+      startTy = ty;
+    }
+  }, { passive: false });
+
+  localVideoEl.addEventListener('touchmove', (ev) => {
+    if (ev.touches.length === 2) {
+      ev.preventDefault();
+      const t1 = ev.touches[0], t2 = ev.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const center = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+      if (pinchStartDist > 0) {
+        const factor = dist / pinchStartDist;
+        scale = Math.min(maxScale, Math.max(minScale, pinchStartScale * factor));
+      }
+      // Optional: adjust translation so pinch center remains roughly fixed (simple)
+      if (lastCenter) {
+        const dx = center.x - lastCenter.x;
+        const dy = center.y - lastCenter.y;
+        tx += dx;
+        ty += dy;
+        lastCenter = center;
+      }
+      applyTransform();
+    } else if (ev.touches.length === 1) {
+      const dx = ev.touches[0].clientX - startX;
+      const dy = ev.touches[0].clientY - startY;
+      tx = startTx + dx;
+      ty = startTy + dy;
+      applyTransform();
+    }
+  }, { passive: false });
+
+  localVideoEl.addEventListener('touchend', (ev) => {
+    if (ev.touches.length < 2) {
+      // reset pinch start values
+      pinchStartDist = 0;
+      lastCenter = null;
+    }
+    clampPosition();
+    applyTransform();
+  });
+
+  // Reset-Button (klein) um Transform zurückzusetzen
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = 'Reset';
+  resetBtn.title = 'Local video zurücksetzen';
+  Object.assign(resetBtn.style, {
+    position: 'fixed',
+    right: '12px',
+    bottom: '150px',
+    zIndex: 9999,
+    padding: '6px 8px',
+    borderRadius: '6px',
+    border: 'none',
+    background: 'rgba(0,0,0,0.6)',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '0.8em'
+  });
+  resetBtn.addEventListener('click', () => {
+    tx = 0; ty = 0; scale = 1;
+    applyTransform();
+  });
+  document.body.appendChild(resetBtn);
+
+  // Initial transform
+  applyTransform();
+
+  // Responsiveness: clamp after window resize
+  window.addEventListener('resize', () => {
+    clampPosition();
+    applyTransform();
+  });
+})();
+
+// --- Cleanup on unload (Browser tab close) ---
+window.addEventListener('beforeunload', () => {
+  try {
+    socket.emit('leave');
+  } catch (e) {}
+  closePeerConnection();
+  stopLocalStream();
+});
+
+// End of client.js}
 
 function tryMatch(waitingEntry) {
   for (let i = 0; i < waiting.length; i++) {
@@ -130,3 +709,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('Server listening on', PORT);
 });
+
