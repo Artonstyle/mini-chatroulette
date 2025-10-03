@@ -192,6 +192,164 @@ sendBtn.onclick = ()=>{
 };
 input.addEventListener("keypress",e=>{
   if (e.key==="Enter"){e.preventDefault();sendBtn.click();}
+});    div.style.fontStyle = "italic";
+  }
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Kamera
+async function startCamera() {
+  if (localStream) return true;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+    localVideo.srcObject = localStream;
+    return true;
+  } catch {
+    addMessage("System","❌ Kamera/Mikrofon verweigert.",true);
+    return false;
+  }
+}
+
+function closePeerConnection() {
+  if (peerConnection) {
+    if (remoteVideo.srcObject) {
+      remoteVideo.srcObject.getTracks().forEach(t=>t.stop());
+    }
+    remoteVideo.srcObject = null;
+    peerConnection.close();
+    peerConnection = null;
+  }
+  dataChannel = null;
+  addMessage("System","Verbindung beendet.",true);
+  btnStart.disabled = false;
+  btnNext.disabled = true;
+  btnStop.disabled = true;
+  sendBtn.disabled = true;
+  input.disabled = true;
+}
+
+// Verbindung
+function createPeerConnection() {
+  peerConnection = new RTCPeerConnection(config);
+  if (localStream) {
+    localStream.getTracks().forEach(track=>peerConnection.addTrack(track,localStream));
+  }
+
+  peerConnection.ontrack = e=>{
+    remoteVideo.srcObject = e.streams[0];
+    addMessage("System","🎥 Partner verbunden.",true);
+    btnNext.disabled = false;
+    btnStop.disabled = false;
+    sendBtn.disabled = false;
+    input.disabled = false;
+    btnStart.disabled = true;
+  };
+
+  peerConnection.onicecandidate = e=>{
+    if (e.candidate) {
+      ws.send(JSON.stringify({type:"candidate",candidate:e.candidate}));
+    }
+  };
+
+  dataChannel = peerConnection.createDataChannel("chat");
+  dataChannel.onmessage = e=>addMessage("Partner",e.data);
+
+  peerConnection.ondatachannel = ev=>{
+    dataChannel = ev.channel;
+    dataChannel.onmessage = e=>addMessage("Partner",e.data);
+  };
+
+  peerConnection.oniceconnectionstatechange = ()=>{
+    if (["disconnected","failed"].includes(peerConnection.iceConnectionState)) {
+      closePeerConnection();
+    }
+  };
+}
+
+// WebSocket
+ws.onopen = ()=>{
+  addMessage("System","✅ Mit Server verbunden.",true);
+  btnStart.disabled = false;
+  btnStop.disabled = true;
+};
+ws.onmessage = async e=>{
+  const data = JSON.parse(e.data);
+
+  if (data.type==="matched" && data.should_offer) {
+    createPeerConnection();
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    ws.send(JSON.stringify({type:"offer",offer}));
+
+  } else if (data.type==="matched" && !data.should_offer) {
+    createPeerConnection();
+
+  } else if (data.type==="offer") {
+    if (!peerConnection) createPeerConnection();
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    ws.send(JSON.stringify({type:"answer",answer}));
+
+  } else if (data.type==="answer") {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+  } else if (data.type==="candidate" && peerConnection) {
+    try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); }
+    catch(err){ console.warn("ICE Fehler",err); }
+
+  } else if (data.type==="partner-left") {
+    addMessage("System","Partner hat beendet.",true);
+    closePeerConnection();
+
+  } else if (data.type==="user-count") {
+    onlineCountElement.textContent = data.count;
+  }
+};
+
+// Buttons
+btnStart.onclick = async ()=>{
+  if (!await startCamera()) return;
+  ws.send(JSON.stringify({type:"start"}));
+  addMessage("System","🔎 Suche nach Partner...",true);
+  btnStart.disabled = true;
+  btnStop.disabled = false;
+};
+btnNext.onclick = ()=>{
+  ws.send(JSON.stringify({type:"next"}));
+  closePeerConnection();
+  ws.send(JSON.stringify({type:"start"}));
+  addMessage("System","🔎 Suche neuer Partner...",true);
+  btnNext.disabled = true;
+};
+btnStop.onclick = ()=>{
+  ws.send(JSON.stringify({type:"stop"}));
+  if (localStream) {
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
+    localVideo.srcObject=null;
+  }
+  closePeerConnection();
+  addMessage("System","⏹ Chat gestoppt.",true);
+};
+
+sendBtn.onclick = ()=>{
+  const text=input.value.trim();
+  if (!text) return;
+  if (bannedWords.some(w=>text.toLowerCase().includes(w))) {
+    addMessage("System","⚠️ Nachricht blockiert.",true);
+    input.value="";
+    return;
+  }
+  if (dataChannel && dataChannel.readyState==="open") {
+    dataChannel.send(text);
+    addMessage("Ich",text);
+  }
+  input.value="";
+};
+input.addEventListener("keypress",e=>{
+  if (e.key==="Enter"){e.preventDefault();sendBtn.click();}
 });}
 
 let localStream = null;
@@ -621,5 +779,6 @@ input.addEventListener("keypress", (event) => {
         sendBtn.click();
     }
 });
+
 
 
