@@ -1,238 +1,94 @@
-// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
-const WS_URL = "wss://mini-chatroulette.onrender.com"; 
-const ws = new WebSocket(WS_URL); 
+const http = require("http");
+const WebSocket = require("ws");
+const express = require("express");
 
-let localStream;
-let peerConnection;
-let dataChannel;
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-// DOM-Elemente
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
-const messagesDiv = document.querySelector(".chat-messages");
-const input = document.querySelector(".chat-input input");
-const sendBtn = document.querySelector(".btn-send");
-// Für zukünftige Profil-Logik
-const genderSelect = document.getElementById("gender");
-const searchSelect = document.getElementById("search");
-const countrySelect = document.getElementById("country");
+// Dient statischen Dateien aus dem 'public' Ordner
+app.use(express.static('public')); 
 
-const config = { 
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" }
-    ] 
-};
+let waiting = null; 
+const pairs = new Map(); 
 
-// Platzhalter für "Suchen"-Animation
-const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
-
-// --- Hilfsfunktionen ---
-
-function addMessage(sender, text, isSystem = false) {
-    const div = document.createElement("div");
-    div.textContent = `${sender}: ${text}`;
-    if (isSystem) {
-        div.style.color = '#ffc107'; 
-        div.style.fontStyle = 'italic';
-    }
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+// Funktion zum Senden der aktuellen Besucherzahl an alle Clients
+function broadcastUserCount() {
+    const count = wss.clients.size;
+    const message = JSON.stringify({ type: "user-count", count: count });
+    
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
 }
 
-async function startCamera() {
-    if (localStream) return true;
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-        return true;
-    } catch (err) {
-        addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
-        return false;
-    }
-}
+wss.on("connection", (ws) => {
+    console.log("🔗 Neuer Client verbunden");
+    
+    // Sende die Zahl bei JEDER Verbindung
+    broadcastUserCount();
 
-function closePeerConnection() {
-    if (peerConnection) {
-        if (remoteVideo.srcObject) {
-            // Stoppe Tracks nur, wenn sie existieren (verhindert Fehler)
-            if (remoteVideo.srcObject.getTracks) {
-                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+    ws.on("message", (msg) => {
+        const data = JSON.parse(msg);
+
+        // --- START-Logik ---
+        if (data.type === "start") {
+            if (waiting && waiting !== ws) {
+                const caller = ws;       
+                const answerer = waiting; 
+
+                pairs.set(caller, answerer);
+                pairs.set(answerer, caller);
+                waiting = null; 
+
+                caller.send(JSON.stringify({ type: "matched", should_offer: true })); 
+                answerer.send(JSON.stringify({ type: "matched", should_offer: false }));
+            } else {
+                waiting = ws;
+                ws.send(JSON.stringify({ type: "no-match" }));
             }
         }
-        remoteVideo.srcObject = null;
-        remoteVideo.src = SEARCHING_VIDEO_SRC; // Zeige Platzhalter nach Trennung
-        remoteVideo.loop = true; // Loop für das Platzhalter-Video
-        peerConnection.close();
-        peerConnection = null;
-    }
-    dataChannel = null;
-    addMessage("System", "Verbindung zum Partner beendet.", true);
-    document.querySelector(".btn-next").disabled = true;
-    document.querySelector(".btn-send").disabled = true;
-    input.disabled = true;
-}
 
-function createPeerConnection() {
-    closePeerConnection(); 
-    peerConnection = new RTCPeerConnection(config);
-
-    if (localStream) {
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    }
-
-    // Remote-Stream empfangen
-    peerConnection.ontrack = (event) => {
-        remoteVideo.src = ""; // Entferne Platzhalter-Video
-        remoteVideo.srcObject = event.streams[0];
-        remoteVideo.loop = false; // Loop ausschalten, da echter Stream
-        addMessage("System", "🎥 Videoanruf gestartet!", true);
-        document.querySelector(".btn-next").disabled = false;
-        document.querySelector(".btn-send").disabled = false;
-        input.disabled = false;
-    };
-
-    // ICE-Kandidaten senden
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+        // --- NEXT- und STOP-Logik ---
+        else if (data.type === "next" || data.type === "stop") {
+            const partner = pairs.get(ws);
+            if (partner) {
+                pairs.delete(ws);
+                pairs.delete(partner);
+                partner.send(JSON.stringify({ type: "partner-left" }));
+            }
+            if (data.type === "stop" && waiting === ws) waiting = null;
         }
-    };
-    
-    // DataChannel für Chat (vom CALLER erstellt)
-    dataChannel = peerConnection.createDataChannel("chat");
-    dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
-    dataChannel.onmessage = (event) => addMessage("Partner", event.data);
 
-    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
-    peerConnection.ondatachannel = (event) => { 
-        dataChannel = event.channel;
-        dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
-        dataChannel.onmessage = (e) => addMessage("Partner", e.data);
-    };
-
-    peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
-            addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
-            closePeerConnection();
+        // --- WEBRTC SIGNALING LOGIC ---
+        else if (["offer", "answer", "candidate"].includes(data.type)) {
+            const partner = pairs.get(ws);
+            if (partner && partner.readyState === WebSocket.OPEN) {
+                partner.send(JSON.stringify(data));
+            }
         }
-    }
-}
+    });
 
-
-// --- WebSocket Events ---
-ws.onopen = () => {
-    addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
-    document.querySelector(".btn-start").disabled = false;
-    document.querySelector(".btn-stop").disabled = false;
-};
-
-ws.onmessage = async (event) => {
-    const data = JSON.parse(event.data);
-
-    if (data.type === "matched" && data.should_offer) {
-        // CALLER: Erstelle Offer
-        createPeerConnection();
-        addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        ws.send(JSON.stringify({ type: "offer", offer }));
-
-    } else if (data.type === "matched" && !data.should_offer) {
-        // ANSWERER: Partner gefunden, warte auf Offer
-        addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
-
-    } else if (data.type === "offer") {
-        // ANSWERER: Empfange Offer
-        if (!peerConnection) createPeerConnection();
+    ws.on("close", () => {
+        console.log("🔗 Client getrennt");
         
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        ws.send(JSON.stringify({ type: "answer", answer }));
-
-    } else if (data.type === "answer") {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-
-    } else if (data.type === "candidate" && peerConnection) {
-        try {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (err) {
-            console.warn("Fehler beim Hinzufügen des ICE Candidate:", err);
+        // Aufräumlogik
+        const partner = pairs.get(ws);
+        if (partner) {
+            pairs.delete(ws);
+            pairs.delete(partner);
+            if (partner.readyState === WebSocket.OPEN) {
+                partner.send(JSON.stringify({ type: "partner-left" }));
+            }
         }
-    } else if (data.type === "partner-left") {
-        addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
-        closePeerConnection();
-    } else if (data.type === "no-match") {
-         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
-    } 
-    // NEU: Logik für Besucherzählung vom Server
-    else if (data.type === "user-count") {
-        const onlineCountElement = document.getElementById("onlineCount");
-        if (onlineCountElement) {
-            onlineCountElement.textContent = data.count;
-        }
-    }
-};
+        if (waiting === ws) waiting = null;
+        
+        // Sende die aktualisierte Zahl nach der Trennung
+        broadcastUserCount();
+    });
+});
 
-// --- Buttons mit Logik ---
-
-document.querySelector(".btn-start").onclick = async () => {
-    if (!await startCamera()) return; 
-
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
-    
-    ws.send(JSON.stringify({ type: "start" }));
-    
-    addMessage("System", "Suche nach Partner...", true);
-    document.querySelector(".btn-start").disabled = true;
-};
-
-document.querySelector(".btn-next").onclick = () => {
-    if (peerConnection) {
-        ws.send(JSON.stringify({ type: "next" })); 
-        closePeerConnection(); 
-    }
-    
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
-
-    ws.send(JSON.stringify({ type: "start" }));
-    
-    addMessage("System", "Suche nach neuem Partner...", true);
-    document.querySelector(".btn-next").disabled = true;
-};
-
-document.querySelector(".btn-stop").onclick = () => {
-    ws.send(JSON.stringify({ type: "stop" }));
-    
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localVideo.srcObject = null;
-        localStream = null;
-    }
-    
-    closePeerConnection();
-    remoteVideo.srcObject = null;
-    remoteVideo.src = ""; // Setze Remote-Video zurück, wenn gestoppt
-    remoteVideo.loop = false;
-    addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
-    document.querySelector(".btn-start").disabled = false;
-    document.querySelector(".btn-stop").disabled = true;
-};
-
-// Chat-Nachricht senden
-sendBtn.onclick = () => {
-    const text = input.value.trim();
-    if (text && dataChannel && dataChannel.readyState === 'open') {
-        dataChannel.send(text);
-        addMessage("Ich", text);
-        input.value = "";
-    } else if (text) {
-         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
-    }
-};
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Signalisierungsserver läuft auf Port ${PORT}`));
