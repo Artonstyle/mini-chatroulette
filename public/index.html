@@ -10,7 +10,6 @@
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
 
-  <!-- ================= Styles ================= -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -90,6 +89,7 @@
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
+      position: relative;
     }
 
     video {
@@ -124,15 +124,8 @@
       box-shadow: 0 0 12px rgba(255,255,255,0.4);
     }
 
-    .btn-stop {
-      background-color: #dc3545;
-      color: #fff;
-    }
-
-    .btn-next {
-      background-color: #007bff;
-      color: #fff;
-    }
+    .btn-stop { background-color: #dc3545; color: #fff; }
+    .btn-next { background-color: #007bff; color: #fff; }
 
     .chat-box {
       background: rgba(50,50,50,0.95);
@@ -175,14 +168,10 @@
       border: none;
     }
 
-    /* mobile-only elements */
     .mobile-topbar,
     .mobile-menu-backdrop,
-    .mobile-menu-panel,
-    .mobile-local-wrap,
-    .mobile-chat-fab,
-    .mobile-chat-overlay,
-    .mobile-chat-backdrop {
+    .mobile-chat-backdrop,
+    .mobile-chat-fab {
       display: none;
     }
 
@@ -242,6 +231,76 @@
         cursor: pointer;
       }
 
+      .mobile-menu-backdrop,
+      .mobile-chat-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 2990;
+      }
+
+      body.menu-open .mobile-menu-backdrop,
+      body.chat-open .mobile-chat-backdrop {
+        display: block;
+      }
+
+      .profile-form {
+        display: none;
+      }
+
+      body.menu-open .profile-form {
+        display: flex;
+        position: fixed;
+        top: 70px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+        margin: 0;
+        z-index: 3100;
+        border-radius: 16px;
+        background: #202c33;
+        box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      body.menu-open .form-left {
+        display: block;
+        width: 100%;
+      }
+
+      body.menu-open .form-left label {
+        display: block;
+        margin-bottom: 12px;
+        color: #d1d7db;
+        font-size: 14px;
+      }
+
+      body.menu-open .form-left select {
+        width: 100%;
+        margin-top: 6px;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: #2a3942;
+        color: #fff;
+        font-size: 15px;
+      }
+
+      body.menu-open .btn-start {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 4px;
+      }
+
+      body.menu-open .online-right {
+        margin-top: 12px;
+        text-align: center;
+        background: #111b21;
+        border-radius: 10px;
+        padding: 10px;
+      }
+
       .videos {
         max-width: none;
         margin: 0;
@@ -267,39 +326,18 @@
       }
 
       #localVideo {
-        width: 100%;
-        height: 100%;
-        border-radius: 0;
-        margin: 0;
-        display: block;
-      }
-
-      .mobile-local-wrap {
-        display: block;
         position: fixed;
         top: 72px;
         right: 12px;
         width: 112px;
         height: 150px;
-        background: #000;
+        margin: 0;
         border-radius: 14px;
-        overflow: hidden;
+        background: #000;
+        z-index: 3200;
         box-shadow: 0 8px 24px rgba(0,0,0,0.45);
         border: 2px solid rgba(255,255,255,0.12);
-        z-index: 3200;
         touch-action: none;
-      }
-
-      .mobile-local-label {
-        position: absolute;
-        left: 6px;
-        bottom: 6px;
-        background: rgba(0,0,0,0.55);
-        color: #fff;
-        font-size: 11px;
-        padding: 4px 7px;
-        border-radius: 999px;
-        z-index: 2;
       }
 
       .buttons {
@@ -359,161 +397,36 @@
         display: block;
       }
 
-      .mobile-chat-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.45);
-        z-index: 3490;
+      .chat-box {
+        display: none;
       }
 
-      .mobile-chat-backdrop.show {
+      body.chat-open .chat-box {
         display: block;
-      }
-
-      .mobile-chat-overlay {
         position: fixed;
         left: 10px;
         right: 10px;
         bottom: 86px;
-        z-index: 3500;
-        display: none;
-      }
-
-      .mobile-chat-overlay.show {
-        display: block;
-      }
-
-      .mobile-chat-overlay .chat-box {
-        display: block !important;
-        margin: 0;
         max-width: none;
+        margin: 0;
         height: 320px;
         background: #0b141a;
         border-radius: 16px;
         overflow: hidden;
+        z-index: 3500;
         box-shadow: 0 10px 28px rgba(0,0,0,0.5);
         border: 1px solid rgba(255,255,255,0.06);
       }
 
-      .mobile-chat-overlay .chat-messages {
+      body.chat-open .chat-messages {
         height: 240px;
         background: #111b21;
+        border-radius: 0;
         margin-bottom: 0;
-        border-radius: 0;
       }
 
-      .mobile-chat-overlay .chat-input {
+      body.chat-open .chat-input {
         padding-top: 10px;
-      }
-
-      .mobile-menu-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.45);
-        z-index: 3590;
-      }
-
-      .mobile-menu-backdrop.show {
-        display: block;
-      }
-
-      .mobile-menu-panel {
-        display: block;
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        width: calc(100vw - 20px);
-        max-width: 320px;
-        background: #202c33;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 14px 40px rgba(0,0,0,0.5);
-        z-index: 3600;
-        transform: translateY(-16px);
-        opacity: 0;
-        pointer-events: none;
-        transition: 0.2s ease;
-      }
-
-      .mobile-menu-panel.show {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      .mobile-menu-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-      }
-
-      .mobile-menu-title {
-        font-weight: bold;
-        color: #e9edef;
-      }
-
-      .mobile-menu-close {
-        border: none;
-        background: #2a3942;
-        color: #fff;
-        border-radius: 10px;
-        padding: 8px 12px;
-        cursor: pointer;
-      }
-
-      .mobile-menu-body {
-        padding: 14px;
-      }
-
-      .mobile-menu-body .profile-form {
-        display: flex !important;
-        max-width: none;
-        margin: 0;
-        padding: 0;
-        background: transparent;
-        box-shadow: none;
-        border-radius: 0;
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .mobile-menu-body .form-left {
-        display: block;
-        width: 100%;
-      }
-
-      .mobile-menu-body .form-left label {
-        display: block;
-        margin-bottom: 12px;
-        color: #d1d7db;
-        font-size: 14px;
-      }
-
-      .mobile-menu-body .form-left select {
-        width: 100%;
-        margin-top: 6px;
-        padding: 12px;
-        border: none;
-        border-radius: 10px;
-        background: #2a3942;
-        color: #fff;
-        font-size: 15px;
-      }
-
-      .mobile-menu-body .btn-start {
-        width: 100%;
-        margin-left: 0;
-        margin-top: 4px;
-      }
-
-      .mobile-menu-body .online-right {
-        margin-top: 10px;
-        text-align: center;
-        background: #111b21;
-        border-radius: 10px;
-        padding: 10px;
       }
     }
   </style>
@@ -522,8 +435,18 @@
 
   <header>Mini Chatroulette</header>
 
-  <!-- Profilbereich -->
-  <section class="profile-form" id="profileForm">
+  <div class="mobile-topbar">
+    <div class="mobile-topbar-title">Mini Chatroulette</div>
+    <div class="mobile-topbar-right">
+      <div class="mobile-online">👥 <span id="onlineCountMirror">0</span></div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">☰</button>
+    </div>
+  </div>
+
+  <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
+  <div class="mobile-chat-backdrop" id="mobileChatBackdrop"></div>
+
+  <section class="profile-form">
     <div class="form-left">
       <label>Ich bin:
         <select id="gender"><option>Mann</option><option>Frau</option></select>
@@ -545,44 +468,19 @@
     </div>
   </section>
 
-  <!-- Mobile Topbar -->
-  <div class="mobile-topbar">
-    <div class="mobile-topbar-title">Mini Chatroulette</div>
-    <div class="mobile-topbar-right">
-      <div class="mobile-online">👥 <span id="onlineCountMirror">0</span></div>
-      <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">☰</button>
-    </div>
-  </div>
-
-  <!-- Mobile Menü -->
-  <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
-  <div class="mobile-menu-panel" id="mobileMenuPanel">
-    <div class="mobile-menu-header">
-      <div class="mobile-menu-title">Sucheinstellungen</div>
-      <button class="mobile-menu-close" id="mobileMenuClose" type="button">✕</button>
-    </div>
-    <div class="mobile-menu-body" id="mobileMenuBody"></div>
-  </div>
-
-  <!-- Videos + Buttons -->
   <section class="videos">
-    <div class="video-container" id="videoContainer">
+    <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
       <video id="remoteVideo" autoplay playsinline></video>
     </div>
+
     <div class="buttons">
       <button class="btn-next">⏭ Nächster</button>
       <button class="btn-stop">⏹ Stop</button>
     </div>
   </section>
 
-  <!-- Mobile floating eigenes Video -->
-  <div class="mobile-local-wrap" id="mobileLocalWrap">
-    <div class="mobile-local-label">Du</div>
-  </div>
-
-  <!-- Chat -->
-  <section class="chat-box" id="chatBox">
+  <section class="chat-box">
     <div class="chat-messages"></div>
     <div class="chat-input">
       <input type="text" placeholder="Nachricht schreiben..." />
@@ -590,38 +488,28 @@
     </div>
   </section>
 
-  <!-- Mobile Chat -->
   <button class="mobile-chat-fab" id="mobileChatFab" type="button">
     💬
     <span class="mobile-chat-badge" id="mobileChatBadge">0</span>
   </button>
 
-  <div class="mobile-chat-backdrop" id="mobileChatBackdrop"></div>
-  <div class="mobile-chat-overlay" id="mobileChatOverlay"></div>
-
   <script>
-    const profileForm = document.getElementById('profileForm');
+    const body = document.body;
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const mobileMenuClose = document.getElementById('mobileMenuClose');
     const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
-    const mobileMenuPanel = document.getElementById('mobileMenuPanel');
-    const mobileMenuBody = document.getElementById('mobileMenuBody');
-
-    const videoContainer = document.getElementById('videoContainer');
-    const localVideo = document.getElementById('localVideo');
-    const mobileLocalWrap = document.getElementById('mobileLocalWrap');
-
-    const chatBox = document.getElementById('chatBox');
-    const mobileChatFab = document.getElementById('mobileChatFab');
-    const mobileChatOverlay = document.getElementById('mobileChatOverlay');
     const mobileChatBackdrop = document.getElementById('mobileChatBackdrop');
+    const mobileChatFab = document.getElementById('mobileChatFab');
     const mobileChatBadge = document.getElementById('mobileChatBadge');
-
     const onlineCount = document.getElementById('onlineCount');
     const onlineCountMirror = document.getElementById('onlineCountMirror');
+    const localVideo = document.getElementById('localVideo');
 
-    let chatOpen = false;
     let unreadCount = 0;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialLeft = 0;
+    let initialTop = 0;
 
     function isMobile() {
       return window.innerWidth <= 768;
@@ -637,19 +525,36 @@
     countObserver.observe(onlineCount, { childList: true, subtree: true, characterData: true });
     syncOnlineCount();
 
-    function openMenu() {
-      mobileMenuPanel.classList.add('show');
-      mobileMenuBackdrop.classList.add('show');
+    function closeAllPanels() {
+      body.classList.remove('menu-open');
+      body.classList.remove('chat-open');
     }
 
-    function closeMenu() {
-      mobileMenuPanel.classList.remove('show');
-      mobileMenuBackdrop.classList.remove('show');
-    }
+    mobileMenuBtn.addEventListener('click', () => {
+      if (!isMobile()) return;
+      const willOpen = !body.classList.contains('menu-open');
+      closeAllPanels();
+      if (willOpen) body.classList.add('menu-open');
+    });
 
-    mobileMenuBtn.addEventListener('click', openMenu);
-    mobileMenuClose.addEventListener('click', closeMenu);
-    mobileMenuBackdrop.addEventListener('click', closeMenu);
+    mobileMenuBackdrop.addEventListener('click', () => {
+      body.classList.remove('menu-open');
+    });
+
+    mobileChatFab.addEventListener('click', () => {
+      if (!isMobile()) return;
+      const willOpen = !body.classList.contains('chat-open');
+      body.classList.remove('menu-open');
+      body.classList.toggle('chat-open', willOpen);
+      if (willOpen) {
+        unreadCount = 0;
+        updateBadge();
+      }
+    });
+
+    mobileChatBackdrop.addEventListener('click', () => {
+      body.classList.remove('chat-open');
+    });
 
     function updateBadge() {
       if (unreadCount > 0) {
@@ -660,101 +565,46 @@
       }
     }
 
-    function openChat() {
-      chatOpen = true;
-      mobileChatOverlay.classList.add('show');
-      mobileChatBackdrop.classList.add('show');
-      unreadCount = 0;
-      updateBadge();
-    }
+    localVideo.addEventListener('pointerdown', (e) => {
+      if (!isMobile()) return;
+      dragging = true;
 
-    function closeChat() {
-      chatOpen = false;
-      mobileChatOverlay.classList.remove('show');
-      mobileChatBackdrop.classList.remove('show');
-    }
+      const rect = localVideo.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      startX = e.clientX;
+      startY = e.clientY;
+      e.preventDefault();
+    });
 
-    mobileChatFab.addEventListener('click', openChat);
-    mobileChatBackdrop.addEventListener('click', closeChat);
+    window.addEventListener('pointermove', (e) => {
+      if (!dragging || !isMobile()) return;
 
-    function placeElements() {
-      if (isMobile()) {
-        if (!mobileMenuBody.contains(profileForm)) {
-          mobileMenuBody.appendChild(profileForm);
-        }
+      let newLeft = initialLeft + (e.clientX - startX);
+      let newTop = initialTop + (e.clientY - startY);
 
-        if (!mobileLocalWrap.contains(localVideo)) {
-          mobileLocalWrap.appendChild(localVideo);
-        }
+      const maxLeft = window.innerWidth - localVideo.offsetWidth - 8;
+      const maxTop = window.innerHeight - localVideo.offsetHeight - 90;
 
-        if (!mobileChatOverlay.contains(chatBox)) {
-          mobileChatOverlay.appendChild(chatBox);
-        }
-      } else {
-        if (profileForm.parentNode !== document.body) {
-          document.body.insertBefore(profileForm, document.querySelector('.videos'));
-        }
+      if (newLeft < 8) newLeft = 8;
+      if (newTop < 66) newTop = 66;
+      if (newLeft > maxLeft) newLeft = maxLeft;
+      if (newTop > maxTop) newTop = maxTop;
 
-        if (!videoContainer.contains(localVideo)) {
-          videoContainer.insertBefore(localVideo, videoContainer.firstChild);
-        }
+      localVideo.style.left = newLeft + 'px';
+      localVideo.style.top = newTop + 'px';
+      localVideo.style.right = 'auto';
+    });
 
-        if (chatBox.parentNode !== document.body) {
-          document.body.insertBefore(chatBox, document.querySelector('script'));
-        }
+    window.addEventListener('pointerup', () => {
+      dragging = false;
+    });
 
-        closeMenu();
-        closeChat();
-      }
-    }
-
-    window.addEventListener('load', placeElements);
-    window.addEventListener('resize', placeElements);
-
-    (function enableDrag(el) {
-      let dragging = false;
-      let startX = 0;
-      let startY = 0;
-      let initialLeft = 0;
-      let initialTop = 0;
-
-      el.addEventListener('pointerdown', (e) => {
-        if (!isMobile()) return;
-
-        dragging = true;
-        const rect = el.getBoundingClientRect();
-        initialLeft = rect.left;
-        initialTop = rect.top;
-        startX = e.clientX;
-        startY = e.clientY;
-        e.preventDefault();
-      });
-
-      window.addEventListener('pointermove', (e) => {
-        if (!dragging) return;
-
-        let newLeft = initialLeft + (e.clientX - startX);
-        let newTop = initialTop + (e.clientY - startY);
-
-        const maxLeft = window.innerWidth - el.offsetWidth - 8;
-        const maxTop = window.innerHeight - el.offsetHeight - 90;
-
-        if (newLeft < 8) newLeft = 8;
-        if (newTop < 66) newTop = 66;
-        if (newLeft > maxLeft) newLeft = maxLeft;
-        if (newTop > maxTop) newTop = maxTop;
-
-        el.style.left = newLeft + 'px';
-        el.style.top = newTop + 'px';
-        el.style.right = 'auto';
-      });
-
-      window.addEventListener('pointerup', () => dragging = false);
-      window.addEventListener('pointercancel', () => dragging = false);
-    })(mobileLocalWrap);
+    window.addEventListener('pointercancel', () => {
+      dragging = false;
+    });
   </script>
 
-  <!-- Client-Script -->
   <script src="client.js"></script>
 </body>
 </html>
