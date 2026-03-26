@@ -10,6 +10,7 @@
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
 
+  <!-- ================= Styles ================= -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -22,9 +23,9 @@
     }
 
     @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     header {
@@ -168,10 +169,12 @@
       border: none;
     }
 
+    /* Mobile helpers */
     .mobile-topbar,
     .mobile-menu-backdrop,
     .mobile-chat-backdrop,
-    .mobile-chat-fab {
+    .mobile-chat-fab,
+    .local-video-label {
       display: none;
     }
 
@@ -314,6 +317,7 @@
       .video-container {
         display: block;
         width: 100%;
+        position: relative;
       }
 
       #remoteVideo {
@@ -338,6 +342,20 @@
         box-shadow: 0 8px 24px rgba(0,0,0,0.45);
         border: 2px solid rgba(255,255,255,0.12);
         touch-action: none;
+      }
+
+      .local-video-label {
+        display: block;
+        position: fixed;
+        top: 194px;
+        right: 20px;
+        z-index: 3201;
+        background: rgba(0,0,0,0.55);
+        color: #fff;
+        font-size: 11px;
+        padding: 4px 7px;
+        border-radius: 999px;
+        pointer-events: none;
       }
 
       .buttons {
@@ -446,40 +464,39 @@
   <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
   <div class="mobile-chat-backdrop" id="mobileChatBackdrop"></div>
 
+  <!-- Profilbereich -->
   <section class="profile-form">
     <div class="form-left">
       <label>Ich bin:
         <select id="gender"><option>Mann</option><option>Frau</option></select>
       </label>
-
       <label>Ich suche:
         <select id="search"><option>Mann</option><option>Frau</option></select>
       </label>
-
       <label>Mein Land:
         <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
       </label>
-
       <button class="btn-start">Start</button>
     </div>
-
     <div class="online-right">
       👥 Online: <span id="onlineCount">0</span>
     </div>
   </section>
 
+  <!-- Videos + Buttons -->
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
       <video id="remoteVideo" autoplay playsinline></video>
     </div>
-
+    <div class="local-video-label">Du</div>
     <div class="buttons">
       <button class="btn-next">⏭ Nächster</button>
       <button class="btn-stop">⏹ Stop</button>
     </div>
   </section>
 
+  <!-- Chat -->
   <section class="chat-box">
     <div class="chat-messages"></div>
     <div class="chat-input">
@@ -494,15 +511,15 @@
   </button>
 
   <script>
-    const body = document.body;
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
-    const mobileChatBackdrop = document.getElementById('mobileChatBackdrop');
-    const mobileChatFab = document.getElementById('mobileChatFab');
-    const mobileChatBadge = document.getElementById('mobileChatBadge');
-    const onlineCount = document.getElementById('onlineCount');
-    const onlineCountMirror = document.getElementById('onlineCountMirror');
-    const localVideo = document.getElementById('localVideo');
+    const bodyEl = document.body;
+    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+    const mobileMenuBackdrop = document.getElementById("mobileMenuBackdrop");
+    const mobileChatBackdrop = document.getElementById("mobileChatBackdrop");
+    const mobileChatFab = document.getElementById("mobileChatFab");
+    const mobileChatBadge = document.getElementById("mobileChatBadge");
+    const onlineCount = document.getElementById("onlineCount");
+    const onlineCountMirror = document.getElementById("onlineCountMirror");
+    const localVideo = document.getElementById("localVideo");
 
     let unreadCount = 0;
     let dragging = false;
@@ -525,47 +542,47 @@
     countObserver.observe(onlineCount, { childList: true, subtree: true, characterData: true });
     syncOnlineCount();
 
-    function closeAllPanels() {
-      body.classList.remove('menu-open');
-      body.classList.remove('chat-open');
+    function closePanels() {
+      bodyEl.classList.remove("menu-open");
+      bodyEl.classList.remove("chat-open");
     }
 
-    mobileMenuBtn.addEventListener('click', () => {
+    mobileMenuBtn.addEventListener("click", () => {
       if (!isMobile()) return;
-      const willOpen = !body.classList.contains('menu-open');
-      closeAllPanels();
-      if (willOpen) body.classList.add('menu-open');
+      const willOpen = !bodyEl.classList.contains("menu-open");
+      closePanels();
+      if (willOpen) bodyEl.classList.add("menu-open");
     });
 
-    mobileMenuBackdrop.addEventListener('click', () => {
-      body.classList.remove('menu-open');
+    mobileMenuBackdrop.addEventListener("click", () => {
+      bodyEl.classList.remove("menu-open");
     });
 
-    mobileChatFab.addEventListener('click', () => {
+    mobileChatFab.addEventListener("click", () => {
       if (!isMobile()) return;
-      const willOpen = !body.classList.contains('chat-open');
-      body.classList.remove('menu-open');
-      body.classList.toggle('chat-open', willOpen);
+      const willOpen = !bodyEl.classList.contains("chat-open");
+      bodyEl.classList.remove("menu-open");
+      bodyEl.classList.toggle("chat-open", willOpen);
       if (willOpen) {
         unreadCount = 0;
         updateBadge();
       }
     });
 
-    mobileChatBackdrop.addEventListener('click', () => {
-      body.classList.remove('chat-open');
+    mobileChatBackdrop.addEventListener("click", () => {
+      bodyEl.classList.remove("chat-open");
     });
 
     function updateBadge() {
       if (unreadCount > 0) {
-        mobileChatBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-        mobileChatBadge.classList.add('show');
+        mobileChatBadge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+        mobileChatBadge.classList.add("show");
       } else {
-        mobileChatBadge.classList.remove('show');
+        mobileChatBadge.classList.remove("show");
       }
     }
 
-    localVideo.addEventListener('pointerdown', (e) => {
+    localVideo.addEventListener("pointerdown", (e) => {
       if (!isMobile()) return;
       dragging = true;
 
@@ -577,7 +594,7 @@
       e.preventDefault();
     });
 
-    window.addEventListener('pointermove', (e) => {
+    window.addEventListener("pointermove", (e) => {
       if (!dragging || !isMobile()) return;
 
       let newLeft = initialLeft + (e.clientX - startX);
@@ -591,20 +608,29 @@
       if (newLeft > maxLeft) newLeft = maxLeft;
       if (newTop > maxTop) newTop = maxTop;
 
-      localVideo.style.left = newLeft + 'px';
-      localVideo.style.top = newTop + 'px';
-      localVideo.style.right = 'auto';
+      localVideo.style.left = newLeft + "px";
+      localVideo.style.top = newTop + "px";
+      localVideo.style.right = "auto";
     });
 
-    window.addEventListener('pointerup', () => {
+    window.addEventListener("pointerup", () => {
       dragging = false;
     });
 
-    window.addEventListener('pointercancel', () => {
+    window.addEventListener("pointercancel", () => {
       dragging = false;
     });
+
+    /* optional helper for future incoming-message badge */
+    window.mobileChatNotify = function () {
+      if (isMobile() && !bodyEl.classList.contains("chat-open")) {
+        unreadCount++;
+        updateBadge();
+      }
+    };
   </script>
 
+  <!-- Client-Script -->
   <script src="client.js"></script>
 </body>
 </html>
