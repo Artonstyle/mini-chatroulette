@@ -21,11 +21,13 @@
       background-size: 400% 400%;
       animation: gradientBG 15s ease infinite;
     }
+
     @keyframes gradientBG {
       0% {background-position: 0% 50%;}
       50% {background-position: 100% 50%;}
       100% {background-position: 0% 50%;}
     }
+
     header {
       font-size: 2em;
       font-weight: bold;
@@ -50,16 +52,19 @@
       margin-left: auto;
       margin-right: auto;
     }
+
     .form-left {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       align-items: center;
     }
+
     .online-right {
       font-weight: bold;
       color: #0f0;
     }
+
     button.btn-start {
       margin-left: 5px;
       background-color: #28a745;
@@ -80,11 +85,13 @@
       margin: 10px auto;
       position: relative;
     }
+
     .video-container {
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
     }
+
     video {
       width: 48%;
       height: 360px;
@@ -100,6 +107,7 @@
       justify-content: flex-end;
       gap: 10px;
     }
+
     .buttons button {
       min-width: 120px;
       padding: 10px 20px;
@@ -110,12 +118,21 @@
       font-weight: bold;
       transition: transform 0.2s, box-shadow 0.2s;
     }
+
     .buttons button:hover {
       transform: scale(1.07);
       box-shadow: 0 0 12px rgba(255,255,255,0.4);
     }
-    .btn-stop {background-color: #dc3545; color: #fff;}
-    .btn-next {background-color: #007bff; color: #fff;}
+
+    .btn-stop {
+      background-color: #dc3545;
+      color: #fff;
+    }
+
+    .btn-next {
+      background-color: #007bff;
+      color: #fff;
+    }
 
     .chat-box {
       background: rgba(50,50,50,0.95);
@@ -125,6 +142,7 @@
       max-width: 1200px;
       margin: 10px auto;
     }
+
     .chat-messages {
       height: 200px;
       overflow-y: auto;
@@ -133,10 +151,12 @@
       border-radius: 8px;
       margin-bottom: 10px;
     }
+
     .chat-input {
       display: flex;
       gap: 10px;
     }
+
     .chat-input input {
       flex: 1;
       padding: 10px;
@@ -144,6 +164,7 @@
       border: none;
       font-size: 1em;
     }
+
     .btn-send {
       background-color: #ffc107;
       color: #000;
@@ -154,35 +175,17 @@
       border: none;
     }
 
-    .chat-message {
-      margin-bottom: 8px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      max-width: 80%;
-      word-break: break-word;
-      font-size: 14px;
-      line-height: 1.35;
-    }
-    .chat-message.me {
-      margin-left: auto;
-      background: #005c4b;
-    }
-    .chat-message.other {
-      margin-right: auto;
-      background: #2a2a2a;
-    }
-
-    /* Mobile extra Elemente standardmäßig aus */
+    /* mobile-only elements */
     .mobile-topbar,
     .mobile-menu-backdrop,
-    .mobile-menu,
-    .mobile-local-video,
+    .mobile-menu-panel,
+    .mobile-local-wrap,
     .mobile-chat-fab,
-    .mobile-chat-overlay {
+    .mobile-chat-overlay,
+    .mobile-chat-backdrop {
       display: none;
     }
 
-    /* ================= MOBILE ================= */
     @media (max-width: 768px) {
       body {
         padding: 0;
@@ -192,10 +195,6 @@
       }
 
       header {
-        display: none;
-      }
-
-      .profile-form {
         display: none;
       }
 
@@ -209,32 +208,36 @@
         right: 0;
         height: 58px;
         padding: 0 14px;
-        background: rgba(17,27,33,0.96);
-        z-index: 2000;
+        background: rgba(17,27,33,0.97);
         border-bottom: 1px solid rgba(255,255,255,0.08);
+        z-index: 3000;
       }
+
       .mobile-topbar-title {
         font-size: 1rem;
         font-weight: bold;
         color: #e9edef;
       }
+
       .mobile-topbar-right {
         display: flex;
         align-items: center;
         gap: 10px;
       }
+
       .mobile-online {
         font-size: 0.9rem;
         color: #25d366;
         font-weight: bold;
       }
+
       .mobile-menu-btn {
-        border: none;
-        background: #233138;
-        color: #fff;
         width: 40px;
         height: 40px;
+        border: none;
         border-radius: 10px;
+        background: #233138;
+        color: #fff;
         font-size: 20px;
         cursor: pointer;
       }
@@ -242,7 +245,7 @@
       .videos {
         max-width: none;
         margin: 0;
-        padding: 58px 0 86px 0;
+        padding: 58px 0 88px 0;
         border-radius: 0;
         box-shadow: none;
         background: #111b21;
@@ -251,13 +254,12 @@
 
       .video-container {
         display: block;
-        position: relative;
         width: 100%;
       }
 
       #remoteVideo {
         width: 100%;
-        height: calc(100vh - 144px);
+        height: calc(100vh - 146px);
         min-height: 420px;
         border-radius: 0;
         margin: 0;
@@ -272,22 +274,23 @@
         display: block;
       }
 
-      .mobile-local-video {
+      .mobile-local-wrap {
         display: block;
         position: fixed;
-        top: 74px;
+        top: 72px;
         right: 12px;
-        width: 110px;
+        width: 112px;
         height: 150px;
-        z-index: 2100;
         background: #000;
         border-radius: 14px;
         overflow: hidden;
         box-shadow: 0 8px 24px rgba(0,0,0,0.45);
         border: 2px solid rgba(255,255,255,0.12);
+        z-index: 3200;
         touch-action: none;
       }
-      .mobile-local-video .me-label {
+
+      .mobile-local-label {
         position: absolute;
         left: 6px;
         bottom: 6px;
@@ -307,16 +310,13 @@
         margin: 0;
         padding: 12px;
         justify-content: center;
-        background: rgba(17,27,33,0.96);
-        z-index: 1900;
+        background: rgba(17,27,33,0.97);
+        z-index: 2900;
       }
+
       .buttons button {
         flex: 1;
         min-width: 0;
-      }
-
-      .chat-box {
-        display: none;
       }
 
       .mobile-chat-fab {
@@ -328,13 +328,13 @@
         bottom: 92px;
         width: 58px;
         height: 58px;
-        border-radius: 50%;
         border: none;
-        cursor: pointer;
+        border-radius: 50%;
         background: #25d366;
         color: #111b21;
-        font-size: 23px;
-        z-index: 2200;
+        font-size: 22px;
+        cursor: pointer;
+        z-index: 3400;
         box-shadow: 0 8px 22px rgba(0,0,0,0.35);
       }
 
@@ -354,89 +354,70 @@
         text-align: center;
         font-weight: bold;
       }
+
       .mobile-chat-badge.show {
         display: block;
       }
 
+      .mobile-chat-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 3490;
+      }
+
+      .mobile-chat-backdrop.show {
+        display: block;
+      }
+
       .mobile-chat-overlay {
-        display: none;
         position: fixed;
         left: 10px;
         right: 10px;
         bottom: 86px;
-        height: 300px;
+        z-index: 3500;
+        display: none;
+      }
+
+      .mobile-chat-overlay.show {
+        display: block;
+      }
+
+      .mobile-chat-overlay .chat-box {
+        display: block !important;
+        margin: 0;
+        max-width: none;
+        height: 320px;
         background: #0b141a;
         border-radius: 16px;
         overflow: hidden;
-        z-index: 2300;
         box-shadow: 0 10px 28px rgba(0,0,0,0.5);
         border: 1px solid rgba(255,255,255,0.06);
       }
-      .mobile-chat-overlay.show {
-        display: flex;
-        flex-direction: column;
-      }
-      .mobile-chat-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 14px;
-        background: #202c33;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-      }
-      .mobile-chat-title {
-        font-weight: bold;
-        color: #e9edef;
-      }
-      .mobile-chat-close {
-        border: none;
-        background: #2a3942;
-        color: #fff;
-        border-radius: 10px;
-        padding: 8px 12px;
-        cursor: pointer;
-      }
-      .mobile-chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
+
+      .mobile-chat-overlay .chat-messages {
+        height: 240px;
         background: #111b21;
+        margin-bottom: 0;
+        border-radius: 0;
       }
-      .mobile-chat-input {
-        display: flex;
-        gap: 8px;
-        padding: 10px;
-        background: #202c33;
-      }
-      .mobile-chat-input input {
-        flex: 1;
-        padding: 10px;
-        border-radius: 10px;
-        border: none;
-        font-size: 1em;
-      }
-      .mobile-chat-input button {
-        border: none;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-weight: bold;
-        background: #25d366;
-        color: #111b21;
-        cursor: pointer;
+
+      .mobile-chat-overlay .chat-input {
+        padding-top: 10px;
       }
 
       .mobile-menu-backdrop {
-        display: none;
         position: fixed;
         inset: 0;
         background: rgba(0,0,0,0.45);
-        z-index: 2390;
+        z-index: 3590;
       }
+
       .mobile-menu-backdrop.show {
         display: block;
       }
 
-      .mobile-menu {
+      .mobile-menu-panel {
         display: block;
         position: fixed;
         top: 10px;
@@ -445,19 +426,21 @@
         max-width: 320px;
         background: #202c33;
         border-radius: 16px;
-        z-index: 2400;
         overflow: hidden;
         box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+        z-index: 3600;
         transform: translateY(-16px);
         opacity: 0;
         pointer-events: none;
         transition: 0.2s ease;
       }
-      .mobile-menu.show {
+
+      .mobile-menu-panel.show {
         transform: translateY(0);
         opacity: 1;
         pointer-events: auto;
       }
+
       .mobile-menu-header {
         display: flex;
         align-items: center;
@@ -465,10 +448,12 @@
         padding: 14px;
         border-bottom: 1px solid rgba(255,255,255,0.08);
       }
+
       .mobile-menu-title {
         font-weight: bold;
         color: #e9edef;
       }
+
       .mobile-menu-close {
         border: none;
         background: #2a3942;
@@ -477,16 +462,36 @@
         padding: 8px 12px;
         cursor: pointer;
       }
-      .mobile-menu-content {
+
+      .mobile-menu-body {
         padding: 14px;
       }
-      .mobile-menu-content label {
+
+      .mobile-menu-body .profile-form {
+        display: flex !important;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .mobile-menu-body .form-left {
+        display: block;
+        width: 100%;
+      }
+
+      .mobile-menu-body .form-left label {
         display: block;
         margin-bottom: 12px;
         color: #d1d7db;
         font-size: 14px;
       }
-      .mobile-menu-content select {
+
+      .mobile-menu-body .form-left select {
         width: 100%;
         margin-top: 6px;
         padding: 12px;
@@ -496,10 +501,19 @@
         color: #fff;
         font-size: 15px;
       }
-      .mobile-menu-content .btn-start {
+
+      .mobile-menu-body .btn-start {
         width: 100%;
         margin-left: 0;
         margin-top: 4px;
+      }
+
+      .mobile-menu-body .online-right {
+        margin-top: 10px;
+        text-align: center;
+        background: #111b21;
+        border-radius: 10px;
+        padding: 10px;
       }
     }
   </style>
@@ -509,19 +523,23 @@
   <header>Mini Chatroulette</header>
 
   <!-- Profilbereich -->
-  <section class="profile-form">
+  <section class="profile-form" id="profileForm">
     <div class="form-left">
       <label>Ich bin:
         <select id="gender"><option>Mann</option><option>Frau</option></select>
       </label>
+
       <label>Ich suche:
         <select id="search"><option>Mann</option><option>Frau</option></select>
       </label>
+
       <label>Mein Land:
         <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
       </label>
-      <button class="btn-start" id="desktopStartBtn">Start</button>
+
+      <button class="btn-start">Start</button>
     </div>
+
     <div class="online-right">
       👥 Online: <span id="onlineCount">0</span>
     </div>
@@ -531,40 +549,19 @@
   <div class="mobile-topbar">
     <div class="mobile-topbar-title">Mini Chatroulette</div>
     <div class="mobile-topbar-right">
-      <div class="mobile-online">👥 <span id="onlineCountMobile">0</span></div>
-      <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+      <div class="mobile-online">👥 <span id="onlineCountMirror">0</span></div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">☰</button>
     </div>
   </div>
 
   <!-- Mobile Menü -->
   <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
-  <div class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-panel" id="mobileMenuPanel">
     <div class="mobile-menu-header">
       <div class="mobile-menu-title">Sucheinstellungen</div>
-      <button class="mobile-menu-close" id="mobileMenuClose">✕</button>
+      <button class="mobile-menu-close" id="mobileMenuClose" type="button">✕</button>
     </div>
-    <div class="mobile-menu-content">
-      <label>Ich bin:
-        <select id="mobileGender">
-          <option>Mann</option>
-          <option>Frau</option>
-        </select>
-      </label>
-      <label>Ich suche:
-        <select id="mobileSearch">
-          <option>Mann</option>
-          <option>Frau</option>
-        </select>
-      </label>
-      <label>Mein Land:
-        <select id="mobileCountry">
-          <option>Deutschland</option>
-          <option>Österreich</option>
-          <option>Schweiz</option>
-        </select>
-      </label>
-      <button class="btn-start" id="mobileStartBtn">Start</button>
-    </div>
+    <div class="mobile-menu-body" id="mobileMenuBody"></div>
   </div>
 
   <!-- Videos + Buttons -->
@@ -574,173 +571,147 @@
       <video id="remoteVideo" autoplay playsinline></video>
     </div>
     <div class="buttons">
-      <button class="btn-next" id="nextBtn">⏭ Nächster</button>
-      <button class="btn-stop" id="stopBtn">⏹ Stop</button>
+      <button class="btn-next">⏭ Nächster</button>
+      <button class="btn-stop">⏹ Stop</button>
     </div>
   </section>
 
-  <!-- Mobile Floating eigenes Video -->
-  <div class="mobile-local-video" id="mobileLocalVideo">
-    <div class="me-label">Du</div>
+  <!-- Mobile floating eigenes Video -->
+  <div class="mobile-local-wrap" id="mobileLocalWrap">
+    <div class="mobile-local-label">Du</div>
   </div>
 
-  <!-- Chat Desktop -->
-  <section class="chat-box" id="desktopChatBox">
-    <div class="chat-messages" id="chatMessages"></div>
+  <!-- Chat -->
+  <section class="chat-box" id="chatBox">
+    <div class="chat-messages"></div>
     <div class="chat-input">
-      <input type="text" id="chatInput" placeholder="Nachricht schreiben..." />
-      <button class="btn-send" id="sendBtn">💬 Senden</button>
+      <input type="text" placeholder="Nachricht schreiben..." />
+      <button class="btn-send">💬 Senden</button>
     </div>
   </section>
 
-  <!-- Mobile Chat Button -->
-  <button class="mobile-chat-fab" id="mobileChatFab">
+  <!-- Mobile Chat -->
+  <button class="mobile-chat-fab" id="mobileChatFab" type="button">
     💬
     <span class="mobile-chat-badge" id="mobileChatBadge">0</span>
   </button>
 
-  <!-- Mobile Chat Overlay -->
-  <div class="mobile-chat-overlay" id="mobileChatOverlay">
-    <div class="mobile-chat-header">
-      <div class="mobile-chat-title">Chat</div>
-      <button class="mobile-chat-close" id="mobileChatClose">Schließen</button>
-    </div>
-    <div class="mobile-chat-messages" id="mobileChatMessages"></div>
-    <div class="mobile-chat-input">
-      <input type="text" id="mobileChatInput" placeholder="Nachricht schreiben..." />
-      <button id="mobileSendBtn">Senden</button>
-    </div>
-  </div>
+  <div class="mobile-chat-backdrop" id="mobileChatBackdrop"></div>
+  <div class="mobile-chat-overlay" id="mobileChatOverlay"></div>
 
   <script>
-    const onlineCount = document.getElementById('onlineCount');
-    const onlineCountMobile = document.getElementById('onlineCountMobile');
-
-    const gender = document.getElementById('gender');
-    const search = document.getElementById('search');
-    const country = document.getElementById('country');
-
-    const mobileGender = document.getElementById('mobileGender');
-    const mobileSearch = document.getElementById('mobileSearch');
-    const mobileCountry = document.getElementById('mobileCountry');
-
-    const desktopStartBtn = document.getElementById('desktopStartBtn');
-    const mobileStartBtn = document.getElementById('mobileStartBtn');
-
+    const profileForm = document.getElementById('profileForm');
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
     const mobileMenuClose = document.getElementById('mobileMenuClose');
+    const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+    const mobileMenuPanel = document.getElementById('mobileMenuPanel');
+    const mobileMenuBody = document.getElementById('mobileMenuBody');
 
-    const localVideo = document.getElementById('localVideo');
     const videoContainer = document.getElementById('videoContainer');
-    const mobileLocalVideo = document.getElementById('mobileLocalVideo');
+    const localVideo = document.getElementById('localVideo');
+    const mobileLocalWrap = document.getElementById('mobileLocalWrap');
 
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendBtn');
-
+    const chatBox = document.getElementById('chatBox');
     const mobileChatFab = document.getElementById('mobileChatFab');
-    const mobileChatBadge = document.getElementById('mobileChatBadge');
     const mobileChatOverlay = document.getElementById('mobileChatOverlay');
-    const mobileChatClose = document.getElementById('mobileChatClose');
-    const mobileChatMessages = document.getElementById('mobileChatMessages');
-    const mobileChatInput = document.getElementById('mobileChatInput');
-    const mobileSendBtn = document.getElementById('mobileSendBtn');
+    const mobileChatBackdrop = document.getElementById('mobileChatBackdrop');
+    const mobileChatBadge = document.getElementById('mobileChatBadge');
 
-    let unreadCount = 0;
+    const onlineCount = document.getElementById('onlineCount');
+    const onlineCountMirror = document.getElementById('onlineCountMirror');
+
     let chatOpen = false;
+    let unreadCount = 0;
 
     function isMobile() {
       return window.innerWidth <= 768;
     }
 
     function syncOnlineCount() {
-      if (onlineCount && onlineCountMobile) {
-        onlineCountMobile.textContent = onlineCount.textContent;
+      if (onlineCount && onlineCountMirror) {
+        onlineCountMirror.textContent = onlineCount.textContent;
       }
     }
 
-    if (onlineCount && onlineCountMobile) {
-      const observer = new MutationObserver(syncOnlineCount);
-      observer.observe(onlineCount, { childList: true, subtree: true, characterData: true });
-      syncOnlineCount();
-    }
-
-    function syncDesktopToMobileFields() {
-      if (mobileGender) mobileGender.value = gender.value;
-      if (mobileSearch) mobileSearch.value = search.value;
-      if (mobileCountry) mobileCountry.value = country.value;
-    }
-
-    function syncMobileToDesktopFields() {
-      if (mobileGender) gender.value = mobileGender.value;
-      if (mobileSearch) search.value = mobileSearch.value;
-      if (mobileCountry) country.value = mobileCountry.value;
-    }
-
-    if (gender) gender.addEventListener('change', syncDesktopToMobileFields);
-    if (search) search.addEventListener('change', syncDesktopToMobileFields);
-    if (country) country.addEventListener('change', syncDesktopToMobileFields);
-
-    if (mobileGender) mobileGender.addEventListener('change', syncMobileToDesktopFields);
-    if (mobileSearch) mobileSearch.addEventListener('change', syncMobileToDesktopFields);
-    if (mobileCountry) mobileCountry.addEventListener('change', syncMobileToDesktopFields);
-
-    syncDesktopToMobileFields();
+    const countObserver = new MutationObserver(syncOnlineCount);
+    countObserver.observe(onlineCount, { childList: true, subtree: true, characterData: true });
+    syncOnlineCount();
 
     function openMenu() {
-      if (!mobileMenu || !mobileMenuBackdrop) return;
-      mobileMenu.classList.add('show');
+      mobileMenuPanel.classList.add('show');
       mobileMenuBackdrop.classList.add('show');
     }
 
     function closeMenu() {
-      if (!mobileMenu || !mobileMenuBackdrop) return;
-      mobileMenu.classList.remove('show');
+      mobileMenuPanel.classList.remove('show');
       mobileMenuBackdrop.classList.remove('show');
     }
 
-    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMenu);
-    if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMenu);
-    if (mobileMenuBackdrop) mobileMenuBackdrop.addEventListener('click', closeMenu);
+    mobileMenuBtn.addEventListener('click', openMenu);
+    mobileMenuClose.addEventListener('click', closeMenu);
+    mobileMenuBackdrop.addEventListener('click', closeMenu);
 
-    if (mobileStartBtn && desktopStartBtn) {
-      mobileStartBtn.addEventListener('click', () => {
-        syncMobileToDesktopFields();
-
-        desktopStartBtn.dispatchEvent(
-          new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          })
-        );
-
-        closeMenu();
-      });
-    }
-
-    function placeVideos() {
-      if (!localVideo || !videoContainer || !mobileLocalVideo) return;
-
-      if (isMobile()) {
-        if (!mobileLocalVideo.contains(localVideo)) {
-          mobileLocalVideo.appendChild(localVideo);
-        }
+    function updateBadge() {
+      if (unreadCount > 0) {
+        mobileChatBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        mobileChatBadge.classList.add('show');
       } else {
-        if (!videoContainer.contains(localVideo)) {
-          videoContainer.insertBefore(localVideo, videoContainer.firstChild);
-        }
+        mobileChatBadge.classList.remove('show');
       }
     }
 
-    window.addEventListener('load', placeVideos);
-    window.addEventListener('resize', placeVideos);
+    function openChat() {
+      chatOpen = true;
+      mobileChatOverlay.classList.add('show');
+      mobileChatBackdrop.classList.add('show');
+      unreadCount = 0;
+      updateBadge();
+    }
+
+    function closeChat() {
+      chatOpen = false;
+      mobileChatOverlay.classList.remove('show');
+      mobileChatBackdrop.classList.remove('show');
+    }
+
+    mobileChatFab.addEventListener('click', openChat);
+    mobileChatBackdrop.addEventListener('click', closeChat);
+
+    function placeElements() {
+      if (isMobile()) {
+        if (!mobileMenuBody.contains(profileForm)) {
+          mobileMenuBody.appendChild(profileForm);
+        }
+
+        if (!mobileLocalWrap.contains(localVideo)) {
+          mobileLocalWrap.appendChild(localVideo);
+        }
+
+        if (!mobileChatOverlay.contains(chatBox)) {
+          mobileChatOverlay.appendChild(chatBox);
+        }
+      } else {
+        if (profileForm.parentNode !== document.body) {
+          document.body.insertBefore(profileForm, document.querySelector('.videos'));
+        }
+
+        if (!videoContainer.contains(localVideo)) {
+          videoContainer.insertBefore(localVideo, videoContainer.firstChild);
+        }
+
+        if (chatBox.parentNode !== document.body) {
+          document.body.insertBefore(chatBox, document.querySelector('script'));
+        }
+
+        closeMenu();
+        closeChat();
+      }
+    }
+
+    window.addEventListener('load', placeElements);
+    window.addEventListener('resize', placeElements);
 
     (function enableDrag(el) {
-      if (!el) return;
-
       let dragging = false;
       let startX = 0;
       let startY = 0;
@@ -749,8 +720,8 @@
 
       el.addEventListener('pointerdown', (e) => {
         if (!isMobile()) return;
-        dragging = true;
 
+        dragging = true;
         const rect = el.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
@@ -778,79 +749,9 @@
         el.style.right = 'auto';
       });
 
-      window.addEventListener('pointerup', () => {
-        dragging = false;
-      });
-
-      window.addEventListener('pointercancel', () => {
-        dragging = false;
-      });
-    })(mobileLocalVideo);
-
-    function renderMessage(container, text, type) {
-      if (!container) return;
-      const div = document.createElement('div');
-      div.className = 'chat-message ' + type;
-      div.textContent = text;
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function addMessage(text, type = 'other') {
-      renderMessage(chatMessages, text, type);
-      renderMessage(mobileChatMessages, text, type);
-
-      if (type === 'other' && isMobile() && !chatOpen) {
-        unreadCount++;
-        updateBadge();
-      }
-    }
-
-    function updateBadge() {
-      if (!mobileChatBadge) return;
-      mobileChatBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-      mobileChatBadge.classList.toggle('show', unreadCount > 0);
-    }
-
-    function openMobileChat() {
-      if (!mobileChatOverlay) return;
-      chatOpen = true;
-      mobileChatOverlay.classList.add('show');
-      unreadCount = 0;
-      updateBadge();
-    }
-
-    function closeMobileChat() {
-      if (!mobileChatOverlay) return;
-      chatOpen = false;
-      mobileChatOverlay.classList.remove('show');
-    }
-
-    if (mobileChatFab) mobileChatFab.addEventListener('click', openMobileChat);
-    if (mobileChatClose) mobileChatClose.addEventListener('click', closeMobileChat);
-
-    function sendMessageFrom(input) {
-      if (!input) return;
-      const text = input.value.trim();
-      if (!text) return;
-      addMessage(text, 'me');
-      input.value = '';
-    }
-
-    if (sendBtn) sendBtn.addEventListener('click', () => sendMessageFrom(chatInput));
-    if (mobileSendBtn) mobileSendBtn.addEventListener('click', () => sendMessageFrom(mobileChatInput));
-
-    if (chatInput) {
-      chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') sendMessageFrom(chatInput);
-      });
-    }
-
-    if (mobileChatInput) {
-      mobileChatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') sendMessageFrom(mobileChatInput);
-      });
-    }
+      window.addEventListener('pointerup', () => dragging = false);
+      window.addEventListener('pointercancel', () => dragging = false);
+    })(mobileLocalWrap);
   </script>
 
   <!-- Client-Script -->
