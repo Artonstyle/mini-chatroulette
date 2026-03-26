@@ -12,7 +12,6 @@
 
   <!-- ================= Styles ================= -->
   <style>
-    /* ================= DESKTOP: EXAKT ORIGINAL ================= */
     body {
       font-family: Arial, sans-serif;
       color: #fff;
@@ -155,7 +154,6 @@
       border: none;
     }
 
-    /* Nachrichtendesign */
     .chat-message {
       margin-bottom: 8px;
       padding: 8px 10px;
@@ -174,18 +172,17 @@
       background: #2a2a2a;
     }
 
-    /* ================= MOBILE EXTRA ELEMENTE ================= */
+    /* Mobile extra Elemente standardmäßig aus */
     .mobile-topbar,
     .mobile-menu-backdrop,
     .mobile-menu,
     .mobile-local-video,
     .mobile-chat-fab,
-    .mobile-chat-badge,
     .mobile-chat-overlay {
       display: none;
     }
 
-    /* ================= MOBILE ONLY ================= */
+    /* ================= MOBILE ================= */
     @media (max-width: 768px) {
       body {
         padding: 0;
@@ -198,12 +195,10 @@
         display: none;
       }
 
-      /* Desktop Suchfeld auf Mobile ausblenden */
       .profile-form {
         display: none;
       }
 
-      /* Neues Topbar Layout */
       .mobile-topbar {
         display: flex;
         align-items: center;
@@ -244,7 +239,6 @@
         cursor: pointer;
       }
 
-      /* Video-Bereich */
       .videos {
         max-width: none;
         margin: 0;
@@ -254,13 +248,13 @@
         background: #111b21;
         min-height: 100vh;
       }
+
       .video-container {
         display: block;
         position: relative;
         width: 100%;
       }
 
-      /* Partner groß */
       #remoteVideo {
         width: 100%;
         height: calc(100vh - 144px);
@@ -270,7 +264,6 @@
         display: block;
       }
 
-      /* Eigenes Video wird mobil in floating Box verschoben */
       #localVideo {
         width: 100%;
         height: 100%;
@@ -306,7 +299,6 @@
         z-index: 2;
       }
 
-      /* Buttons unten */
       .buttons {
         position: fixed;
         left: 0;
@@ -323,12 +315,10 @@
         min-width: 0;
       }
 
-      /* Desktop Chat auf Mobile ausblenden */
       .chat-box {
         display: none;
       }
 
-      /* Chat Button */
       .mobile-chat-fab {
         display: flex;
         align-items: center;
@@ -347,6 +337,7 @@
         z-index: 2200;
         box-shadow: 0 8px 22px rgba(0,0,0,0.35);
       }
+
       .mobile-chat-badge {
         display: none;
         position: absolute;
@@ -367,7 +358,6 @@
         display: block;
       }
 
-      /* Chat Overlay */
       .mobile-chat-overlay {
         display: none;
         position: fixed;
@@ -435,7 +425,6 @@
         cursor: pointer;
       }
 
-      /* Hamburger Menü */
       .mobile-menu-backdrop {
         display: none;
         position: fixed;
@@ -446,6 +435,7 @@
       .mobile-menu-backdrop.show {
         display: block;
       }
+
       .mobile-menu {
         display: block;
         position: fixed;
@@ -510,10 +500,6 @@
         width: 100%;
         margin-left: 0;
         margin-top: 4px;
-      }
-
-      .mobile-hidden {
-        display: none !important;
       }
     }
   </style>
@@ -647,7 +633,6 @@
     const mobileMenuClose = document.getElementById('mobileMenuClose');
 
     const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
     const videoContainer = document.getElementById('videoContainer');
     const mobileLocalVideo = document.getElementById('mobileLocalVideo');
 
@@ -671,56 +656,74 @@
     }
 
     function syncOnlineCount() {
-      onlineCountMobile.textContent = onlineCount.textContent;
+      if (onlineCount && onlineCountMobile) {
+        onlineCountMobile.textContent = onlineCount.textContent;
+      }
     }
 
-    const observer = new MutationObserver(syncOnlineCount);
-    observer.observe(onlineCount, { childList: true, subtree: true, characterData: true });
-    syncOnlineCount();
+    if (onlineCount && onlineCountMobile) {
+      const observer = new MutationObserver(syncOnlineCount);
+      observer.observe(onlineCount, { childList: true, subtree: true, characterData: true });
+      syncOnlineCount();
+    }
 
     function syncDesktopToMobileFields() {
-      mobileGender.value = gender.value;
-      mobileSearch.value = search.value;
-      mobileCountry.value = country.value;
+      if (mobileGender) mobileGender.value = gender.value;
+      if (mobileSearch) mobileSearch.value = search.value;
+      if (mobileCountry) mobileCountry.value = country.value;
     }
 
     function syncMobileToDesktopFields() {
-      gender.value = mobileGender.value;
-      search.value = mobileSearch.value;
-      country.value = mobileCountry.value;
+      if (mobileGender) gender.value = mobileGender.value;
+      if (mobileSearch) search.value = mobileSearch.value;
+      if (mobileCountry) country.value = mobileCountry.value;
     }
 
-    gender.addEventListener('change', syncDesktopToMobileFields);
-    search.addEventListener('change', syncDesktopToMobileFields);
-    country.addEventListener('change', syncDesktopToMobileFields);
+    if (gender) gender.addEventListener('change', syncDesktopToMobileFields);
+    if (search) search.addEventListener('change', syncDesktopToMobileFields);
+    if (country) country.addEventListener('change', syncDesktopToMobileFields);
 
-    mobileGender.addEventListener('change', syncMobileToDesktopFields);
-    mobileSearch.addEventListener('change', syncMobileToDesktopFields);
-    mobileCountry.addEventListener('change', syncMobileToDesktopFields);
+    if (mobileGender) mobileGender.addEventListener('change', syncMobileToDesktopFields);
+    if (mobileSearch) mobileSearch.addEventListener('change', syncMobileToDesktopFields);
+    if (mobileCountry) mobileCountry.addEventListener('change', syncMobileToDesktopFields);
 
     syncDesktopToMobileFields();
 
     function openMenu() {
+      if (!mobileMenu || !mobileMenuBackdrop) return;
       mobileMenu.classList.add('show');
       mobileMenuBackdrop.classList.add('show');
     }
 
     function closeMenu() {
+      if (!mobileMenu || !mobileMenuBackdrop) return;
       mobileMenu.classList.remove('show');
       mobileMenuBackdrop.classList.remove('show');
     }
 
-    mobileMenuBtn.addEventListener('click', openMenu);
-    mobileMenuClose.addEventListener('click', closeMenu);
-    mobileMenuBackdrop.addEventListener('click', closeMenu);
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMenu);
+    if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMenu);
+    if (mobileMenuBackdrop) mobileMenuBackdrop.addEventListener('click', closeMenu);
 
-    mobileStartBtn.addEventListener('click', () => {
-      syncMobileToDesktopFields();
-      desktopStartBtn.click();
-      closeMenu();
-    });
+    if (mobileStartBtn && desktopStartBtn) {
+      mobileStartBtn.addEventListener('click', () => {
+        syncMobileToDesktopFields();
+
+        desktopStartBtn.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          })
+        );
+
+        closeMenu();
+      });
+    }
 
     function placeVideos() {
+      if (!localVideo || !videoContainer || !mobileLocalVideo) return;
+
       if (isMobile()) {
         if (!mobileLocalVideo.contains(localVideo)) {
           mobileLocalVideo.appendChild(localVideo);
@@ -735,8 +738,9 @@
     window.addEventListener('load', placeVideos);
     window.addEventListener('resize', placeVideos);
 
-    // Drag eigenes Video
     (function enableDrag(el) {
+      if (!el) return;
+
       let dragging = false;
       let startX = 0;
       let startY = 0;
@@ -746,6 +750,7 @@
       el.addEventListener('pointerdown', (e) => {
         if (!isMobile()) return;
         dragging = true;
+
         const rect = el.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
@@ -756,6 +761,7 @@
 
       window.addEventListener('pointermove', (e) => {
         if (!dragging) return;
+
         let newLeft = initialLeft + (e.clientX - startX);
         let newTop = initialTop + (e.clientY - startY);
 
@@ -775,13 +781,14 @@
       window.addEventListener('pointerup', () => {
         dragging = false;
       });
+
       window.addEventListener('pointercancel', () => {
         dragging = false;
       });
     })(mobileLocalVideo);
 
-    // Chat
     function renderMessage(container, text, type) {
+      if (!container) return;
       const div = document.createElement('div');
       div.className = 'chat-message ' + type;
       div.textContent = text;
@@ -800,11 +807,13 @@
     }
 
     function updateBadge() {
+      if (!mobileChatBadge) return;
       mobileChatBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
       mobileChatBadge.classList.toggle('show', unreadCount > 0);
     }
 
     function openMobileChat() {
+      if (!mobileChatOverlay) return;
       chatOpen = true;
       mobileChatOverlay.classList.add('show');
       unreadCount = 0;
@@ -812,35 +821,36 @@
     }
 
     function closeMobileChat() {
+      if (!mobileChatOverlay) return;
       chatOpen = false;
       mobileChatOverlay.classList.remove('show');
     }
 
-    mobileChatFab.addEventListener('click', openMobileChat);
-    mobileChatClose.addEventListener('click', closeMobileChat);
+    if (mobileChatFab) mobileChatFab.addEventListener('click', openMobileChat);
+    if (mobileChatClose) mobileChatClose.addEventListener('click', closeMobileChat);
 
     function sendMessageFrom(input) {
+      if (!input) return;
       const text = input.value.trim();
       if (!text) return;
       addMessage(text, 'me');
       input.value = '';
     }
 
-    sendBtn.addEventListener('click', () => sendMessageFrom(chatInput));
-    mobileSendBtn.addEventListener('click', () => sendMessageFrom(mobileChatInput));
+    if (sendBtn) sendBtn.addEventListener('click', () => sendMessageFrom(chatInput));
+    if (mobileSendBtn) mobileSendBtn.addEventListener('click', () => sendMessageFrom(mobileChatInput));
 
-    chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMessageFrom(chatInput);
-    });
-    mobileChatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') sendMessageFrom(mobileChatInput);
-    });
+    if (chatInput) {
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMessageFrom(chatInput);
+      });
+    }
 
-    // Demo
-    addMessage('Willkommen im Chat 👋', 'other');
-
-    // Eingehende Nachricht Demo:
-    // addMessage('Hallo :)', 'other');
+    if (mobileChatInput) {
+      mobileChatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMessageFrom(mobileChatInput);
+      });
+    }
   </script>
 
   <!-- Client-Script -->
