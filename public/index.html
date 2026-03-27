@@ -13,198 +13,238 @@
 </head>
 <body>
 
-<!-- MOBILE TOPBAR -->
-<div class="mobile-topbar">
-  <div class="mobile-logo">Mini Chatroulette</div>
+  <!-- MOBILE TOPBAR -->
+  <div class="mobile-topbar">
+    <div class="mobile-logo">Mini Chatroulette</div>
 
-  <div class="mobile-top-actions">
-    <button id="chatToggle" class="mobile-icon-btn">
-      💬
-      <span id="chatBadge" class="mobile-badge">0</span>
-    </button>
+    <div class="mobile-top-actions">
+      <button id="chatToggle" class="mobile-icon-btn" type="button" aria-label="Chat öffnen">
+        💬
+        <span id="chatBadge" class="mobile-badge">0</span>
+      </button>
 
-    <button id="filterToggle" class="mobile-icon-btn">⚙️</button>
-  </div>
-</div>
-
-<div id="mobileOverlay" class="mobile-overlay"></div>
-
-<header>Mini Chatroulette</header>
-
-<!-- PROFIL -->
-<section class="profile-form">
-  <div class="form-left">
-    <label>Ich bin:
-      <select id="gender">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-
-    <label>Ich suche:
-      <select id="search">
-        <option>Mann</option>
-        <option>Frau</option>
-      </select>
-    </label>
-
-    <label>Mein Land:
-      <select id="country">
-        <option>Deutschland</option>
-        <option>Österreich</option>
-        <option>Schweiz</option>
-      </select>
-    </label>
-
-    <button class="btn-start" disabled>Start</button>
+      <button id="filterToggle" class="mobile-icon-btn" type="button" aria-label="Filter öffnen">⚙️</button>
+    </div>
   </div>
 
-  <div class="online-right">
-    👥 Online: <span id="onlineCount">0</span>
-  </div>
-</section>
+  <div id="mobileOverlay" class="mobile-overlay"></div>
 
-<!-- VIDEOS -->
-<section class="videos">
-  <div class="video-container">
-    <video id="localVideo" autoplay muted playsinline></video>
-    <video id="remoteVideo" autoplay playsinline></video>
-  </div>
+  <header>Mini Chatroulette</header>
 
-  <div class="buttons">
-    <button class="btn-next" disabled>⏭ Nächster</button>
-    <button class="btn-stop" disabled>⏹ Stop</button>
-  </div>
-</section>
+  <!-- PROFIL -->
+  <section class="profile-form">
+    <div class="form-left">
+      <label>Ich bin:
+        <select id="gender">
+          <option>Mann</option>
+          <option>Frau</option>
+        </select>
+      </label>
 
-<!-- CHAT -->
-<section class="chat-box" id="chatBox">
-  <div class="chat-messages"></div>
+      <label>Ich suche:
+        <select id="search">
+          <option>Mann</option>
+          <option>Frau</option>
+        </select>
+      </label>
 
-  <div class="chat-input">
-    <!-- ❗ jetzt NICHT mehr disabled -->
-    <input id="msgInput" type="text" placeholder="Nachricht schreiben..." />
-    <button class="btn-send">💬 Senden</button>
-  </div>
-</section>
+      <label>Mein Land:
+        <select id="country">
+          <option>Deutschland</option>
+          <option>Österreich</option>
+          <option>Schweiz</option>
+        </select>
+      </label>
 
-<script src="client.js"></script>
+      <button class="btn-start" disabled>Start</button>
+    </div>
 
-<!-- MOBILE UI SCRIPT -->
-<script>
-(function () {
-  const body = document.body;
-  const chatToggle = document.getElementById("chatToggle");
-  const filterToggle = document.getElementById("filterToggle");
-  const chatBadge = document.getElementById("chatBadge");
-  const overlay = document.getElementById("mobileOverlay");
-  const chatMessages = document.querySelector(".chat-messages");
+    <div class="online-right">
+      👥 Online: <span id="onlineCount">0</span>
+    </div>
+  </section>
 
-  let unread = 0;
+  <!-- VIDEOS -->
+  <section class="videos">
+    <div class="video-container">
+      <video id="localVideo" autoplay muted playsinline></video>
 
-  function isMobile() {
-    return window.innerWidth <= 800;
-  }
+      <div class="remote-wrap">
+        <video id="remoteVideo" autoplay playsinline></video>
 
-  function closePanels() {
-    body.classList.remove("chat-open");
-    body.classList.remove("filter-open");
-  }
+        <div id="remoteStatus" class="remote-status show">
+          <div class="remote-status-inner">
+            <div class="spinner"></div>
+            <div class="remote-status-title">Partner wird gesucht…</div>
+            <div class="remote-status-sub">Bitte kurz warten</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  function updateBadge() {
-    if (unread > 0) {
-      chatBadge.textContent = unread > 99 ? "99+" : unread;
-      chatBadge.classList.add("show");
-    } else {
-      chatBadge.classList.remove("show");
-    }
-  }
+    <div class="buttons">
+      <button class="btn-next" disabled>⏭ Nächster</button>
+      <button class="btn-stop" disabled>⏹ Stop</button>
+    </div>
+  </section>
 
-  function playSound() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+  <!-- CHAT -->
+  <section class="chat-box" id="chatBox">
+    <div class="chat-messages"></div>
 
-      osc.frequency.value = 880;
-      gain.gain.value = 0.05;
+    <div class="chat-input">
+      <input id="msgInput" type="text" placeholder="Nachricht schreiben..." />
+      <button class="btn-send">💬 Senden</button>
+    </div>
+  </section>
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+  <script src="client.js"></script>
 
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch {}
-  }
+  <!-- MOBILE UI SCRIPT -->
+  <script>
+    (function () {
+      const body = document.body;
+      const chatToggle = document.getElementById("chatToggle");
+      const filterToggle = document.getElementById("filterToggle");
+      const chatBadge = document.getElementById("chatBadge");
+      const overlay = document.getElementById("mobileOverlay");
+      const chatMessages = document.querySelector(".chat-messages");
+      const remoteVideo = document.getElementById("remoteVideo");
+      const remoteStatus = document.getElementById("remoteStatus");
 
-  function vibrate() {
-    if (navigator.vibrate) {
-      navigator.vibrate([120, 60, 120]);
-    }
-  }
+      let unread = 0;
 
-  chatToggle.onclick = () => {
-    if (!isMobile()) return;
+      function isMobile() {
+        return window.innerWidth <= 800;
+      }
 
-    const open = !body.classList.contains("chat-open");
-    closePanels();
+      function closePanels() {
+        body.classList.remove("chat-open");
+        body.classList.remove("filter-open");
+      }
 
-    if (open) {
-      body.classList.add("chat-open");
-      unread = 0;
-      updateBadge();
-    }
-  };
+      function updateBadge() {
+        if (unread > 0) {
+          chatBadge.textContent = unread > 99 ? "99+" : unread;
+          chatBadge.classList.add("show");
+        } else {
+          chatBadge.classList.remove("show");
+        }
+      }
 
-  filterToggle.onclick = () => {
-    if (!isMobile()) return;
+      function playSound() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
 
-    const open = !body.classList.contains("filter-open");
-    closePanels();
+          osc.frequency.value = 880;
+          gain.gain.value = 0.05;
 
-    if (open) {
-      body.classList.add("filter-open");
-    }
-  };
+          osc.connect(gain);
+          gain.connect(ctx.destination);
 
-  overlay.onclick = closePanels;
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+        } catch {}
+      }
 
-  if (chatMessages) {
-    const observer = new MutationObserver((mutations) => {
-      if (!isMobile()) return;
-      if (body.classList.contains("chat-open")) return;
+      function vibrate() {
+        if (navigator.vibrate) {
+          navigator.vibrate([120, 60, 120]);
+        }
+      }
 
-      let added = 0;
+      function updateRemoteStatus() {
+        if (!remoteVideo || !remoteStatus) return;
 
-      for (const m of mutations) {
-        m.addedNodes.forEach((node) => {
-          if (node.nodeType !== 1) return;
+        const hasRemoteStream = !!remoteVideo.srcObject;
+        const hasRemoteSrc = !!remoteVideo.getAttribute("src");
 
-          const text = (node.textContent || "").trim();
+        if (hasRemoteStream) {
+          remoteStatus.classList.remove("show");
+          return;
+        }
 
-          // ✅ NUR Partner zählt
-          if (text.startsWith("Partner:")) {
-            added++;
+        // Wenn Suchvideo oder nichts da ist -> Status zeigen
+        if (!hasRemoteStream) {
+          remoteStatus.classList.add("show");
+
+          if (hasRemoteSrc) {
+            remoteStatus.querySelector(".remote-status-title").textContent = "Partner wird gesucht…";
+            remoteStatus.querySelector(".remote-status-sub").textContent = "Bitte kurz warten";
+          } else {
+            remoteStatus.querySelector(".remote-status-title").textContent = "Noch nicht gestartet";
+            remoteStatus.querySelector(".remote-status-sub").textContent = "Tippe auf Start";
+          }
+        }
+      }
+
+      chatToggle.addEventListener("click", () => {
+        if (!isMobile()) return;
+
+        const open = !body.classList.contains("chat-open");
+        closePanels();
+
+        if (open) {
+          body.classList.add("chat-open");
+          unread = 0;
+          updateBadge();
+        }
+      });
+
+      filterToggle.addEventListener("click", () => {
+        if (!isMobile()) return;
+
+        const open = !body.classList.contains("filter-open");
+        closePanels();
+
+        if (open) {
+          body.classList.add("filter-open");
+        }
+      });
+
+      overlay.addEventListener("click", closePanels);
+
+      if (chatMessages) {
+        const observer = new MutationObserver((mutations) => {
+          if (!isMobile()) return;
+          if (body.classList.contains("chat-open")) return;
+
+          let added = 0;
+
+          for (const m of mutations) {
+            m.addedNodes.forEach((node) => {
+              if (node.nodeType !== 1) return;
+
+              const text = (node.textContent || "").trim();
+
+              // Nur echte Partner-Nachrichten zählen
+              if (text.startsWith("Partner:")) {
+                added++;
+              }
+            });
+          }
+
+          if (added > 0) {
+            unread += added;
+            updateBadge();
+            playSound();
+            vibrate();
           }
         });
+
+        observer.observe(chatMessages, { childList: true });
       }
 
-      if (added > 0) {
-        unread += added;
-        updateBadge();
-        playSound();
-        vibrate();
-      }
-    });
+      // Remote-Status regelmäßig prüfen, ohne client.js anzufassen
+      updateRemoteStatus();
+      setInterval(updateRemoteStatus, 500);
 
-    observer.observe(chatMessages, { childList: true });
-  }
-
-  window.addEventListener("resize", () => {
-    if (!isMobile()) closePanels();
-  });
-})();
-</script>
-
+      window.addEventListener("resize", () => {
+        if (!isMobile()) closePanels();
+      });
+    })();
+  </script>
 </body>
 </html>
