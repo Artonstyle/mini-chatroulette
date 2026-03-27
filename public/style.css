@@ -1,135 +1,98 @@
-/* ================= ORIGINAL DESKTOP ================= */
-body {
-  font-family: Arial, sans-serif;
-  color: #fff;
-  margin: 0;
-  padding: 20px;
-  background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
-  background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
+/* ================= RESET ================= */
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ================= BODY ================= */
+body{
+  font-family:Arial,sans-serif;
+  color:#fff;
+  background:#111;
+  overflow-x:hidden;
 }
 
-@keyframes gradientBG {
-  0% {background-position: 0% 50%;}
-  50% {background-position: 100% 50%;}
-  100% {background-position: 0% 50%;}
+/* ================= HEADER ================= */
+header{
+  font-size:2em;
+  text-align:center;
+  margin-bottom:20px;
+  color:#00d4ff;
+  text-shadow:0 0 10px #00d4ff;
 }
 
-header {
-  font-size: 2em;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-align: center;
-  color: #00d4ff;
-  text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
+/* ================= PROFILE ================= */
+.profile-form{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  background:rgba(40,40,40,0.95);
+  padding:15px;
+  border-radius:12px;
+  max-width:1200px;
+  margin:0 auto 20px;
 }
 
-.profile-form {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  background: rgba(50,50,50,0.95);
-  padding: 15px;
-  border-radius: 12px;
-  max-width: 1200px;
-  margin: 0 auto 20px;
+/* ================= VIDEO ================= */
+.videos{
+  max-width:1200px;
+  margin:0 auto;
 }
 
-.video-container {
-  display: flex;
-  justify-content: space-between;
+.video-container{
+  display:flex;
+  justify-content:space-between;
 }
 
-video {
-  width: 48%;
-  height: 360px;
-  background: #000;
-  border-radius: 8px;
-  object-fit: cover;
+/* LOCAL */
+#localVideo{
+  width:48%;
+  height:360px;
+  border-radius:8px;
+  object-fit:cover;
+  background:#000;
 }
 
-.videos {
-  max-width: 1200px;
-  margin: 10px auto;
-  padding: 15px;
-  background: rgba(50,50,50,0.95);
-  border-radius: 12px;
+/* REMOTE WRAP */
+.remote-wrap{
+  width:48%;
+  height:360px;
+  position:relative;
+  overflow:hidden;
+  border-radius:8px;
 }
 
-.buttons {
-  margin-top: 10px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+/* REMOTE VIDEO */
+#remoteVideo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  background:#000;
 }
 
-.buttons button {
-  min-width: 120px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+/* 🔥 animated background (wenn nix da ist) */
+.remote-wrap::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(270deg,#0f2027,#203a43,#2c5364);
+  background-size:600% 600%;
+  animation:bgMove 8s ease infinite;
+  z-index:0;
 }
 
-.btn-next {background:#007bff;color:#fff;}
-.btn-stop {background:#dc3545;color:#fff;}
-
-.chat-box {
-  max-width: 1200px;
-  margin: 10px auto;
-  background: rgba(50,50,50,0.95);
-  padding: 15px;
-  border-radius: 12px;
-}
-
-.chat-messages {
-  height: 200px;
-  overflow-y: auto;
-  background: #1f1f1f;
-  padding: 10px;
-  border-radius: 8px;
-}
-
-.chat-input {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.chat-input input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-}
-
-.btn-send {
-  background: #ffc107;
-  border-radius: 8px;
-  padding: 10px 20px;
-  border: none;
+@keyframes bgMove{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
 }
 
 /* ================= OVERLAY ================= */
-
-.remote-wrap{
-  position:relative;
-  width:48%;
-  height:360px;
-}
-
-.remote-wrap video{
-  width:100%;
-  height:100%;
-}
-
 .remote-status{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  display:none;
   z-index:2;
+  text-align:center;
+  display:none;
 }
 
 .remote-status.show{
@@ -139,18 +102,30 @@ video {
 .remote-status-inner{
   background:rgba(0,0,0,0.7);
   padding:20px;
-  border-radius:12px;
-  text-align:center;
+  border-radius:14px;
+  backdrop-filter:blur(8px);
 }
 
-/* spinner */
+/* TEXT */
+.remote-status-title{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:5px;
+}
+
+.remote-status-sub{
+  font-size:13px;
+  opacity:0.8;
+}
+
+/* SPINNER */
 .spinner{
-  width:30px;
-  height:30px;
-  border:3px solid rgba(255,255,255,0.3);
-  border-top:3px solid #00d4ff;
+  width:40px;
+  height:40px;
+  border:4px solid rgba(255,255,255,0.2);
+  border-top:4px solid #00d4ff;
   border-radius:50%;
-  margin:0 auto 10px;
+  margin:0 auto 12px;
   animation:spin 1s linear infinite;
 }
 
@@ -158,14 +133,67 @@ video {
   to{transform:rotate(360deg)}
 }
 
+/* ================= BUTTONS ================= */
+.buttons{
+  margin-top:10px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+.buttons button{
+  padding:10px 20px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.btn-next{background:#007bff;color:#fff;}
+.btn-stop{background:#dc3545;color:#fff;}
+
+/* ================= CHAT ================= */
+.chat-box{
+  max-width:1200px;
+  margin:10px auto;
+  background:rgba(40,40,40,0.95);
+  padding:15px;
+  border-radius:12px;
+}
+
+.chat-messages{
+  height:200px;
+  overflow-y:auto;
+  background:#1f1f1f;
+  padding:10px;
+  border-radius:8px;
+}
+
+.chat-input{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.chat-input input{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+}
+
+.btn-send{
+  background:#ffc107;
+  padding:10px 20px;
+  border-radius:8px;
+  border:none;
+}
+
 /* ================= MOBILE ================= */
 @media(max-width:800px){
 
   body{
-    padding:0;
-    overflow:hidden;
+    overflow:hidden; /* ❌ kein scroll */
     background:#111b21;
-    animation:none;
   }
 
   header,
@@ -175,9 +203,7 @@ video {
   }
 
   .videos{
-    margin:0;
-    padding:0;
-    border-radius:0;
+    width:100%;
     height:100vh;
   }
 
@@ -189,6 +215,7 @@ video {
   .remote-wrap{
     width:100%;
     height:100%;
+    border-radius:0;
   }
 
   #remoteVideo{
@@ -202,6 +229,7 @@ video {
     top:70px;
     right:10px;
     width:100px;
+    height:auto;
     z-index:10;
     border-radius:10px;
     border:2px solid rgba(255,255,255,0.2);
