@@ -134,7 +134,7 @@ input#msgInput{
   color:var(--muted);
 }
 
-/* Diese Elemente sind auf Desktop unsichtbar */
+/* Nur vorbereitet, aktuell nicht benutzt */
 .chat-icon,
 .chat-badge,
 .chat-popup{
@@ -154,7 +154,7 @@ input#msgInput{
     color:#fff;
     position:sticky;
     top:0;
-    z-index:50;
+    z-index:5;
     padding:14px 16px;
     text-align:left;
     border-bottom:1px solid rgba(255,255,255,0.08);
@@ -203,7 +203,10 @@ input#msgInput{
     right:10px;
     width:110px;
     height:140px;
-    z-index:30;
+    max-width:30vw;
+    max-height:25vh;
+    object-fit:cover;
+    z-index:20;
     border-radius:12px;
     border:2px solid rgba(255,255,255,0.2);
     box-shadow:0 8px 24px rgba(0,0,0,0.35);
@@ -223,14 +226,13 @@ input#msgInput{
     background:#202c33;
     padding:10px;
     margin:0;
-    z-index:25;
+    z-index:15;
   }
 
   .btn{
     flex:1;
   }
 
-  /* Rechte Spalte kompakter */
   aside.card{
     padding:10px;
     background:#111b21;
@@ -250,7 +252,6 @@ input#msgInput{
     color:#25d366;
   }
 
-  /* Normalen Chat kleiner machen */
   #chat{
     padding:10px;
     background:#111b21;
@@ -277,100 +278,5 @@ input#msgInput{
 
   input#msgInput::placeholder{
     color:#9aa6b2;
-  }
-
-  /* Mobile Chat Icon */
-  .chat-icon{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:absolute;
-    right:16px;
-    top:10px;
-    width:42px;
-    height:42px;
-    border-radius:12px;
-    background:#2a3942;
-    color:#fff;
-    font-size:20px;
-    cursor:pointer;
-  }
-
-  .chat-badge{
-    display:none;
-    position:absolute;
-    top:-4px;
-    right:-4px;
-    min-width:20px;
-    height:20px;
-    padding:0 5px;
-    border-radius:999px;
-    background:#ff3b30;
-    color:#fff;
-    font-size:11px;
-    line-height:20px;
-    text-align:center;
-    font-weight:700;
-  }
-
-  .chat-badge.show{
-    display:block;
-  }
-
-  /* Chat Popup nur Mobile */
-  .chat-popup{
-    position:fixed;
-    left:12px;
-    right:12px;
-    bottom:78px;
-    height:320px;
-    background:#111b21;
-    border-radius:16px;
-    display:none;
-    flex-direction:column;
-    box-shadow:0 10px 30px rgba(0,0,0,0.5);
-    overflow:hidden;
-    z-index:60;
-    border:1px solid rgba(255,255,255,0.06);
-  }
-
-  .chat-popup.open{
-    display:flex;
-  }
-
-  .chat-popup .chat-messages{
-    flex:1;
-    overflow:auto;
-    padding:10px;
-    background:#111b21;
-    color:#fff;
-    border:none;
-    border-radius:0;
-    margin:0;
-    height:auto;
-  }
-
-  .chat-popup .chat-input{
-    display:flex;
-    gap:8px;
-    padding:8px;
-    background:#202c33;
-  }
-
-  .chat-popup input{
-    flex:1;
-    background:#202c33;
-    color:#fff;
-    border:none;
-    border-radius:10px;
-    padding:10px;
-  }
-
-  .chat-popup input::placeholder{
-    color:#9aa6b2;
-  }
-
-  .chat-popup button{
-    border-radius:10px;
   }
 }
