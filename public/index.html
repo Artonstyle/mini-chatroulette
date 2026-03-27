@@ -11,6 +11,7 @@
 <header>
   <h1>Mini Chatroulette</h1>
 
+  <!-- ICONS (nur Mobile sichtbar per CSS) -->
   <div class="top-icons">
     <button id="filterToggle">⚙️</button>
     <button id="chatToggle">
@@ -35,6 +36,7 @@
     </div>
   </section>
 
+  <!-- DEIN ORIGINAL ASIDE BLEIBT -->
   <aside>
     <div class="card">
       <label>Ich bin:
@@ -54,6 +56,7 @@
       </div>
     </div>
 
+    <!-- ORIGINAL CHAT BLEIBT -->
     <div class="card" id="chat">
       <div class="messages chat-messages"></div>
       <div class="input-row chat-input">
@@ -65,19 +68,6 @@
 
 </main>
 
-<!-- FILTER POPUP -->
-<div id="filterPopup" class="popup">
-  <label>Ich bin:
-    <select id="gender"></select>
-  </label>
-  <label>Ich suche:
-    <select id="search"></select>
-  </label>
-  <label>Land:
-    <select id="country"></select>
-  </label>
-</div>
-
 <script src="client.js"></script>
 
 <script>
@@ -88,9 +78,9 @@ const chatBadge = document.getElementById("chatBadge");
 const chat = document.getElementById("chat");
 
 const filterToggle = document.getElementById("filterToggle");
-const filterPopup = document.getElementById("filterPopup");
+const aside = document.querySelector("aside");
 
-// CHAT TOGGLE
+// CHAT
 chatToggle.onclick = () => {
   chat.classList.toggle("open");
   unread = 0;
@@ -99,10 +89,10 @@ chatToggle.onclick = () => {
 
 // FILTER
 filterToggle.onclick = () => {
-  filterPopup.classList.toggle("open");
+  aside.classList.toggle("open");
 };
 
-// BADGE LOGIK
+// BADGE
 const observer = new MutationObserver(() => {
   if (!chat.classList.contains("open")) {
     unread++;
