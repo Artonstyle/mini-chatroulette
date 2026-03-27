@@ -6,7 +6,9 @@
   --muted:#6b7280;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 body{
   margin:0;
@@ -18,6 +20,7 @@ body{
 header{
   padding:18px 20px;
   text-align:center;
+  position:relative;
 }
 
 h1{
@@ -87,8 +90,15 @@ video{
   font-weight:600;
 }
 
-.btn.primary{background:var(--primary);color:white}
-.btn.danger{background:var(--accent);color:white}
+.btn.primary{
+  background:var(--primary);
+  color:white;
+}
+
+.btn.danger{
+  background:var(--accent);
+  color:white;
+}
 
 #chat{
   display:flex;
@@ -124,11 +134,19 @@ input#msgInput{
   color:var(--muted);
 }
 
+/* Diese Elemente sind auf Desktop unsichtbar */
+.chat-icon,
+.chat-badge,
+.chat-popup{
+  display:none;
+}
+
 /* ================= MOBILE ================= */
 @media(max-width:800px){
   body{
     background:#111b21;
     color:#fff;
+    overflow-x:hidden;
   }
 
   header{
@@ -136,13 +154,21 @@ input#msgInput{
     color:#fff;
     position:sticky;
     top:0;
-    z-index:5;
+    z-index:50;
+    padding:14px 16px;
+    text-align:left;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+
+  h1{
+    font-size:18px;
   }
 
   #container{
     grid-template-columns:1fr;
     padding:0;
     gap:0;
+    max-width:none;
   }
 
   .card{
@@ -164,19 +190,20 @@ input#msgInput{
   video{
     width:100%;
     height:100vh;
+    min-height:420px;
     border-radius:0;
     border:none;
     display:block;
   }
 
-  /* Eigenes Video klein + draggable */
+  /* Eigenes Video klein */
   video:first-child{
     position:fixed;
     top:70px;
     right:10px;
     width:110px;
     height:140px;
-    z-index:20;
+    z-index:30;
     border-radius:12px;
     border:2px solid rgba(255,255,255,0.2);
     box-shadow:0 8px 24px rgba(0,0,0,0.35);
@@ -196,13 +223,34 @@ input#msgInput{
     background:#202c33;
     padding:10px;
     margin:0;
-    z-index:15;
+    z-index:25;
   }
 
   .btn{
     flex:1;
   }
 
+  /* Rechte Spalte kompakter */
+  aside.card{
+    padding:10px;
+    background:#111b21;
+  }
+
+  label{
+    color:#d1d7db;
+  }
+
+  select{
+    background:#202c33;
+    color:#fff;
+    border:none;
+  }
+
+  #profileInfo{
+    color:#25d366;
+  }
+
+  /* Normalen Chat kleiner machen */
   #chat{
     padding:10px;
     background:#111b21;
@@ -229,5 +277,100 @@ input#msgInput{
 
   input#msgInput::placeholder{
     color:#9aa6b2;
+  }
+
+  /* Mobile Chat Icon */
+  .chat-icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:absolute;
+    right:16px;
+    top:10px;
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    background:#2a3942;
+    color:#fff;
+    font-size:20px;
+    cursor:pointer;
+  }
+
+  .chat-badge{
+    display:none;
+    position:absolute;
+    top:-4px;
+    right:-4px;
+    min-width:20px;
+    height:20px;
+    padding:0 5px;
+    border-radius:999px;
+    background:#ff3b30;
+    color:#fff;
+    font-size:11px;
+    line-height:20px;
+    text-align:center;
+    font-weight:700;
+  }
+
+  .chat-badge.show{
+    display:block;
+  }
+
+  /* Chat Popup nur Mobile */
+  .chat-popup{
+    position:fixed;
+    left:12px;
+    right:12px;
+    bottom:78px;
+    height:320px;
+    background:#111b21;
+    border-radius:16px;
+    display:none;
+    flex-direction:column;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    overflow:hidden;
+    z-index:60;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+
+  .chat-popup.open{
+    display:flex;
+  }
+
+  .chat-popup .chat-messages{
+    flex:1;
+    overflow:auto;
+    padding:10px;
+    background:#111b21;
+    color:#fff;
+    border:none;
+    border-radius:0;
+    margin:0;
+    height:auto;
+  }
+
+  .chat-popup .chat-input{
+    display:flex;
+    gap:8px;
+    padding:8px;
+    background:#202c33;
+  }
+
+  .chat-popup input{
+    flex:1;
+    background:#202c33;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:10px;
+  }
+
+  .chat-popup input::placeholder{
+    color:#9aa6b2;
+  }
+
+  .chat-popup button{
+    border-radius:10px;
   }
 }
