@@ -21,9 +21,9 @@
     }
 
     @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     header {
@@ -87,6 +87,7 @@
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
+      position: relative;
     }
 
     video {
@@ -115,8 +116,15 @@
       font-weight: bold;
     }
 
-    .btn-stop {background-color: #dc3545; color: #fff;}
-    .btn-next {background-color: #007bff; color: #fff;}
+    .btn-stop {
+      background-color: #dc3545;
+      color: #fff;
+    }
+
+    .btn-next {
+      background-color: #007bff;
+      color: #fff;
+    }
 
     .chat-box {
       background: rgba(50,50,50,0.95);
@@ -155,15 +163,21 @@
       padding: 10px 20px;
       border: none;
       font-weight: bold;
+      cursor: pointer;
     }
 
-    /* ================= MOBILE ================= */
     .mobile-topbar,
     .mobile-menu-backdrop {
       display: none;
     }
 
     @media (max-width: 768px) {
+      body {
+        padding: 0;
+        background: #111b21;
+        animation: none;
+        overflow-x: hidden;
+      }
 
       body.menu-open {
         overflow: hidden;
@@ -185,6 +199,12 @@
         padding: 0 15px;
         background: #202c33;
         z-index: 2000;
+      }
+
+      .mobile-topbar-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #e9edef;
       }
 
       .mobile-menu-btn {
@@ -213,6 +233,43 @@
         background: #202c33;
         border-radius: 16px;
         padding: 15px;
+        max-width: none;
+        margin: 0;
+      }
+
+      body.menu-open .form-left {
+        display: block;
+        width: 100%;
+      }
+
+      body.menu-open .form-left label {
+        display: block;
+        margin-bottom: 12px;
+        color: #d1d7db;
+      }
+
+      body.menu-open .form-left select {
+        width: 100%;
+        margin-top: 6px;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: #2a3942;
+        color: #fff;
+      }
+
+      body.menu-open .btn-start {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 4px;
+      }
+
+      body.menu-open .online-right {
+        margin-top: 12px;
+        text-align: center;
+        background: #111b21;
+        border-radius: 10px;
+        padding: 10px;
       }
 
       .mobile-menu-backdrop {
@@ -227,22 +284,42 @@
       }
 
       .videos {
-        padding-top: 60px;
+        max-width: 100%;
+        margin: 0;
+        padding: 60px 0 74px 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: #111b21;
+        min-height: 100vh;
       }
 
+      .video-container {
+        display: block;
+        width: 100%;
+      }
+
+      /* Partner groß */
       #remoteVideo {
         width: 100%;
-        height: 60vh;
+        height: calc(100vh - 134px);
+        min-height: 420px;
+        border-radius: 0;
+        margin: 0;
+        display: block;
       }
 
+      /* Eigenes Video klein */
       #localVideo {
         position: fixed;
-        top: 70px;
-        right: 10px;
+        top: 72px;
+        right: 12px;
         width: 110px;
-        height: 140px;
+        height: 145px;
         z-index: 3000;
-        border-radius: 10px;
+        border-radius: 12px;
+        margin: 0;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+        border: 2px solid rgba(255,255,255,0.14);
       }
 
       .buttons {
@@ -252,11 +329,76 @@
         right: 0;
         justify-content: center;
         padding: 10px;
-        background: #111;
+        margin: 0;
+        background: rgba(17,27,33,0.97);
+        z-index: 1900;
       }
 
       .buttons button {
         flex: 1;
+        min-width: 0;
+        padding: 14px 10px;
+        border-radius: 12px;
+      }
+
+      .chat-box {
+        margin: 0;
+        max-width: 100%;
+        border-radius: 0;
+        padding: 10px;
+        background: #0b141a;
+        box-shadow: none;
+      }
+
+      .chat-messages {
+        height: 150px;
+        background: #111b21;
+        border-radius: 14px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+
+      .chat-input {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #202c33;
+        border-radius: 14px;
+        padding: 8px;
+      }
+
+      .chat-input input {
+        background: transparent;
+        color: #fff;
+        padding: 10px 12px;
+      }
+
+      .chat-input input::placeholder {
+        color: #8696a0;
+      }
+
+      .btn-send {
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: #25d366;
+        color: #111b21;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #remoteVideo {
+        height: calc(100vh - 124px);
+        min-height: 360px;
+      }
+
+      #localVideo {
+        width: 95px;
+        height: 125px;
+      }
+
+      .chat-messages {
+        height: 130px;
       }
     }
   </style>
@@ -264,74 +406,71 @@
 
 <body>
 
-<!-- MOBILE TOPBAR -->
-<div class="mobile-topbar">
-  <div>Mini Chatroulette</div>
-  <button class="mobile-menu-btn" id="menuBtn">☰</button>
-</div>
-
-<div class="mobile-menu-backdrop" id="menuBackdrop"></div>
-
-<header>Mini Chatroulette</header>
-
-<section class="profile-form">
-  <div class="form-left">
-    <label>Ich bin:
-      <select id="gender"><option>Mann</option><option>Frau</option></select>
-    </label>
-
-    <label>Ich suche:
-      <select id="search"><option>Mann</option><option>Frau</option></select>
-    </label>
-
-    <label>Mein Land:
-      <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-    </label>
-
-    <button class="btn-start">Start</button>
+  <div class="mobile-topbar">
+    <div class="mobile-topbar-title">Mini Chatroulette</div>
+    <button class="mobile-menu-btn" id="menuBtn">☰</button>
   </div>
 
-  <div class="online-right">
-    👥 Online: <span id="onlineCount">0</span>
-  </div>
-</section>
+  <div class="mobile-menu-backdrop" id="menuBackdrop"></div>
 
-<section class="videos">
-  <div class="video-container">
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
-  </div>
+  <header>Mini Chatroulette</header>
 
-  <div class="buttons">
-    <button class="btn-next">⏭ Nächster</button>
-    <button class="btn-stop">⏹ Stop</button>
-  </div>
-</section>
+  <section class="profile-form">
+    <div class="form-left">
+      <label>Ich bin:
+        <select id="gender"><option>Mann</option><option>Frau</option></select>
+      </label>
 
-<section class="chat-box">
-  <div class="chat-messages"></div>
-  <div class="chat-input">
-    <input type="text" placeholder="Nachricht schreiben..." />
-    <button class="btn-send">💬 Senden</button>
-  </div>
-</section>
+      <label>Ich suche:
+        <select id="search"><option>Mann</option><option>Frau</option></select>
+      </label>
 
-<!-- MENU SCRIPT -->
-<script>
-  const body = document.body;
-  const menuBtn = document.getElementById("menuBtn");
-  const menuBackdrop = document.getElementById("menuBackdrop");
+      <label>Mein Land:
+        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+      </label>
 
-  menuBtn.onclick = () => {
-    body.classList.toggle("menu-open");
-  };
+      <button class="btn-start">Start</button>
+    </div>
 
-  menuBackdrop.onclick = () => {
-    body.classList.remove("menu-open");
-  };
-</script>
+    <div class="online-right">
+      👥 Online: <span id="onlineCount">0</span>
+    </div>
+  </section>
 
-<script src="client.js"></script>
+  <section class="videos">
+    <div class="video-container">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
 
+    <div class="buttons">
+      <button class="btn-next">⏭ Nächster</button>
+      <button class="btn-stop">⏹ Stop</button>
+    </div>
+  </section>
+
+  <section class="chat-box">
+    <div class="chat-messages"></div>
+    <div class="chat-input">
+      <input type="text" placeholder="Nachricht schreiben..." />
+      <button class="btn-send">💬 Senden</button>
+    </div>
+  </section>
+
+  <script>
+    const body = document.body;
+    const menuBtn = document.getElementById("menuBtn");
+    const menuBackdrop = document.getElementById("menuBackdrop");
+
+    menuBtn.onclick = () => {
+      body.classList.toggle("menu-open");
+    };
+
+    menuBackdrop.onclick = () => {
+      body.classList.remove("menu-open");
+    };
+  </script>
+
+  <script src="client.js"></script>
 </body>
 </html>
