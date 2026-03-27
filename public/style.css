@@ -5,28 +5,127 @@
   --primary:#2196f3;
   --muted:#6b7280;
 }
+
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#111}
-header{padding:18px 20px;text-align:center}
-h1{margin:0;font-size:20px}
-.card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,0.06);margin:20px auto;max-width:400px}
-label{display:block;margin:10px 0}
-select{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
-#container{display:grid;grid-template-columns:2fr 1fr;gap:18px;padding:20px;max-width:1000px;margin:0 auto}
-.video-row{display:flex;gap:10px;justify-content:center;align-items:center}
-video{width:48%;height:auto;background:#000;border-radius:8px;border:1px solid #ddd}
-.controls{display:flex;justify-content:center;margin-top:12px}
-.btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+
+body{
+  margin:0;
+  font-family:Inter,Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:#111;
+}
+
+header{
+  padding:18px 20px;
+  text-align:center;
+}
+
+h1{
+  margin:0;
+  font-size:20px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 6px 18px rgba(15,23,42,0.06);
+  margin:20px auto;
+  max-width:400px;
+}
+
+label{
+  display:block;
+  margin:10px 0;
+}
+
+select{
+  width:100%;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #ddd;
+}
+
+#container{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:18px;
+  padding:20px;
+  max-width:1000px;
+  margin:0 auto;
+}
+
+.video-row{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  align-items:center;
+}
+
+video{
+  width:48%;
+  height:auto;
+  background:#000;
+  border-radius:8px;
+  border:1px solid #ddd;
+  object-fit:cover;
+}
+
+.controls{
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+  gap:10px;
+}
+
+.btn{
+  padding:10px 14px;
+  border-radius:8px;
+  border:0;
+  cursor:pointer;
+  font-weight:600;
+}
+
 .btn.primary{background:var(--primary);color:white}
 .btn.danger{background:var(--accent);color:white}
-#chat{display:flex;flex-direction:column;gap:8px}
-.messages{flex:1;overflow:auto;border:1px solid #eee;padding:10px;border-radius:8px;height:360px;background:#fafafa}
-.input-row{display:flex;gap:8px}
-input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
-#profileInfo{margin-top:12px;font-size:14px;color:var(--muted)}
 
-/* ================= MOBILE ONLY ================= */
+#chat{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.messages{
+  flex:1;
+  overflow:auto;
+  border:1px solid #eee;
+  padding:10px;
+  border-radius:8px;
+  height:360px;
+  background:#fafafa;
+}
+
+.input-row{
+  display:flex;
+  gap:8px;
+}
+
+input#msgInput{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ddd;
+}
+
+#profileInfo{
+  margin-top:12px;
+  font-size:14px;
+  color:var(--muted);
+}
+
+/* ================= MOBILE ================= */
 @media(max-width:800px){
+
   body{
     background:#111b21;
     color:#fff;
@@ -61,7 +160,7 @@ input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
     position:relative;
   }
 
-  /* Partner groß */
+  /* Partner Video FULLSCREEN */
   video{
     width:100%;
     height:100vh;
@@ -72,19 +171,22 @@ input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
     object-fit:cover;
   }
 
-  /* Eigenes Video klein */
+  /* Eigenes Video (FIXED + NICHT VERZERRT) */
   video:first-child{
     position:fixed;
     top:70px;
     right:10px;
-    width:110px;
-    height:140px;
-    max-width:30vw;
-    max-height:25vh;
+
+    width:100px;
+    aspect-ratio: 3 / 4;
+
+    object-fit:cover;
+
     z-index:20;
     border-radius:12px;
     border:2px solid rgba(255,255,255,0.2);
     box-shadow:0 8px 24px rgba(0,0,0,0.35);
+
     touch-action:none;
     cursor:grab;
   }
@@ -93,6 +195,7 @@ input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
     cursor:grabbing;
   }
 
+  /* Buttons unten */
   .controls{
     position:fixed;
     bottom:0;
@@ -102,21 +205,20 @@ input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
     padding:10px;
     margin:0;
     z-index:15;
-    gap:10px;
   }
 
   .btn{
     flex:1;
   }
 
-  .card:last-child{
-    padding:10px;
+  /* Rechte Seite (Profil + Chat) */
+  aside{
     background:#111b21;
+    padding:10px;
   }
 
   label{
     color:#d1d7db;
-    padding:0 10px;
   }
 
   select{
@@ -127,9 +229,9 @@ input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
 
   #profileInfo{
     color:#25d366;
-    padding:0 10px 10px;
   }
 
+  /* Chat kompakter */
   #chat{
     padding:10px;
     background:#111b21;
