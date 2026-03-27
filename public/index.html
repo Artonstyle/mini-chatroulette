@@ -9,12 +9,11 @@
 <body>
 
 <header>
-  <h1>Mini Chatroulette</h1>
+  <h1 class="logo">Mini Chatroulette</h1>
 
-  <!-- ICONS (nur Mobile sichtbar per CSS) -->
   <div class="top-icons">
-    <button id="filterToggle">⚙️</button>
-    <button id="chatToggle">
+    <button id="filterToggle" class="top-btn" type="button" aria-label="Filter öffnen">⚙️</button>
+    <button id="chatToggle" class="top-btn" type="button" aria-label="Chat öffnen">
       💬
       <span id="chatBadge">0</span>
     </button>
@@ -30,25 +29,34 @@
     </div>
 
     <div class="controls">
-      <button class="btn primary btn-start">Start</button>
-      <button class="btn primary btn-next">⏭</button>
-      <button class="btn danger btn-stop">⏹</button>
+      <button class="btn primary btn-start" disabled>Start</button>
+      <button class="btn primary btn-next" disabled>⏭</button>
+      <button class="btn danger btn-stop" disabled>⏹</button>
     </div>
   </section>
 
-  <!-- DEIN ORIGINAL ASIDE BLEIBT -->
-  <aside>
-    <div class="card">
+  <aside id="sidePanel">
+    <div class="card settings-card">
       <label>Ich bin:
-        <select id="gender"><option>Mann</option><option>Frau</option></select>
+        <select id="gender">
+          <option>Mann</option>
+          <option>Frau</option>
+        </select>
       </label>
 
       <label>Ich suche:
-        <select id="search"><option>Mann</option><option>Frau</option></select>
+        <select id="search">
+          <option>Mann</option>
+          <option>Frau</option>
+        </select>
       </label>
 
       <label>Mein Land:
-        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+        <select id="country">
+          <option>Deutschland</option>
+          <option>Österreich</option>
+          <option>Schweiz</option>
+        </select>
       </label>
 
       <div id="profileInfo">
@@ -56,54 +64,105 @@
       </div>
     </div>
 
-    <!-- ORIGINAL CHAT BLEIBT -->
     <div class="card" id="chat">
       <div class="messages chat-messages"></div>
       <div class="input-row chat-input">
-        <input id="msgInput" type="text" placeholder="Nachricht...">
-        <button class="btn primary btn-send">➡</button>
+        <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled>
+        <button class="btn primary btn-send" disabled>➡</button>
       </div>
     </div>
   </aside>
 
 </main>
 
+<div id="mobileOverlay"></div>
+
 <script src="client.js"></script>
 
 <script>
-let unread = 0;
+(function () {
+  const body = document.body;
+  const chatToggle = document.getElementById("chatToggle");
+  const filterToggle = document.getElementById("filterToggle");
+  const chatBadge = document.getElementById("chatBadge");
+  const chatMessages = document.querySelector(".chat-messages");
+  const overlay = document.getElementById("mobileOverlay");
 
-const chatToggle = document.getElementById("chatToggle");
-const chatBadge = document.getElementById("chatBadge");
-const chat = document.getElementById("chat");
+  let unread = 0;
 
-const filterToggle = document.getElementById("filterToggle");
-const aside = document.querySelector("aside");
-
-// CHAT
-chatToggle.onclick = () => {
-  chat.classList.toggle("open");
-  unread = 0;
-  chatBadge.style.display = "none";
-};
-
-// FILTER
-filterToggle.onclick = () => {
-  aside.classList.toggle("open");
-};
-
-// BADGE
-const observer = new MutationObserver(() => {
-  if (!chat.classList.contains("open")) {
-    unread++;
-    chatBadge.innerText = unread;
-    chatBadge.style.display = "block";
+  function isMobile() {
+    return window.innerWidth <= 800;
   }
-});
 
-observer.observe(document.querySelector(".chat-messages"), {
-  childList: true
-});
+  function closePanels() {
+    body.classList.remove("chat-open");
+    body.classList.remove("filter-open");
+  }
+
+  function updateBadge() {
+    if (unread > 0) {
+      chatBadge.textContent = unread > 99 ? "99+" : unread;
+      chatBadge.classList.add("show");
+    } else {
+      chatBadge.classList.remove("show");
+    }
+  }
+
+  chatToggle.addEventListener("click", () => {
+    if (!isMobile()) return;
+    const open = !body.classList.contains("chat-open");
+    closePanels();
+    if (open) {
+      body.classList.add("chat-open");
+      unread = 0;
+      updateBadge();
+    }
+  });
+
+  filterToggle.addEventListener("click", () => {
+    if (!isMobile()) return;
+    const open = !body.classList.contains("filter-open");
+    closePanels();
+    if (open) {
+      body.classList.add("filter-open");
+    }
+  });
+
+  overlay.addEventListener("click", closePanels);
+
+  if (chatMessages) {
+    const observer = new MutationObserver((mutations) => {
+      if (!isMobile()) return;
+      if (body.classList.contains("chat-open")) return;
+
+      let added = 0;
+
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) {
+            const text = (node.textContent || "").trim();
+            if (text && !text.startsWith("Ich:")) {
+              added++;
+            }
+          }
+        });
+      }
+
+      if (added > 0) {
+        unread += added;
+        updateBadge();
+      }
+    });
+
+    observer.observe(chatMessages, { childList: true });
+  }
+
+  window.addEventListener("resize", () => {
+    if (!isMobile()) {
+      closePanels();
+    }
+  });
+})();
 </script>
 
 </body>
