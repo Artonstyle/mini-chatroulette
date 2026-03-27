@@ -122,8 +122,8 @@
       box-shadow: 0 0 12px rgba(255,255,255,0.4);
     }
 
-    .btn-stop {background-color: #dc3545; color: #fff;}
-    .btn-next {background-color: #007bff; color: #fff;}
+    .btn-stop { background-color: #dc3545; color: #fff; }
+    .btn-next { background-color: #007bff; color: #fff; }
 
     .chat-box {
       background: rgba(50,50,50,0.95);
@@ -334,12 +334,6 @@
         margin: 0;
         box-shadow: 0 8px 24px rgba(0,0,0,0.45);
         border: 2px solid rgba(255,255,255,0.14);
-        touch-action: none;
-        cursor: grab;
-      }
-
-      #localVideo.dragging {
-        cursor: grabbing;
       }
 
       .buttons {
@@ -486,7 +480,6 @@
     const menuBackdrop = document.getElementById("menuBackdrop");
     const onlineCount = document.getElementById("onlineCount");
     const onlineCountMirror = document.getElementById("onlineCountMirror");
-    const localVideo = document.getElementById("localVideo");
 
     menuBtn.onclick = () => {
       body.classList.toggle("menu-open");
@@ -507,58 +500,6 @@
     });
 
     onlineCountMirror.textContent = onlineCount.textContent;
-
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-    let startLeft = 0;
-    let startTop = 0;
-
-    function isMobile() {
-      return window.innerWidth <= 768;
-    }
-
-    localVideo.addEventListener("pointerdown", (e) => {
-      if (!isMobile()) return;
-
-      dragging = true;
-      localVideo.classList.add("dragging");
-
-      const rect = localVideo.getBoundingClientRect();
-      startLeft = rect.left;
-      startTop = rect.top;
-      startX = e.clientX;
-      startY = e.clientY;
-
-      e.preventDefault();
-    });
-
-    window.addEventListener("pointermove", (e) => {
-      if (!dragging || !isMobile()) return;
-
-      let newLeft = startLeft + (e.clientX - startX);
-      let newTop = startTop + (e.clientY - startY);
-
-      const maxLeft = window.innerWidth - localVideo.offsetWidth - 8;
-      const maxTop = window.innerHeight - localVideo.offsetHeight - 90;
-
-      if (newLeft < 8) newLeft = 8;
-      if (newTop < 66) newTop = 66;
-      if (newLeft > maxLeft) newLeft = maxLeft;
-      if (newTop > maxTop) newTop = maxTop;
-
-      localVideo.style.left = newLeft + "px";
-      localVideo.style.top = newTop + "px";
-      localVideo.style.right = "auto";
-    });
-
-    function stopDrag() {
-      dragging = false;
-      localVideo.classList.remove("dragging");
-    }
-
-    window.addEventListener("pointerup", stopDrag);
-    window.addEventListener("pointercancel", stopDrag);
   </script>
 
   <script src="client.js"></script>
