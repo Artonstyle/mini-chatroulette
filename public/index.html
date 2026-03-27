@@ -3,40 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Chatroulette</title>
+
+  <title>Mini Chatroulette – Videochat online</title>
+  <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
+  <meta name="robots" content="index, follow">
+  <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>
-  <h1 class="logo">Mini Chatroulette</h1>
-
-  <div class="top-icons">
-    <button id="filterToggle" class="top-btn" type="button" aria-label="Filter öffnen">⚙️</button>
-    <button id="chatToggle" class="top-btn" type="button" aria-label="Chat öffnen">
-      💬
-      <span id="chatBadge">0</span>
-    </button>
+  <!-- Mobile-only topbar -->
+  <div class="mobile-topbar">
+    <div class="mobile-logo">Mini Chatroulette</div>
+    <div class="mobile-top-actions">
+      <button id="chatToggle" class="mobile-icon-btn" type="button" aria-label="Chat öffnen">
+        💬
+        <span id="chatBadge" class="mobile-badge">0</span>
+      </button>
+      <button id="filterToggle" class="mobile-icon-btn" type="button" aria-label="Filter öffnen">⚙️</button>
+    </div>
   </div>
-</header>
 
-<main id="container">
+  <div id="mobileOverlay" class="mobile-overlay"></div>
 
-  <section>
-    <div class="video-row">
-      <video id="localVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
+  <header>Mini Chatroulette</header>
 
-    <div class="controls">
-      <button class="btn primary btn-start" disabled>Start</button>
-      <button class="btn primary btn-next" disabled>⏭</button>
-      <button class="btn danger btn-stop" disabled>⏹</button>
-    </div>
-  </section>
-
-  <aside id="sidePanel">
-    <div class="card settings-card">
+  <!-- Profilbereich -->
+  <section class="profile-form">
+    <div class="form-left">
       <label>Ich bin:
         <select id="gender">
           <option>Mann</option>
@@ -59,111 +54,115 @@
         </select>
       </label>
 
-      <div id="profileInfo">
-        👥 Online: <span id="onlineCount">0</span>
-      </div>
+      <button class="btn-start" disabled>Start</button>
     </div>
 
-    <div class="card" id="chat">
-      <div class="messages chat-messages"></div>
-      <div class="input-row chat-input">
-        <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled>
-        <button class="btn primary btn-send" disabled>➡</button>
-      </div>
+    <div class="online-right">
+      👥 Online: <span id="onlineCount">0</span>
     </div>
-  </aside>
+  </section>
 
-</main>
+  <!-- Videos + Buttons -->
+  <section class="videos">
+    <div class="video-container">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
 
-<div id="mobileOverlay"></div>
+    <div class="buttons">
+      <button class="btn-next" disabled>⏭ Nächster</button>
+      <button class="btn-stop" disabled>⏹ Stop</button>
+    </div>
+  </section>
 
-<script src="client.js"></script>
+  <!-- Chat -->
+  <section class="chat-box" id="chatBox">
+    <div class="chat-messages"></div>
+    <div class="chat-input">
+      <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled />
+      <button class="btn-send" disabled>💬 Senden</button>
+    </div>
+  </section>
 
-<script>
-(function () {
-  const body = document.body;
-  const chatToggle = document.getElementById("chatToggle");
-  const filterToggle = document.getElementById("filterToggle");
-  const chatBadge = document.getElementById("chatBadge");
-  const chatMessages = document.querySelector(".chat-messages");
-  const overlay = document.getElementById("mobileOverlay");
+  <script src="client.js"></script>
 
-  let unread = 0;
+  <script>
+    (function () {
+      const body = document.body;
+      const chatToggle = document.getElementById("chatToggle");
+      const filterToggle = document.getElementById("filterToggle");
+      const chatBadge = document.getElementById("chatBadge");
+      const overlay = document.getElementById("mobileOverlay");
+      const chatMessages = document.querySelector(".chat-messages");
 
-  function isMobile() {
-    return window.innerWidth <= 800;
-  }
+      let unread = 0;
 
-  function closePanels() {
-    body.classList.remove("chat-open");
-    body.classList.remove("filter-open");
-  }
+      function isMobile() {
+        return window.innerWidth <= 800;
+      }
 
-  function updateBadge() {
-    if (unread > 0) {
-      chatBadge.textContent = unread > 99 ? "99+" : unread;
-      chatBadge.classList.add("show");
-    } else {
-      chatBadge.classList.remove("show");
-    }
-  }
+      function closePanels() {
+        body.classList.remove("chat-open");
+        body.classList.remove("filter-open");
+      }
 
-  chatToggle.addEventListener("click", () => {
-    if (!isMobile()) return;
-    const open = !body.classList.contains("chat-open");
-    closePanels();
-    if (open) {
-      body.classList.add("chat-open");
-      unread = 0;
-      updateBadge();
-    }
-  });
+      function updateBadge() {
+        if (unread > 0) {
+          chatBadge.textContent = unread > 99 ? "99+" : unread;
+          chatBadge.classList.add("show");
+        } else {
+          chatBadge.classList.remove("show");
+        }
+      }
 
-  filterToggle.addEventListener("click", () => {
-    if (!isMobile()) return;
-    const open = !body.classList.contains("filter-open");
-    closePanels();
-    if (open) {
-      body.classList.add("filter-open");
-    }
-  });
+      chatToggle.addEventListener("click", () => {
+        if (!isMobile()) return;
+        const open = !body.classList.contains("chat-open");
+        closePanels();
+        if (open) {
+          body.classList.add("chat-open");
+          unread = 0;
+          updateBadge();
+        }
+      });
 
-  overlay.addEventListener("click", closePanels);
+      filterToggle.addEventListener("click", () => {
+        if (!isMobile()) return;
+        const open = !body.classList.contains("filter-open");
+        closePanels();
+        if (open) body.classList.add("filter-open");
+      });
 
-  if (chatMessages) {
-    const observer = new MutationObserver((mutations) => {
-      if (!isMobile()) return;
-      if (body.classList.contains("chat-open")) return;
+      overlay.addEventListener("click", closePanels);
 
-      let added = 0;
+      if (chatMessages) {
+        const observer = new MutationObserver((mutations) => {
+          if (!isMobile()) return;
+          if (body.classList.contains("chat-open")) return;
 
-      for (const mutation of mutations) {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) {
-            const text = (node.textContent || "").trim();
-            if (text && !text.startsWith("Ich:")) {
-              added++;
-            }
+          let added = 0;
+          for (const mutation of mutations) {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) {
+                const text = (node.textContent || "").trim();
+                if (text && !text.startsWith("Ich:")) added++;
+              }
+            });
+          }
+
+          if (added > 0) {
+            unread += added;
+            updateBadge();
           }
         });
+
+        observer.observe(chatMessages, { childList: true });
       }
 
-      if (added > 0) {
-        unread += added;
-        updateBadge();
-      }
-    });
-
-    observer.observe(chatMessages, { childList: true });
-  }
-
-  window.addEventListener("resize", () => {
-    if (!isMobile()) {
-      closePanels();
-    }
-  });
-})();
-</script>
-
+      window.addEventListener("resize", () => {
+        if (!isMobile()) closePanels();
+      });
+    })();
+  </script>
 </body>
 </html>
