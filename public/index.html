@@ -4,14 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ================= SEO & Google ================= -->
   <title>Mini Chatroulette – Videochat online</title>
   <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
   <meta name="robots" content="index, follow">
-  <!-- Google Search Console Verifizierung -->
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
 
-  <!-- ================= Styles ================= -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -22,11 +19,13 @@
       background-size: 400% 400%;
       animation: gradientBG 15s ease infinite;
     }
+
     @keyframes gradientBG {
       0% {background-position: 0% 50%;}
       50% {background-position: 100% 50%;}
       100% {background-position: 0% 50%;}
     }
+
     header {
       font-size: 2em;
       font-weight: bold;
@@ -51,16 +50,19 @@
       margin-left: auto;
       margin-right: auto;
     }
+
     .form-left {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       align-items: center;
     }
+
     .online-right {
       font-weight: bold;
       color: #0f0;
     }
+
     button.btn-start {
       margin-left: 5px;
       background-color: #28a745;
@@ -69,6 +71,7 @@
       padding: 10px 20px;
       cursor: pointer;
       font-weight: bold;
+      border: none;
     }
 
     .videos {
@@ -79,11 +82,13 @@
       max-width: 1200px;
       margin: 10px auto;
     }
+
     .video-container {
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
     }
+
     video {
       width: 48%;
       height: 360px;
@@ -99,6 +104,7 @@
       justify-content: flex-end;
       gap: 10px;
     }
+
     .buttons button {
       min-width: 120px;
       padding: 10px 20px;
@@ -107,12 +113,8 @@
       cursor: pointer;
       font-size: 1em;
       font-weight: bold;
-      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .buttons button:hover {
-      transform: scale(1.07);
-      box-shadow: 0 0 12px rgba(255,255,255,0.4);
-    }
+
     .btn-stop {background-color: #dc3545; color: #fff;}
     .btn-next {background-color: #007bff; color: #fff;}
 
@@ -124,6 +126,7 @@
       max-width: 1200px;
       margin: 10px auto;
     }
+
     .chat-messages {
       height: 200px;
       overflow-y: auto;
@@ -132,72 +135,203 @@
       border-radius: 8px;
       margin-bottom: 10px;
     }
+
     .chat-input {
       display: flex;
       gap: 10px;
     }
+
     .chat-input input {
       flex: 1;
       padding: 10px;
       border-radius: 8px;
       border: none;
-      font-size: 1em;
     }
+
     .btn-send {
       background-color: #ffc107;
       color: #000;
       border-radius: 8px;
       padding: 10px 20px;
-      cursor: pointer;
+      border: none;
       font-weight: bold;
+    }
+
+    /* ================= MOBILE ================= */
+    .mobile-topbar,
+    .mobile-menu-backdrop {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+
+      body.menu-open {
+        overflow: hidden;
+      }
+
+      header {
+        display: none;
+      }
+
+      .mobile-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        padding: 0 15px;
+        background: #202c33;
+        z-index: 2000;
+      }
+
+      .mobile-menu-btn {
+        background: #2a3942;
+        border: none;
+        color: #fff;
+        font-size: 22px;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      .profile-form {
+        display: none;
+      }
+
+      body.menu-open .profile-form {
+        display: flex;
+        position: fixed;
+        top: 70px;
+        left: 10px;
+        right: 10px;
+        z-index: 2100;
+        flex-direction: column;
+        background: #202c33;
+        border-radius: 16px;
+        padding: 15px;
+      }
+
+      .mobile-menu-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1990;
+      }
+
+      body.menu-open .mobile-menu-backdrop {
+        display: block;
+      }
+
+      .videos {
+        padding-top: 60px;
+      }
+
+      #remoteVideo {
+        width: 100%;
+        height: 60vh;
+      }
+
+      #localVideo {
+        position: fixed;
+        top: 70px;
+        right: 10px;
+        width: 110px;
+        height: 140px;
+        z-index: 3000;
+        border-radius: 10px;
+      }
+
+      .buttons {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        justify-content: center;
+        padding: 10px;
+        background: #111;
+      }
+
+      .buttons button {
+        flex: 1;
+      }
     }
   </style>
 </head>
+
 <body>
 
-  <header>Mini Chatroulette</header>
-
-  <!-- Profilbereich -->
-  <section class="profile-form">
-    <div class="form-left">
-      <label>Ich bin:
-        <select id="gender"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Ich suche:
-        <select id="search"><option>Mann</option><option>Frau</option></select>
-      </label>
-      <label>Mein Land:
-        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-      </label>
-      <button class="btn-start">Start</button>
-    </div>
-    <div class="online-right">
-  👥 Online: <span id="onlineCount">0</span>
+<!-- MOBILE TOPBAR -->
+<div class="mobile-topbar">
+  <div>Mini Chatroulette</div>
+  <button class="mobile-menu-btn" id="menuBtn">☰</button>
 </div>
-  </section>
 
-  <!-- Videos + Buttons -->
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted></video>
-      <video id="remoteVideo" autoplay></video>
-    </div>
-    <div class="buttons">
-      <button class="btn-next">⏭ Nächster</button>
-      <button class="btn-stop">⏹ Stop</button>
-    </div>
-  </section>
+<div class="mobile-menu-backdrop" id="menuBackdrop"></div>
 
-  <!-- Chat -->
-  <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">💬 Senden</button>
-    </div>
-  </section>
+<header>Mini Chatroulette</header>
 
-  <!-- Client-Script -->
-  <script src="client.js"></script>
+<section class="profile-form">
+  <div class="form-left">
+    <label>Ich bin:
+      <select id="gender"><option>Mann</option><option>Frau</option></select>
+    </label>
+
+    <label>Ich suche:
+      <select id="search"><option>Mann</option><option>Frau</option></select>
+    </label>
+
+    <label>Mein Land:
+      <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+    </label>
+
+    <button class="btn-start">Start</button>
+  </div>
+
+  <div class="online-right">
+    👥 Online: <span id="onlineCount">0</span>
+  </div>
+</section>
+
+<section class="videos">
+  <div class="video-container">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </div>
+
+  <div class="buttons">
+    <button class="btn-next">⏭ Nächster</button>
+    <button class="btn-stop">⏹ Stop</button>
+  </div>
+</section>
+
+<section class="chat-box">
+  <div class="chat-messages"></div>
+  <div class="chat-input">
+    <input type="text" placeholder="Nachricht schreiben..." />
+    <button class="btn-send">💬 Senden</button>
+  </div>
+</section>
+
+<!-- MENU SCRIPT -->
+<script>
+  const body = document.body;
+  const menuBtn = document.getElementById("menuBtn");
+  const menuBackdrop = document.getElementById("menuBackdrop");
+
+  menuBtn.onclick = () => {
+    body.classList.toggle("menu-open");
+  };
+
+  menuBackdrop.onclick = () => {
+    body.classList.remove("menu-open");
+  };
+</script>
+
+<script src="client.js"></script>
+
 </body>
 </html>
