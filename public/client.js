@@ -1,6 +1,6 @@
 // ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
-const WS_URL = "wss://mini-chatroulette.onrender.com"; 
-const ws = new WebSocket(WS_URL); 
+const WS_URL = "wss://mini-chatroulette.onrender.com";
+const ws = new WebSocket(WS_URL);
 
 let localStream;
 let peerConnection;
@@ -12,21 +12,22 @@ const remoteVideo = document.getElementById("remoteVideo");
 const messagesDiv = document.querySelector(".chat-messages");
 const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
+
 // Für zukünftige Profil-Logik
 const genderSelect = document.getElementById("gender");
 const searchSelect = document.getElementById("search");
 const countrySelect = document.getElementById("country");
 
-const config = { 
+const config = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:stun2.l.google.com:19302" }
-    ] 
+    ]
 };
 
 // Platzhalter für "Suchen"-Animation
-const SEARCHING_VIDEO_SRC = "/assets/searching.mp4"; 
+const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
 
 // --- Hilfsfunktionen ---
 
@@ -34,8 +35,8 @@ function addMessage(sender, text, isSystem = false) {
     const div = document.createElement("div");
     div.textContent = `${sender}: ${text}`;
     if (isSystem) {
-        div.style.color = '#ffc107'; 
-        div.style.fontStyle = 'italic';
+        div.style.color = "#ffc107";
+        div.style.fontStyle = "italic";
     }
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -44,7 +45,10 @@ function addMessage(sender, text, isSystem = false) {
 async function startCamera() {
     if (localStream) return true;
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
         localVideo.srcObject = localStream;
         return true;
     } catch (err) {
@@ -56,17 +60,17 @@ async function startCamera() {
 function closePeerConnection() {
     if (peerConnection) {
         if (remoteVideo.srcObject) {
-            // Stoppe Tracks nur, wenn sie existieren (verhindert Fehler)
             if (remoteVideo.srcObject.getTracks) {
                 remoteVideo.srcObject.getTracks().forEach(track => track.stop());
             }
         }
         remoteVideo.srcObject = null;
-        remoteVideo.src = SEARCHING_VIDEO_SRC; // Zeige Platzhalter nach Trennung
-        remoteVideo.loop = true; // Loop für das Platzhalter-Video
+        remoteVideo.src = SEARCHING_VIDEO_SRC;
+        remoteVideo.loop = true;
         peerConnection.close();
         peerConnection = null;
     }
+
     dataChannel = null;
     addMessage("System", "Verbindung zum Partner beendet.", true);
     document.querySelector(".btn-next").disabled = true;
@@ -75,7 +79,7 @@ function closePeerConnection() {
 }
 
 function createPeerConnection() {
-    closePeerConnection(); 
+    closePeerConnection();
     peerConnection = new RTCPeerConnection(config);
 
     if (localStream) {
@@ -84,9 +88,9 @@ function createPeerConnection() {
 
     // Remote-Stream empfangen
     peerConnection.ontrack = (event) => {
-        remoteVideo.src = ""; // Entferne Platzhalter-Video
+        remoteVideo.src = "";
         remoteVideo.srcObject = event.streams[0];
-        remoteVideo.loop = false; // Loop ausschalten, da echter Stream
+        remoteVideo.loop = false;
         addMessage("System", "🎥 Videoanruf gestartet!", true);
         document.querySelector(".btn-next").disabled = false;
         document.querySelector(".btn-send").disabled = false;
@@ -99,27 +103,29 @@ function createPeerConnection() {
             ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
         }
     };
-    
-    // DataChannel für Chat (vom CALLER erstellt)
+
+    // DataChannel für Chat
     dataChannel = peerConnection.createDataChannel("chat");
     dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
     dataChannel.onmessage = (event) => addMessage("Partner", event.data);
 
-    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
-    peerConnection.ondatachannel = (event) => { 
+    // DataChannel empfangen
+    peerConnection.ondatachannel = (event) => {
         dataChannel = event.channel;
         dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
         dataChannel.onmessage = (e) => addMessage("Partner", e.data);
     };
 
     peerConnection.oniceconnectionstatechange = () => {
-        if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+        if (
+            peerConnection.iceConnectionState === "disconnected" ||
+            peerConnection.iceConnectionState === "failed"
+        ) {
             addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
             closePeerConnection();
         }
-    }
+    };
 }
-
 
 // --- WebSocket Events ---
 ws.onopen = () => {
@@ -132,7 +138,6 @@ ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
 
     if (data.type === "matched" && data.should_offer) {
-        // CALLER: Erstelle Offer
         createPeerConnection();
         addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
         const offer = await peerConnection.createOffer();
@@ -140,13 +145,11 @@ ws.onmessage = async (event) => {
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
-        // ANSWERER: Partner gefunden, warte auf Offer
         addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
 
     } else if (data.type === "offer") {
-        // ANSWERER: Empfange Offer
         if (!peerConnection) createPeerConnection();
-        
+
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
@@ -161,14 +164,15 @@ ws.onmessage = async (event) => {
         } catch (err) {
             console.warn("Fehler beim Hinzufügen des ICE Candidate:", err);
         }
+
     } else if (data.type === "partner-left") {
         addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
         closePeerConnection();
+
     } else if (data.type === "no-match") {
-         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
-    } 
-    // NEU: Logik für Besucherzählung vom Server
-    else if (data.type === "user-count") {
+        addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
+
+    } else if (data.type === "user-count") {
         const onlineCountElement = document.getElementById("onlineCount");
         if (onlineCountElement) {
             onlineCountElement.textContent = data.count;
@@ -179,46 +183,46 @@ ws.onmessage = async (event) => {
 // --- Buttons mit Logik ---
 
 document.querySelector(".btn-start").onclick = async () => {
-    if (!await startCamera()) return; 
+    if (!await startCamera()) return;
 
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
-    
+
     ws.send(JSON.stringify({ type: "start" }));
-    
+
     addMessage("System", "Suche nach Partner...", true);
     document.querySelector(".btn-start").disabled = true;
 };
 
 document.querySelector(".btn-next").onclick = () => {
     if (peerConnection) {
-        ws.send(JSON.stringify({ type: "next" })); 
-        closePeerConnection(); 
+        ws.send(JSON.stringify({ type: "next" }));
+        closePeerConnection();
     }
-    
+
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
 
     ws.send(JSON.stringify({ type: "start" }));
-    
+
     addMessage("System", "Suche nach neuem Partner...", true);
     document.querySelector(".btn-next").disabled = true;
 };
 
 document.querySelector(".btn-stop").onclick = () => {
     ws.send(JSON.stringify({ type: "stop" }));
-    
+
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localVideo.srcObject = null;
         localStream = null;
     }
-    
+
     closePeerConnection();
     remoteVideo.srcObject = null;
-    remoteVideo.src = ""; // Setze Remote-Video zurück, wenn gestoppt
+    remoteVideo.src = "";
     remoteVideo.loop = false;
     addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
     document.querySelector(".btn-start").disabled = false;
@@ -228,11 +232,90 @@ document.querySelector(".btn-stop").onclick = () => {
 // Chat-Nachricht senden
 sendBtn.onclick = () => {
     const text = input.value.trim();
-    if (text && dataChannel && dataChannel.readyState === 'open') {
+    if (text && dataChannel && dataChannel.readyState === "open") {
         dataChannel.send(text);
         addMessage("Ich", text);
         input.value = "";
     } else if (text) {
-         addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
+        addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
     }
 };
+
+// --- Mobile Drag für eigenes Video ---
+(function () {
+    if (!localVideo) return;
+
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    function isMobile() {
+        return window.innerWidth <= 800;
+    }
+
+    function setInitialMobilePosition() {
+        if (!isMobile()) {
+            localVideo.style.left = "";
+            localVideo.style.top = "";
+            localVideo.style.right = "";
+            localVideo.classList.remove("dragging");
+            return;
+        }
+
+        if (!localVideo.dataset.dragReady) {
+            localVideo.style.top = "70px";
+            localVideo.style.right = "10px";
+            localVideo.dataset.dragReady = "true";
+        }
+    }
+
+    localVideo.addEventListener("pointerdown", (e) => {
+        if (!isMobile()) return;
+
+        dragging = true;
+        localVideo.classList.add("dragging");
+
+        const rect = localVideo.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        startX = e.clientX;
+        startY = e.clientY;
+
+        localVideo.style.left = rect.left + "px";
+        localVideo.style.top = rect.top + "px";
+        localVideo.style.right = "auto";
+
+        e.preventDefault();
+    });
+
+    window.addEventListener("pointermove", (e) => {
+        if (!dragging || !isMobile()) return;
+
+        let newLeft = startLeft + (e.clientX - startX);
+        let newTop = startTop + (e.clientY - startY);
+
+        const maxLeft = window.innerWidth - localVideo.offsetWidth - 8;
+        const maxTop = window.innerHeight - localVideo.offsetHeight - 8;
+
+        if (newLeft < 8) newLeft = 8;
+        if (newTop < 8) newTop = 8;
+        if (newLeft > maxLeft) newLeft = maxLeft;
+        if (newTop > maxTop) newTop = maxTop;
+
+        localVideo.style.left = newLeft + "px";
+        localVideo.style.top = newTop + "px";
+    });
+
+    function stopDrag() {
+        dragging = false;
+        localVideo.classList.remove("dragging");
+    }
+
+    window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("pointercancel", stopDrag);
+    window.addEventListener("resize", setInitialMobilePosition);
+
+    setInitialMobilePosition();
+})();
