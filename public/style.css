@@ -76,7 +76,6 @@ button.btn-start {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0;
 }
 
 video {
@@ -86,13 +85,7 @@ video {
   border-radius: 8px;
   object-fit: cover;
   margin: 5px 0;
-
-  /* 🔥 Fade Effekt */
-  transition: opacity 0.4s ease;
-}
-
-video.fade-out {
-  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .remote-wrap {
@@ -108,26 +101,21 @@ video.fade-out {
   margin: 0;
 }
 
-/* 🔥 Overlay verbessert */
+/* 🔥 Overlay (Partner gesucht / Stop) */
 .remote-status {
   position: absolute;
   inset: 0;
   display: none;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6));
+  border-radius: 8px;
   text-align: center;
   padding: 20px;
-
-  background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-  backdrop-filter: blur(6px);
-
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
 .remote-status.show {
   display: flex;
-  opacity: 1;
 }
 
 .remote-status-inner {
@@ -135,30 +123,25 @@ video.fade-out {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-
-  background: rgba(0,0,0,0.6);
-  padding: 20px;
-  border-radius: 16px;
 }
 
 .remote-status-title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
 .remote-status-sub {
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.8);
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.82);
 }
 
-/* Spinner */
 .spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: #00d4ff;
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.9s linear infinite;
 }
 
 @keyframes spin {
@@ -232,13 +215,15 @@ video.fade-out {
   border: none;
 }
 
-/* Desktop: Mobile-Elemente aus */
-.mobile-topbar,
+/* ================= MOBILE ================= */
+.mobile-topbar {
+  display: none;
+}
+
 .mobile-overlay {
   display: none;
 }
 
-/* ================= MOBILE ================= */
 @media (max-width: 800px) {
 
   body {
@@ -248,8 +233,17 @@ video.fade-out {
     overflow: hidden;
   }
 
-  header { display: none; }
-  .profile-form { display: none; }
+  header {
+    display: none;
+  }
+
+  .mobile-topbar {
+    display: flex;
+  }
+
+  .profile-form {
+    display: none;
+  }
 
   .videos {
     margin: 0;
@@ -271,22 +265,28 @@ video.fade-out {
   #remoteVideo {
     width: 100%;
     height: 100%;
+    border-radius: 0;
   }
 
+  /* 🔥 dein kleines Video bleibt korrekt */
   #localVideo {
     position: fixed;
     top: 70px;
     right: 10px;
     width: 100px;
+    height: auto;
+    aspect-ratio: 3/4;
+    object-fit: cover;
     z-index: 40;
     border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.2);
   }
 
   .buttons {
     position: fixed;
     bottom: 0;
     width: 100%;
-    background: rgba(0,0,0,0.6);
+    background: rgba(17,27,33,0.9);
     padding: 10px;
     justify-content: center;
   }
@@ -295,5 +295,7 @@ video.fade-out {
     flex: 1;
   }
 
-  .chat-box { display: none; }
+  .chat-box {
+    display: none;
+  }
 }
