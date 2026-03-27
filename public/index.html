@@ -13,156 +13,198 @@
 </head>
 <body>
 
-  <!-- Mobile-only topbar -->
-  <div class="mobile-topbar">
-    <div class="mobile-logo">Mini Chatroulette</div>
-    <div class="mobile-top-actions">
-      <button id="chatToggle" class="mobile-icon-btn" type="button" aria-label="Chat öffnen">
-        💬
-        <span id="chatBadge" class="mobile-badge">0</span>
-      </button>
-      <button id="filterToggle" class="mobile-icon-btn" type="button" aria-label="Filter öffnen">⚙️</button>
-    </div>
+<!-- MOBILE TOPBAR -->
+<div class="mobile-topbar">
+  <div class="mobile-logo">Mini Chatroulette</div>
+
+  <div class="mobile-top-actions">
+    <button id="chatToggle" class="mobile-icon-btn">
+      💬
+      <span id="chatBadge" class="mobile-badge">0</span>
+    </button>
+
+    <button id="filterToggle" class="mobile-icon-btn">⚙️</button>
+  </div>
+</div>
+
+<div id="mobileOverlay" class="mobile-overlay"></div>
+
+<header>Mini Chatroulette</header>
+
+<!-- PROFIL -->
+<section class="profile-form">
+  <div class="form-left">
+    <label>Ich bin:
+      <select id="gender">
+        <option>Mann</option>
+        <option>Frau</option>
+      </select>
+    </label>
+
+    <label>Ich suche:
+      <select id="search">
+        <option>Mann</option>
+        <option>Frau</option>
+      </select>
+    </label>
+
+    <label>Mein Land:
+      <select id="country">
+        <option>Deutschland</option>
+        <option>Österreich</option>
+        <option>Schweiz</option>
+      </select>
+    </label>
+
+    <button class="btn-start" disabled>Start</button>
   </div>
 
-  <div id="mobileOverlay" class="mobile-overlay"></div>
+  <div class="online-right">
+    👥 Online: <span id="onlineCount">0</span>
+  </div>
+</section>
 
-  <header>Mini Chatroulette</header>
+<!-- VIDEOS -->
+<section class="videos">
+  <div class="video-container">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
 
-  <!-- Profilbereich -->
-  <section class="profile-form">
-    <div class="form-left">
-      <label>Ich bin:
-        <select id="gender">
-          <option>Mann</option>
-          <option>Frau</option>
-        </select>
-      </label>
+  <div class="buttons">
+    <button class="btn-next" disabled>⏭ Nächster</button>
+    <button class="btn-stop" disabled>⏹ Stop</button>
+  </div>
+</section>
 
-      <label>Ich suche:
-        <select id="search">
-          <option>Mann</option>
-          <option>Frau</option>
-        </select>
-      </label>
+<!-- CHAT -->
+<section class="chat-box" id="chatBox">
+  <div class="chat-messages"></div>
 
-      <label>Mein Land:
-        <select id="country">
-          <option>Deutschland</option>
-          <option>Österreich</option>
-          <option>Schweiz</option>
-        </select>
-      </label>
+  <div class="chat-input">
+    <!-- ❗ jetzt NICHT mehr disabled -->
+    <input id="msgInput" type="text" placeholder="Nachricht schreiben..." />
+    <button class="btn-send">💬 Senden</button>
+  </div>
+</section>
 
-      <button class="btn-start" disabled>Start</button>
-    </div>
+<script src="client.js"></script>
 
-    <div class="online-right">
-      👥 Online: <span id="onlineCount">0</span>
-    </div>
-  </section>
+<!-- MOBILE UI SCRIPT -->
+<script>
+(function () {
+  const body = document.body;
+  const chatToggle = document.getElementById("chatToggle");
+  const filterToggle = document.getElementById("filterToggle");
+  const chatBadge = document.getElementById("chatBadge");
+  const overlay = document.getElementById("mobileOverlay");
+  const chatMessages = document.querySelector(".chat-messages");
 
-  <!-- Videos + Buttons -->
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
+  let unread = 0;
 
-    <div class="buttons">
-      <button class="btn-next" disabled>⏭ Nächster</button>
-      <button class="btn-stop" disabled>⏹ Stop</button>
-    </div>
-  </section>
+  function isMobile() {
+    return window.innerWidth <= 800;
+  }
 
-  <!-- Chat -->
-  <section class="chat-box" id="chatBox">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled />
-      <button class="btn-send" disabled>💬 Senden</button>
-    </div>
-  </section>
+  function closePanels() {
+    body.classList.remove("chat-open");
+    body.classList.remove("filter-open");
+  }
 
-  <script src="client.js"></script>
+  function updateBadge() {
+    if (unread > 0) {
+      chatBadge.textContent = unread > 99 ? "99+" : unread;
+      chatBadge.classList.add("show");
+    } else {
+      chatBadge.classList.remove("show");
+    }
+  }
 
-  <script>
-    (function () {
-      const body = document.body;
-      const chatToggle = document.getElementById("chatToggle");
-      const filterToggle = document.getElementById("filterToggle");
-      const chatBadge = document.getElementById("chatBadge");
-      const overlay = document.getElementById("mobileOverlay");
-      const chatMessages = document.querySelector(".chat-messages");
+  function playSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-      let unread = 0;
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
 
-      function isMobile() {
-        return window.innerWidth <= 800;
-      }
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-      function closePanels() {
-        body.classList.remove("chat-open");
-        body.classList.remove("filter-open");
-      }
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {}
+  }
 
-      function updateBadge() {
-        if (unread > 0) {
-          chatBadge.textContent = unread > 99 ? "99+" : unread;
-          chatBadge.classList.add("show");
-        } else {
-          chatBadge.classList.remove("show");
-        }
-      }
+  function vibrate() {
+    if (navigator.vibrate) {
+      navigator.vibrate([120, 60, 120]);
+    }
+  }
 
-      chatToggle.addEventListener("click", () => {
-        if (!isMobile()) return;
-        const open = !body.classList.contains("chat-open");
-        closePanels();
-        if (open) {
-          body.classList.add("chat-open");
-          unread = 0;
-          updateBadge();
-        }
-      });
+  chatToggle.onclick = () => {
+    if (!isMobile()) return;
 
-      filterToggle.addEventListener("click", () => {
-        if (!isMobile()) return;
-        const open = !body.classList.contains("filter-open");
-        closePanels();
-        if (open) body.classList.add("filter-open");
-      });
+    const open = !body.classList.contains("chat-open");
+    closePanels();
 
-      overlay.addEventListener("click", closePanels);
+    if (open) {
+      body.classList.add("chat-open");
+      unread = 0;
+      updateBadge();
+    }
+  };
 
-      if (chatMessages) {
-        const observer = new MutationObserver((mutations) => {
-          if (!isMobile()) return;
-          if (body.classList.contains("chat-open")) return;
+  filterToggle.onclick = () => {
+    if (!isMobile()) return;
 
-          let added = 0;
-          for (const mutation of mutations) {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === 1) {
-                const text = (node.textContent || "").trim();
-                if (text && !text.startsWith("Ich:")) added++;
-              }
-            });
-          }
+    const open = !body.classList.contains("filter-open");
+    closePanels();
 
-          if (added > 0) {
-            unread += added;
-            updateBadge();
+    if (open) {
+      body.classList.add("filter-open");
+    }
+  };
+
+  overlay.onclick = closePanels;
+
+  if (chatMessages) {
+    const observer = new MutationObserver((mutations) => {
+      if (!isMobile()) return;
+      if (body.classList.contains("chat-open")) return;
+
+      let added = 0;
+
+      for (const m of mutations) {
+        m.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+
+          const text = (node.textContent || "").trim();
+
+          // ✅ NUR Partner zählt
+          if (text.startsWith("Partner:")) {
+            added++;
           }
         });
-
-        observer.observe(chatMessages, { childList: true });
       }
 
-      window.addEventListener("resize", () => {
-        if (!isMobile()) closePanels();
-      });
-    })();
-  </script>
+      if (added > 0) {
+        unread += added;
+        updateBadge();
+        playSound();
+        vibrate();
+      }
+    });
+
+    observer.observe(chatMessages, { childList: true });
+  }
+
+  window.addEventListener("resize", () => {
+    if (!isMobile()) closePanels();
+  });
+})();
+</script>
+
 </body>
 </html>
