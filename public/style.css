@@ -76,6 +76,7 @@ button.btn-start {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 0;
 }
 
 video {
@@ -85,7 +86,6 @@ video {
   border-radius: 8px;
   object-fit: cover;
   margin: 5px 0;
-  transition: opacity 0.3s ease;
 }
 
 .remote-wrap {
@@ -101,7 +101,7 @@ video {
   margin: 0;
 }
 
-/* 🔥 Overlay (Partner gesucht / Stop) */
+/* 🔥 NUR HIER WURDE WAS ERWEITERT */
 .remote-status {
   position: absolute;
   inset: 0;
@@ -112,10 +112,14 @@ video {
   border-radius: 8px;
   text-align: center;
   padding: 20px;
+
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .remote-status.show {
   display: flex;
+  opacity: 1;
 }
 
 .remote-status-inner {
@@ -215,21 +219,23 @@ video {
   border: none;
 }
 
-/* ================= MOBILE ================= */
-.mobile-topbar {
-  display: none;
-}
-
+/* Desktop: Mobile-Elemente aus */
+.mobile-topbar,
 .mobile-overlay {
   display: none;
 }
 
+/* ================= MOBILE ONLY ================= */
 @media (max-width: 800px) {
-
   body {
     padding: 0;
     background: #111b21;
     animation: none;
+    overflow-x: hidden;
+  }
+
+  body.chat-open,
+  body.filter-open {
     overflow: hidden;
   }
 
@@ -241,41 +247,51 @@ video {
     display: flex;
   }
 
+  .mobile-overlay {
+    display: none;
+  }
+
   .profile-form {
     display: none;
   }
 
   .videos {
+    max-width: none;
     margin: 0;
-    padding: 0;
-    height: 100vh;
+    padding: 0 0 82px 0;
+    border-radius: 0;
+    box-shadow: none;
     background: #111b21;
+    min-height: 100vh;
   }
 
   .video-container {
     display: block;
-    height: 100%;
+    width: 100%;
   }
 
   .remote-wrap {
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    min-height: 420px;
+    margin: 0;
   }
 
   #remoteVideo {
     width: 100%;
     height: 100%;
     border-radius: 0;
+    margin: 0;
+    display: block;
   }
 
-  /* 🔥 dein kleines Video bleibt korrekt */
   #localVideo {
     position: fixed;
     top: 70px;
     right: 10px;
     width: 100px;
     height: auto;
-    aspect-ratio: 3/4;
+    aspect-ratio: 3 / 4;
     object-fit: cover;
     z-index: 40;
     border-radius: 12px;
@@ -285,14 +301,19 @@ video {
   .buttons {
     position: fixed;
     bottom: 0;
-    width: 100%;
-    background: rgba(17,27,33,0.9);
+    left: 0;
+    right: 0;
+    background: rgba(17,27,33,0.92);
     padding: 10px;
+    margin: 0;
+    z-index: 50;
+    gap: 10px;
     justify-content: center;
   }
 
   .buttons button {
     flex: 1;
+    min-width: 0;
   }
 
   .chat-box {
