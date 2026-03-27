@@ -13,6 +13,11 @@
 
   <header>
     <h1>Mini Chatroulette</h1>
+
+    <button class="chat-toggle" id="chatToggle" type="button" aria-label="Chat öffnen">
+      💬
+      <span class="chat-badge" id="chatBadge">0</span>
+    </button>
   </header>
 
   <main id="container">
@@ -74,6 +79,93 @@
     </aside>
   </main>
 
+  <div class="chat-overlay-backdrop" id="chatBackdrop"></div>
+
   <script src="client.js"></script>
+
+  <script>
+    (function () {
+      const body = document.body;
+      const chatToggle = document.getElementById("chatToggle");
+      const chatBadge = document.getElementById("chatBadge");
+      const chatBackdrop = document.getElementById("chatBackdrop");
+      const chatMessages = document.querySelector(".chat-messages");
+
+      let unreadCount = 0;
+
+      function isMobile() {
+        return window.innerWidth <= 800;
+      }
+
+      function updateBadge() {
+        if (!chatBadge) return;
+        if (unreadCount > 0) {
+          chatBadge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+          chatBadge.classList.add("show");
+        } else {
+          chatBadge.classList.remove("show");
+        }
+      }
+
+      function openChat() {
+        if (!isMobile()) return;
+        body.classList.add("chat-open");
+        unreadCount = 0;
+        updateBadge();
+      }
+
+      function closeChat() {
+        body.classList.remove("chat-open");
+      }
+
+      if (chatToggle) {
+        chatToggle.addEventListener("click", () => {
+          if (!isMobile()) return;
+          if (body.classList.contains("chat-open")) {
+            closeChat();
+          } else {
+            openChat();
+          }
+        });
+      }
+
+      if (chatBackdrop) {
+        chatBackdrop.addEventListener("click", closeChat);
+      }
+
+      if (chatMessages) {
+        const observer = new MutationObserver((mutations) => {
+          if (!isMobile()) return;
+          if (body.classList.contains("chat-open")) return;
+
+          let added = 0;
+
+          for (const mutation of mutations) {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) {
+                const text = (node.textContent || "").trim();
+                if (text && !text.startsWith("Ich:")) {
+                  added++;
+                }
+              }
+            });
+          }
+
+          if (added > 0) {
+            unreadCount += added;
+            updateBadge();
+          }
+        });
+
+        observer.observe(chatMessages, { childList: true });
+      }
+
+      window.addEventListener("resize", () => {
+        if (!isMobile()) {
+          closeChat();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
