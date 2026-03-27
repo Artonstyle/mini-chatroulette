@@ -3,504 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Mini Chatroulette – Videochat online</title>
   <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-      background: linear-gradient(-45deg, #1c1c1c, #2e2e2e, #3a3a3a, #1c1c1c);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-    }
-
-    @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
-    }
-
-    header {
-      font-size: 2em;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-align: center;
-      color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff, 0 0 20px #0077ff, 0 0 40px #0044ff;
-      letter-spacing: 2px;
-    }
-
-    .profile-form {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .form-left {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .online-right {
-      font-weight: bold;
-      color: #0f0;
-    }
-
-    button.btn-start {
-      margin-left: 5px;
-      background-color: #28a745;
-      color: #fff;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-      border: none;
-    }
-
-    .videos {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
-    }
-
-    .video-container {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      position: relative;
-    }
-
-    video {
-      width: 48%;
-      height: 360px;
-      background: #000;
-      border-radius: 8px;
-      object-fit: cover;
-      margin: 5px 0;
-    }
-
-    .buttons {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-
-    .buttons button {
-      min-width: 120px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1em;
-      font-weight: bold;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .buttons button:hover {
-      transform: scale(1.07);
-      box-shadow: 0 0 12px rgba(255,255,255,0.4);
-    }
-
-    .btn-stop { background-color: #dc3545; color: #fff; }
-    .btn-next { background-color: #007bff; color: #fff; }
-
-    .chat-box {
-      background: rgba(50,50,50,0.95);
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      max-width: 1200px;
-      margin: 10px auto;
-    }
-
-    .chat-messages {
-      height: 200px;
-      overflow-y: auto;
-      background: #1f1f1f;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-
-    .chat-input {
-      display: flex;
-      gap: 10px;
-    }
-
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1em;
-    }
-
-    .btn-send {
-      background-color: #ffc107;
-      color: #000;
-      border-radius: 8px;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-      border: none;
-    }
-
-    .mobile-topbar,
-    .mobile-menu-backdrop {
-      display: none;
-    }
-
-    @media (max-width: 768px) {
-      body {
-        padding: 0;
-        background: #111b21;
-        animation: none;
-        overflow-x: hidden;
-      }
-
-      body.menu-open {
-        overflow: hidden;
-      }
-
-      header {
-        display: none;
-      }
-
-      .mobile-topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 58px;
-        padding: 0 14px;
-        background: #202c33;
-        z-index: 2000;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-      }
-
-      .mobile-topbar-title {
-        font-size: 1rem;
-        font-weight: bold;
-        color: #e9edef;
-      }
-
-      .mobile-topbar-right {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .mobile-online {
-        color: #25d366;
-        font-size: 0.9rem;
-        font-weight: bold;
-      }
-
-      .mobile-menu-btn {
-        background: #2a3942;
-        border: none;
-        color: #fff;
-        font-size: 22px;
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        cursor: pointer;
-      }
-
-      .mobile-menu-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1990;
-      }
-
-      body.menu-open .mobile-menu-backdrop {
-        display: block;
-      }
-
-      .profile-form {
-        display: none;
-      }
-
-      body.menu-open .profile-form {
-        display: flex;
-        position: fixed;
-        top: 70px;
-        left: 10px;
-        right: 10px;
-        z-index: 2100;
-        flex-direction: column;
-        align-items: stretch;
-        background: #202c33;
-        border-radius: 16px;
-        padding: 15px;
-        max-width: none;
-        margin: 0;
-      }
-
-      body.menu-open .form-left {
-        display: block;
-        width: 100%;
-      }
-
-      body.menu-open .form-left label {
-        display: block;
-        margin-bottom: 12px;
-        color: #d1d7db;
-        font-size: 14px;
-      }
-
-      body.menu-open .form-left select {
-        width: 100%;
-        margin-top: 6px;
-        padding: 12px;
-        border: none;
-        border-radius: 10px;
-        background: #2a3942;
-        color: #fff;
-        font-size: 15px;
-      }
-
-      body.menu-open .btn-start {
-        width: 100%;
-        margin-left: 0;
-        margin-top: 4px;
-      }
-
-      body.menu-open .online-right {
-        margin-top: 12px;
-        text-align: center;
-        background: #111b21;
-        border-radius: 10px;
-        padding: 10px;
-      }
-
-      .videos {
-        max-width: none;
-        margin: 0;
-        padding: 58px 0 82px 0;
-        border-radius: 0;
-        box-shadow: none;
-        background: #111b21;
-        min-height: 100vh;
-      }
-
-      .video-container {
-        display: block;
-        width: 100%;
-      }
-
-      #remoteVideo {
-        width: 100%;
-        height: calc(100vh - 140px);
-        min-height: 430px;
-        border-radius: 0;
-        margin: 0;
-        display: block;
-      }
-
-      #localVideo {
-        position: fixed;
-        top: 72px;
-        right: 12px;
-        width: 108px;
-        height: 144px;
-        z-index: 1200;
-        border-radius: 14px;
-        margin: 0;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-        border: 2px solid rgba(255,255,255,0.14);
-      }
-
-      .buttons {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        margin: 0;
-        padding: 10px;
-        justify-content: center;
-        gap: 10px;
-        background: rgba(17,27,33,0.97);
-        z-index: 1100;
-      }
-
-      .buttons button {
-        flex: 1;
-        min-width: 0;
-        padding: 14px 10px;
-        border-radius: 12px;
-      }
-
-      .chat-box {
-        margin: 0;
-        max-width: 100%;
-        border-radius: 0;
-        padding: 10px;
-        background: #0b141a;
-        box-shadow: none;
-      }
-
-      .chat-messages {
-        height: 150px;
-        background: #111b21;
-        border-radius: 14px;
-        padding: 12px;
-        margin-bottom: 10px;
-      }
-
-      .chat-input {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: #202c33;
-        border-radius: 14px;
-        padding: 8px;
-      }
-
-      .chat-input input {
-        background: transparent;
-        color: #fff;
-        padding: 10px 12px;
-      }
-
-      .chat-input input::placeholder {
-        color: #8696a0;
-      }
-
-      .btn-send {
-        padding: 12px 16px;
-        border-radius: 12px;
-        background: #25d366;
-        color: #111b21;
-        white-space: nowrap;
-      }
-    }
-
-    @media (max-width: 480px) {
-      #remoteVideo {
-        height: calc(100vh - 132px);
-        min-height: 360px;
-      }
-
-      #localVideo {
-        width: 92px;
-        height: 122px;
-      }
-
-      .chat-messages {
-        height: 130px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="mobile-topbar">
-    <div class="mobile-topbar-title">Mini Chatroulette</div>
-    <div class="mobile-topbar-right">
-      <div class="mobile-online">👥 <span id="onlineCountMirror">0</span></div>
-      <button class="mobile-menu-btn" id="menuBtn" type="button">☰</button>
-    </div>
-  </div>
+  <header>
+    <h1>Mini Chatroulette</h1>
+  </header>
 
-  <div class="mobile-menu-backdrop" id="menuBackdrop"></div>
+  <main id="container">
+    <section>
+      <div class="card">
+        <div class="video-row">
+          <video id="localVideo" autoplay muted playsinline></video>
+          <video id="remoteVideo" autoplay playsinline></video>
+        </div>
 
-  <header>Mini Chatroulette</header>
+        <div class="controls">
+          <button class="btn primary btn-start" disabled>Start</button>
+          <button class="btn primary btn-next" disabled>⏭ Nächster</button>
+          <button class="btn danger btn-stop" disabled>⏹ Stop</button>
+        </div>
+      </div>
+    </section>
 
-  <section class="profile-form">
-    <div class="form-left">
-      <label>Ich bin:
-        <select id="gender"><option>Mann</option><option>Frau</option></select>
-      </label>
+    <aside>
+      <div class="card">
+        <label>
+          Ich bin:
+          <select id="gender">
+            <option>Mann</option>
+            <option>Frau</option>
+          </select>
+        </label>
 
-      <label>Ich suche:
-        <select id="search"><option>Mann</option><option>Frau</option></select>
-      </label>
+        <label>
+          Ich suche:
+          <select id="search">
+            <option>Mann</option>
+            <option>Frau</option>
+          </select>
+        </label>
 
-      <label>Mein Land:
-        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
-      </label>
+        <label>
+          Mein Land:
+          <select id="country">
+            <option>Deutschland</option>
+            <option>Österreich</option>
+            <option>Schweiz</option>
+          </select>
+        </label>
 
-      <button class="btn-start">Start</button>
-    </div>
+        <div id="profileInfo">
+          👥 Online: <span id="onlineCount">0</span>
+        </div>
+      </div>
 
-    <div class="online-right">
-      👥 Online: <span id="onlineCount">0</span>
-    </div>
-  </section>
+      <div class="card" id="chat">
+        <div class="messages chat-messages"></div>
 
-  <section class="videos">
-    <div class="video-container">
-      <video id="localVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
-
-    <div class="buttons">
-      <button class="btn-next">⏭ Nächster</button>
-      <button class="btn-stop">⏹ Stop</button>
-    </div>
-  </section>
-
-  <section class="chat-box">
-    <div class="chat-messages"></div>
-    <div class="chat-input">
-      <input type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">💬 Senden</button>
-    </div>
-  </section>
-
-  <script>
-    const body = document.body;
-    const menuBtn = document.getElementById("menuBtn");
-    const menuBackdrop = document.getElementById("menuBackdrop");
-    const onlineCount = document.getElementById("onlineCount");
-    const onlineCountMirror = document.getElementById("onlineCountMirror");
-
-    menuBtn.onclick = () => {
-      body.classList.toggle("menu-open");
-    };
-
-    menuBackdrop.onclick = () => {
-      body.classList.remove("menu-open");
-    };
-
-    const countObserver = new MutationObserver(() => {
-      onlineCountMirror.textContent = onlineCount.textContent;
-    });
-
-    countObserver.observe(onlineCount, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
-
-    onlineCountMirror.textContent = onlineCount.textContent;
-  </script>
+        <div class="input-row chat-input">
+          <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled>
+          <button class="btn primary btn-send" disabled>💬 Senden</button>
+        </div>
+      </div>
+    </aside>
+  </main>
 
   <script src="client.js"></script>
 </body>
