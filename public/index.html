@@ -3,169 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Chatroulette – Videochat online</title>
-  <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
-  <meta name="robots" content="index, follow">
-  <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
+  <title>Mini Chatroulette</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <header>
-    <h1>Mini Chatroulette</h1>
+<header>
+  <h1>Mini Chatroulette</h1>
 
-    <button class="chat-toggle" id="chatToggle" type="button" aria-label="Chat öffnen">
+  <div class="top-icons">
+    <button id="filterToggle">⚙️</button>
+    <button id="chatToggle">
       💬
-      <span class="chat-badge" id="chatBadge">0</span>
+      <span id="chatBadge">0</span>
     </button>
-  </header>
+  </div>
+</header>
 
-  <main id="container">
-    <section>
-      <div class="card">
-        <div class="video-row">
-          <video id="localVideo" autoplay muted playsinline></video>
-          <video id="remoteVideo" autoplay playsinline></video>
-        </div>
+<main id="container">
 
-        <div class="controls">
-          <button class="btn primary btn-start" disabled>Start</button>
-          <button class="btn primary btn-next" disabled>⏭ Nächster</button>
-          <button class="btn danger btn-stop" disabled>⏹ Stop</button>
-        </div>
+  <section>
+    <div class="video-row">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary btn-start">Start</button>
+      <button class="btn primary btn-next">⏭</button>
+      <button class="btn danger btn-stop">⏹</button>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <label>Ich bin:
+        <select id="gender"><option>Mann</option><option>Frau</option></select>
+      </label>
+
+      <label>Ich suche:
+        <select id="search"><option>Mann</option><option>Frau</option></select>
+      </label>
+
+      <label>Mein Land:
+        <select id="country"><option>Deutschland</option><option>Österreich</option><option>Schweiz</option></select>
+      </label>
+
+      <div id="profileInfo">
+        👥 Online: <span id="onlineCount">0</span>
       </div>
-    </section>
+    </div>
 
-    <aside>
-      <div class="card">
-        <label>
-          Ich bin:
-          <select id="gender">
-            <option>Mann</option>
-            <option>Frau</option>
-          </select>
-        </label>
-
-        <label>
-          Ich suche:
-          <select id="search">
-            <option>Mann</option>
-            <option>Frau</option>
-          </select>
-        </label>
-
-        <label>
-          Mein Land:
-          <select id="country">
-            <option>Deutschland</option>
-            <option>Österreich</option>
-            <option>Schweiz</option>
-          </select>
-        </label>
-
-        <div id="profileInfo">
-          👥 Online: <span id="onlineCount">0</span>
-        </div>
+    <div class="card" id="chat">
+      <div class="messages chat-messages"></div>
+      <div class="input-row chat-input">
+        <input id="msgInput" type="text" placeholder="Nachricht...">
+        <button class="btn primary btn-send">➡</button>
       </div>
+    </div>
+  </aside>
 
-      <div class="card" id="chat">
-        <div class="messages chat-messages"></div>
+</main>
 
-        <div class="input-row chat-input">
-          <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled>
-          <button class="btn primary btn-send" disabled>💬 Senden</button>
-        </div>
-      </div>
-    </aside>
-  </main>
+<!-- FILTER POPUP -->
+<div id="filterPopup" class="popup">
+  <label>Ich bin:
+    <select id="gender"></select>
+  </label>
+  <label>Ich suche:
+    <select id="search"></select>
+  </label>
+  <label>Land:
+    <select id="country"></select>
+  </label>
+</div>
 
-  <div class="chat-overlay-backdrop" id="chatBackdrop"></div>
+<script src="client.js"></script>
 
-  <script src="client.js"></script>
+<script>
+let unread = 0;
 
-  <script>
-    (function () {
-      const body = document.body;
-      const chatToggle = document.getElementById("chatToggle");
-      const chatBadge = document.getElementById("chatBadge");
-      const chatBackdrop = document.getElementById("chatBackdrop");
-      const chatMessages = document.querySelector(".chat-messages");
+const chatToggle = document.getElementById("chatToggle");
+const chatBadge = document.getElementById("chatBadge");
+const chat = document.getElementById("chat");
 
-      let unreadCount = 0;
+const filterToggle = document.getElementById("filterToggle");
+const filterPopup = document.getElementById("filterPopup");
 
-      function isMobile() {
-        return window.innerWidth <= 800;
-      }
+// CHAT TOGGLE
+chatToggle.onclick = () => {
+  chat.classList.toggle("open");
+  unread = 0;
+  chatBadge.style.display = "none";
+};
 
-      function updateBadge() {
-        if (!chatBadge) return;
-        if (unreadCount > 0) {
-          chatBadge.textContent = unreadCount > 99 ? "99+" : unreadCount;
-          chatBadge.classList.add("show");
-        } else {
-          chatBadge.classList.remove("show");
-        }
-      }
+// FILTER
+filterToggle.onclick = () => {
+  filterPopup.classList.toggle("open");
+};
 
-      function openChat() {
-        if (!isMobile()) return;
-        body.classList.add("chat-open");
-        unreadCount = 0;
-        updateBadge();
-      }
+// BADGE LOGIK
+const observer = new MutationObserver(() => {
+  if (!chat.classList.contains("open")) {
+    unread++;
+    chatBadge.innerText = unread;
+    chatBadge.style.display = "block";
+  }
+});
 
-      function closeChat() {
-        body.classList.remove("chat-open");
-      }
+observer.observe(document.querySelector(".chat-messages"), {
+  childList: true
+});
+</script>
 
-      if (chatToggle) {
-        chatToggle.addEventListener("click", () => {
-          if (!isMobile()) return;
-          if (body.classList.contains("chat-open")) {
-            closeChat();
-          } else {
-            openChat();
-          }
-        });
-      }
-
-      if (chatBackdrop) {
-        chatBackdrop.addEventListener("click", closeChat);
-      }
-
-      if (chatMessages) {
-        const observer = new MutationObserver((mutations) => {
-          if (!isMobile()) return;
-          if (body.classList.contains("chat-open")) return;
-
-          let added = 0;
-
-          for (const mutation of mutations) {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === 1) {
-                const text = (node.textContent || "").trim();
-                if (text && !text.startsWith("Ich:")) {
-                  added++;
-                }
-              }
-            });
-          }
-
-          if (added > 0) {
-            unreadCount += added;
-            updateBadge();
-          }
-        });
-
-        observer.observe(chatMessages, { childList: true });
-      }
-
-      window.addEventListener("resize", () => {
-        if (!isMobile()) {
-          closeChat();
-        }
-      });
-    })();
-  </script>
 </body>
 </html>
