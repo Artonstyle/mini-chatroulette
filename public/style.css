@@ -5,143 +5,27 @@
   --primary:#2196f3;
   --muted:#6b7280;
 }
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#111}
+header{padding:18px 20px;text-align:center}
+h1{margin:0;font-size:20px}
+.card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,0.06);margin:20px auto;max-width:400px}
+label{display:block;margin:10px 0}
+select{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd}
+#container{display:grid;grid-template-columns:2fr 1fr;gap:18px;padding:20px;max-width:1000px;margin:0 auto}
+.video-row{display:flex;gap:10px;justify-content:center;align-items:center}
+video{width:48%;height:auto;background:#000;border-radius:8px;border:1px solid #ddd}
+.controls{display:flex;justify-content:center;margin-top:12px}
+.btn{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--primary);color:white}
+.btn.danger{background:var(--accent);color:white}
+#chat{display:flex;flex-direction:column;gap:8px}
+.messages{flex:1;overflow:auto;border:1px solid #eee;padding:10px;border-radius:8px;height:360px;background:#fafafa}
+.input-row{display:flex;gap:8px}
+input#msgInput{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+#profileInfo{margin-top:12px;font-size:14px;color:var(--muted)}
 
-*{
-  box-sizing:border-box;
-}
-
-body{
-  margin:0;
-  font-family:Inter,Arial,Helvetica,sans-serif;
-  background:var(--bg);
-  color:#111;
-}
-
-header{
-  padding:18px 20px;
-  text-align:center;
-  position:relative;
-}
-
-h1{
-  margin:0;
-  font-size:20px;
-}
-
-.card{
-  background:var(--card);
-  border-radius:12px;
-  padding:16px;
-  box-shadow:0 6px 18px rgba(15,23,42,0.06);
-  margin:20px auto;
-  max-width:400px;
-}
-
-label{
-  display:block;
-  margin:10px 0;
-}
-
-select{
-  width:100%;
-  padding:8px;
-  border-radius:8px;
-  border:1px solid #ddd;
-}
-
-#container{
-  display:grid;
-  grid-template-columns:2fr 1fr;
-  gap:18px;
-  padding:20px;
-  max-width:1000px;
-  margin:0 auto;
-}
-
-.video-row{
-  display:flex;
-  gap:10px;
-  justify-content:center;
-  align-items:center;
-  position:relative;
-}
-
-video{
-  width:48%;
-  height:auto;
-  background:#000;
-  border-radius:8px;
-  border:1px solid #ddd;
-  object-fit:cover;
-}
-
-.controls{
-  display:flex;
-  justify-content:center;
-  margin-top:12px;
-  gap:10px;
-}
-
-.btn{
-  padding:10px 14px;
-  border-radius:8px;
-  border:0;
-  cursor:pointer;
-  font-weight:600;
-}
-
-.btn.primary{
-  background:var(--primary);
-  color:white;
-}
-
-.btn.danger{
-  background:var(--accent);
-  color:white;
-}
-
-#chat{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.messages{
-  flex:1;
-  overflow:auto;
-  border:1px solid #eee;
-  padding:10px;
-  border-radius:8px;
-  height:360px;
-  background:#fafafa;
-}
-
-.input-row{
-  display:flex;
-  gap:8px;
-}
-
-input#msgInput{
-  flex:1;
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #ddd;
-}
-
-#profileInfo{
-  margin-top:12px;
-  font-size:14px;
-  color:var(--muted);
-}
-
-/* Nur vorbereitet, aktuell nicht benutzt */
-.chat-icon,
-.chat-badge,
-.chat-popup{
-  display:none;
-}
-
-/* ================= MOBILE ================= */
+/* ================= MOBILE ONLY ================= */
 @media(max-width:800px){
   body{
     background:#111b21;
@@ -155,20 +39,11 @@ input#msgInput{
     position:sticky;
     top:0;
     z-index:5;
-    padding:14px 16px;
-    text-align:left;
-    border-bottom:1px solid rgba(255,255,255,0.08);
-  }
-
-  h1{
-    font-size:18px;
   }
 
   #container{
     grid-template-columns:1fr;
     padding:0;
-    gap:0;
-    max-width:none;
   }
 
   .card{
@@ -194,6 +69,7 @@ input#msgInput{
     border-radius:0;
     border:none;
     display:block;
+    object-fit:cover;
   }
 
   /* Eigenes Video klein */
@@ -205,7 +81,6 @@ input#msgInput{
     height:140px;
     max-width:30vw;
     max-height:25vh;
-    object-fit:cover;
     z-index:20;
     border-radius:12px;
     border:2px solid rgba(255,255,255,0.2);
@@ -227,19 +102,21 @@ input#msgInput{
     padding:10px;
     margin:0;
     z-index:15;
+    gap:10px;
   }
 
   .btn{
     flex:1;
   }
 
-  aside.card{
+  .card:last-child{
     padding:10px;
     background:#111b21;
   }
 
   label{
     color:#d1d7db;
+    padding:0 10px;
   }
 
   select{
@@ -250,6 +127,7 @@ input#msgInput{
 
   #profileInfo{
     color:#25d366;
+    padding:0 10px 10px;
   }
 
   #chat{
