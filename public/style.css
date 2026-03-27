@@ -76,6 +76,7 @@ button.btn-start {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 0;
 }
 
 video {
@@ -85,6 +86,65 @@ video {
   border-radius: 8px;
   object-fit: cover;
   margin: 5px 0;
+}
+
+.remote-wrap {
+  width: 48%;
+  height: 360px;
+  position: relative;
+  margin: 5px 0;
+}
+
+.remote-wrap #remoteVideo {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.remote-status {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6));
+  border-radius: 8px;
+  text-align: center;
+  padding: 20px;
+}
+
+.remote-status.show {
+  display: flex;
+}
+
+.remote-status-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.remote-status-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.remote-status-sub {
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.82);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .buttons {
@@ -174,12 +234,10 @@ video {
     overflow: hidden;
   }
 
-  /* Desktop Header auf Mobile aus */
   header {
     display: none;
   }
 
-  /* Mobile Topbar */
   .mobile-topbar {
     display: flex;
     align-items: center;
@@ -262,7 +320,6 @@ video {
     display: block;
   }
 
-  /* Profilfeld standardmäßig versteckt auf Mobile */
   .profile-form {
     display: none;
   }
@@ -323,7 +380,6 @@ video {
     color: #25d366;
   }
 
-  /* Video */
   .videos {
     max-width: none;
     margin: 0;
@@ -339,17 +395,21 @@ video {
     width: 100%;
   }
 
-  /* Partner groß */
-  #remoteVideo {
+  .remote-wrap {
     width: 100%;
     height: 100vh;
     min-height: 420px;
+    margin: 0;
+  }
+
+  #remoteVideo {
+    width: 100%;
+    height: 100%;
     border-radius: 0;
     margin: 0;
     display: block;
   }
 
-  /* Eigenes Video klein */
   #localVideo {
     position: fixed;
     top: 70px;
@@ -371,7 +431,6 @@ video {
     cursor: grabbing;
   }
 
-  /* Buttons unten */
   .buttons {
     position: fixed;
     bottom: 0;
@@ -392,7 +451,6 @@ video {
     min-width: 0;
   }
 
-  /* Chat standardmäßig versteckt */
   .chat-box {
     display: none;
   }
@@ -450,5 +508,9 @@ video {
     border-radius: 10px;
     padding: 10px 14px;
     white-space: nowrap;
+  }
+
+  .remote-status {
+    border-radius: 0;
   }
 }
