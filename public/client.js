@@ -204,6 +204,20 @@ async function getMediaStreamForFacingMode(facingMode) {
     }
 }
 
+async function getVideoStreamForFacingMode(facingMode) {
+    try {
+        return await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { exact: facingMode } },
+            audio: false
+        });
+    } catch {
+        return await navigator.mediaDevices.getUserMedia({
+            video: { facingMode },
+            audio: false
+        });
+    }
+}
+
 async function getNextVideoDeviceId() {
     if (!navigator.mediaDevices?.enumerateDevices) return null;
 
@@ -230,6 +244,27 @@ async function getMediaStreamForNextCamera() {
         video: { deviceId: { exact: nextDeviceId } },
         audio: true
     });
+}
+
+async function getVideoStreamForNextCamera() {
+    const nextDeviceId = await getNextVideoDeviceId();
+
+    if (!nextDeviceId) return null;
+
+    return navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: nextDeviceId } },
+        audio: false
+    });
+}
+
+function combineVideoWithCurrentAudio(videoStream) {
+    const tracks = [...videoStream.getVideoTracks()];
+
+    if (localStream) {
+        tracks.push(...localStream.getAudioTracks());
+    }
+
+    return new MediaStream(tracks);
 }
 
 async function replaceTracksInPeerConnection(newStream) {
@@ -306,21 +341,41 @@ async function switchCamera() {
     const previousFacingMode = currentFacingMode;
     currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    let ok = false;
+    async function trySwitch(shouldStopCurrentVideo = false) {
+        const currentVideoTracks = localStream ? localStream.getVideoTracks() : [];
 
-    try {
-        const newStream = await getMediaStreamForFacingMode(currentFacingMode);
-        await setLocalStream(newStream, true);
-        ok = true;
-    } catch {
+        if (shouldStopCurrentVideo) {
+            currentVideoTracks.forEach((track) => track.stop());
+        }
+
         try {
-            const newStream = await getMediaStreamForNextCamera();
+            const videoStream = await getVideoStreamForFacingMode(currentFacingMode);
+            const newStream = combineVideoWithCurrentAudio(videoStream);
+            await setLocalStream(newStream, false);
+            currentVideoTracks.forEach((track) => track.stop());
+            return true;
+        } catch {
+            try {
+                const videoStream = await getVideoStreamForNextCamera();
 
-            if (newStream) {
-                await setLocalStream(newStream, true);
-                ok = true;
+                if (!videoStream) {
+                    return false;
+                }
+
+                const newStream = combineVideoWithCurrentAudio(videoStream);
+                await setLocalStream(newStream, false);
+                currentVideoTracks.forEach((track) => track.stop());
+                return true;
+            } catch {
+                return false;
             }
-        } catch {}
+        }
+    }
+
+    let ok = await trySwitch(false);
+
+    if (!ok) {
+        ok = await trySwitch(true);
     }
 
     if (!ok) {
@@ -576,7 +631,6 @@ sendBtn.onclick = () => {
     let startY = 0;
     let startLeft = 0;
     let startTop = 0;
-    const dragThreshold = 8;
 
     function setInitialMobilePosition() {
         if (!isMobile()) {
@@ -614,7 +668,6 @@ sendBtn.onclick = () => {
 
         localVideo.classList.add("dragging");
         setMobileControlsVisible(false);
-        localVideoWrap.setPointerCapture?.(e.pointerId);
         e.preventDefault();
     });
 
@@ -623,9 +676,6 @@ sendBtn.onclick = () => {
 
         const deltaX = e.clientX - startX;
         const deltaY = e.clientY - startY;
-        const distance = Math.hypot(deltaX, deltaY);
-
-        if (distance < dragThreshold) return;
 
         let newLeft = startLeft + deltaX;
         let newTop = startTop + deltaY;
