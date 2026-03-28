@@ -17,9 +17,9 @@ const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
 const muteBtn = document.getElementById("btnMute");
 const cameraBtn = document.getElementById("btnCamera");
+const layoutBtn = document.getElementById("btnLayout");
 const localVideoWrap = document.querySelector(".local-video-wrap");
 const localVideoControls = document.querySelector(".local-video-controls");
-const filterButtons = document.querySelectorAll(".filter-chip");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -40,29 +40,6 @@ const config = {
 };
 
 const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
-const FILTER_PRESETS = {
-    normal: {
-        filter: "none",
-        label: "normal"
-    },
-    warm: {
-        filter: "saturate(1.14) contrast(1.04) brightness(1.03) sepia(0.08) hue-rotate(-8deg)",
-        label: "warm"
-    },
-    cool: {
-        filter: "saturate(1.08) contrast(1.06) brightness(1.02) hue-rotate(10deg)",
-        label: "cool"
-    },
-    beauty: {
-        filter: "brightness(1.06) contrast(0.97) saturate(1.08) blur(0.6px)",
-        label: "beauty"
-    },
-    mono: {
-        filter: "grayscale(1) contrast(1.08) brightness(1.02)",
-        label: "mono"
-    }
-};
-let currentFilter = "normal";
 const MIC_ON_ICON = `
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
@@ -90,6 +67,20 @@ const CAMERA_SWITCH_ICON = `
         <path d="m8.4 11.1 1.6.3.34-1.62" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
     </svg>
 `;
+const LAYOUT_OVERLAY_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="12" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <rect x="13.5" y="13.5" width="6.5" height="5.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    </svg>
+`;
+const LAYOUT_SPLIT_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="6.2" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <rect x="4" y="13" width="16" height="6.2" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    </svg>
+`;
+let mobileLayoutMode = "overlay";
+let overlayLayoutState = null;
 
 function addMessage(sender, text, isSystem = false) {
     if (isSystem) return;
@@ -182,6 +173,10 @@ function isMobile() {
     return window.innerWidth <= 800;
 }
 
+function isSplitLayout() {
+    return mobileLayoutMode === "split";
+}
+
 function setMobileControlsVisible(visible) {
     if (!localVideoWrap || !localVideoControls) return;
     if (!isMobile()) visible = false;
@@ -189,21 +184,49 @@ function setMobileControlsVisible(visible) {
     localVideoWrap.classList.toggle("mobile-controls-open", visible);
 }
 
-function applyLocalFilter(filterName) {
-    const preset = FILTER_PRESETS[filterName] || FILTER_PRESETS.normal;
-    currentFilter = FILTER_PRESETS[filterName] ? filterName : "normal";
+function updateLayoutButton() {
+    if (!layoutBtn) return;
 
-    if (localVideo) {
-        localVideo.style.filter = preset.filter;
+    if (isSplitLayout()) {
+        layoutBtn.innerHTML = LAYOUT_SPLIT_ICON;
+        layoutBtn.classList.add("active");
+        layoutBtn.title = "Vollbildansicht";
+        layoutBtn.setAttribute("aria-label", "Zur Vollbildansicht wechseln");
+    } else {
+        layoutBtn.innerHTML = LAYOUT_OVERLAY_ICON;
+        layoutBtn.classList.remove("active");
+        layoutBtn.title = "Geteilte Ansicht";
+        layoutBtn.setAttribute("aria-label", "Zur geteilten Ansicht wechseln");
+    }
+}
+
+function applyMobileLayoutMode() {
+    const activeSplitLayout = isMobile() && isSplitLayout();
+    document.body.classList.toggle("mobile-split-view", activeSplitLayout);
+
+    if (!localVideoWrap) return;
+
+    if (activeSplitLayout) {
+        overlayLayoutState = {
+            left: localVideoWrap.style.left,
+            top: localVideoWrap.style.top,
+            right: localVideoWrap.style.right,
+            width: localVideoWrap.style.width
+        };
+
+        localVideoWrap.style.left = "";
+        localVideoWrap.style.top = "";
+        localVideoWrap.style.right = "";
+        localVideoWrap.style.width = "";
+    } else if (overlayLayoutState) {
+        localVideoWrap.style.left = overlayLayoutState.left || "";
+        localVideoWrap.style.top = overlayLayoutState.top || "";
+        localVideoWrap.style.right = overlayLayoutState.right || "";
+        localVideoWrap.style.width = overlayLayoutState.width || "";
     }
 
-    if (localVideoWrap) {
-        localVideoWrap.dataset.filter = preset.label;
-    }
-
-    filterButtons.forEach((button) => {
-        button.classList.toggle("active", button.dataset.filter === currentFilter);
-    });
+    setMobileControlsVisible(false);
+    updateLayoutButton();
 }
 
 function resetControlState() {
@@ -215,6 +238,7 @@ function resetControlState() {
 
     if (muteBtn) muteBtn.disabled = true;
     if (cameraBtn) cameraBtn.disabled = true;
+    updateLayoutButton();
 }
 
 function enableVideoControls() {
@@ -653,6 +677,13 @@ cameraBtn.onclick = async () => {
     await switchCamera();
 };
 
+if (layoutBtn) {
+    layoutBtn.onclick = () => {
+        mobileLayoutMode = isSplitLayout() ? "overlay" : "split";
+        applyMobileLayoutMode();
+    };
+}
+
 sendBtn.onclick = () => {
     const text = input.value.trim();
 
@@ -662,12 +693,6 @@ sendBtn.onclick = () => {
         input.value = "";
     }
 };
-
-filterButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        applyLocalFilter(button.dataset.filter);
-    });
-});
 
 // --- Mobile Drag ---
 (function () {
@@ -725,10 +750,13 @@ filterButtons.forEach((button) => {
             localVideoWrap.style.width = "92px";
             localVideoWrap.dataset.dragReady = "true";
         }
+
+        applyMobileLayoutMode();
     }
 
     localVideoWrap.addEventListener("pointerdown", (e) => {
         if (!isMobile()) return;
+        if (isSplitLayout()) return;
 
         const clickedButton = e.target.closest(".video-icon-btn");
         if (clickedButton) return;
@@ -762,6 +790,7 @@ filterButtons.forEach((button) => {
 
     window.addEventListener("pointermove", (e) => {
         if (!isMobile()) return;
+        if (isSplitLayout()) return;
         if (!activePointers.has(e.pointerId)) return;
 
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -841,6 +870,6 @@ filterButtons.forEach((button) => {
     setInitialMobilePosition();
     updateMuteButton();
     updateCameraButton();
-    applyLocalFilter(currentFilter);
+    updateLayoutButton();
 })();
 
