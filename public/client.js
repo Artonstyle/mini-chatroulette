@@ -13,6 +13,11 @@ const messagesDiv = document.querySelector(".chat-messages");
 const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
 
+// Overlay-Elemente
+const remoteStatus = document.getElementById("remoteStatus");
+const remoteStatusTitle = document.querySelector(".remote-status-title");
+const remoteStatusSub = document.querySelector(".remote-status-sub");
+
 // Für zukünftige Profil-Logik
 const genderSelect = document.getElementById("gender");
 const searchSelect = document.getElementById("search");
@@ -42,8 +47,22 @@ function addMessage(sender, text, isSystem = false) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+function setRemoteStatus(title, sub = "", show = true) {
+    if (!remoteStatus) return;
+
+    if (remoteStatusTitle) remoteStatusTitle.textContent = title || "";
+    if (remoteStatusSub) remoteStatusSub.textContent = sub || "";
+
+    if (show) {
+        remoteStatus.classList.add("show");
+    } else {
+        remoteStatus.classList.remove("show");
+    }
+}
+
 async function startCamera() {
     if (localStream) return true;
+
     try {
         localStream = await navigator.mediaDevices.getUserMedia({
             video: true,
@@ -57,21 +76,44 @@ async function startCamera() {
     }
 }
 
-function closePeerConnection() {
+function stopLocalMedia() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localVideo.srcObject = null;
+        localStream = null;
+    }
+}
+
+function resetRemoteToSearchingOverlay(title = "Partner wird gesucht…", sub = "Bitte kurz warten") {
+    remoteVideo.srcObject = null;
+    remoteVideo.src = SEARCHING_VIDEO_SRC;
+    remoteVideo.loop = true;
+    setRemoteStatus(title, sub, true);
+}
+
+function resetRemoteToStoppedOverlay() {
+    remoteVideo.srcObject = null;
+    remoteVideo.src = "";
+    remoteVideo.loop = false;
+    setRemoteStatus("⛔ Suche wurde gestoppt", "Drücke Start, um erneut zu suchen", true);
+}
+
+function closePeerConnection(showSearchingOverlay = true) {
     if (peerConnection) {
-        if (remoteVideo.srcObject) {
-            if (remoteVideo.srcObject.getTracks) {
-                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-            }
+        if (remoteVideo.srcObject && remoteVideo.srcObject.getTracks) {
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
         }
-        remoteVideo.srcObject = null;
-        remoteVideo.src = SEARCHING_VIDEO_SRC;
-        remoteVideo.loop = true;
+
         peerConnection.close();
         peerConnection = null;
     }
 
     dataChannel = null;
+
+    if (showSearchingOverlay) {
+        resetRemoteToSearchingOverlay();
+    }
+
     addMessage("System", "Verbindung zum Partner beendet.", true);
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-send").disabled = true;
@@ -79,7 +121,7 @@ function closePeerConnection() {
 }
 
 function createPeerConnection() {
-    closePeerConnection();
+    closePeerConnection(false);
     peerConnection = new RTCPeerConnection(config);
 
     if (localStream) {
@@ -91,6 +133,8 @@ function createPeerConnection() {
         remoteVideo.src = "";
         remoteVideo.srcObject = event.streams[0];
         remoteVideo.loop = false;
+        setRemoteStatus("", "", false);
+
         addMessage("System", "🎥 Videoanruf gestartet!", true);
         document.querySelector(".btn-next").disabled = false;
         document.querySelector(".btn-send").disabled = false;
@@ -118,11 +162,12 @@ function createPeerConnection() {
 
     peerConnection.oniceconnectionstatechange = () => {
         if (
-            peerConnection.iceConnectionState === "disconnected" ||
-            peerConnection.iceConnectionState === "failed"
+            peerConnection &&
+            (peerConnection.iceConnectionState === "disconnected" ||
+             peerConnection.iceConnectionState === "failed")
         ) {
             addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
-            closePeerConnection();
+            closePeerConnection(true);
         }
     };
 }
@@ -132,6 +177,7 @@ ws.onopen = () => {
     addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = false;
+    setRemoteStatus("Noch nicht gestartet", "Tippe auf Start", true);
 };
 
 ws.onmessage = async (event) => {
@@ -139,12 +185,15 @@ ws.onmessage = async (event) => {
 
     if (data.type === "matched" && data.should_offer) {
         createPeerConnection();
+        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut…", true);
         addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
+
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
+        setRemoteStatus("Partner gefunden", "Warte auf Verbindungsaufbau…", true);
         addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
 
     } else if (data.type === "offer") {
@@ -167,9 +216,10 @@ ws.onmessage = async (event) => {
 
     } else if (data.type === "partner-left") {
         addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
-        closePeerConnection();
+        closePeerConnection(true);
 
     } else if (data.type === "no-match") {
+        setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true);
         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
 
     } else if (data.type === "user-count") {
@@ -185,26 +235,21 @@ ws.onmessage = async (event) => {
 document.querySelector(".btn-start").onclick = async () => {
     if (!await startCamera()) return;
 
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
-
+    resetRemoteToSearchingOverlay("Partner wird gesucht…", "Bitte kurz warten");
     ws.send(JSON.stringify({ type: "start" }));
 
     addMessage("System", "Suche nach Partner...", true);
     document.querySelector(".btn-start").disabled = true;
+    document.querySelector(".btn-stop").disabled = false;
 };
 
 document.querySelector(".btn-next").onclick = () => {
     if (peerConnection) {
         ws.send(JSON.stringify({ type: "next" }));
-        closePeerConnection();
+        closePeerConnection(false);
     }
 
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
-
+    resetRemoteToSearchingOverlay("Neuer Partner wird gesucht…", "Bitte kurz warten");
     ws.send(JSON.stringify({ type: "start" }));
 
     addMessage("System", "Suche nach neuem Partner...", true);
@@ -214,24 +259,23 @@ document.querySelector(".btn-next").onclick = () => {
 document.querySelector(".btn-stop").onclick = () => {
     ws.send(JSON.stringify({ type: "stop" }));
 
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localVideo.srcObject = null;
-        localStream = null;
-    }
+    stopLocalMedia();
+    closePeerConnection(false);
+    resetRemoteToStoppedOverlay();
 
-    closePeerConnection();
-    remoteVideo.srcObject = null;
-    remoteVideo.src = "";
-    remoteVideo.loop = false;
-    addMessage("System", "Chat beendet. Kamera ausgeschaltet.", true);
+    addMessage("System", "Suche wurde gestoppt. Drücke Start, um erneut zu suchen.", true);
+
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = true;
+    document.querySelector(".btn-next").disabled = true;
+    document.querySelector(".btn-send").disabled = true;
+    input.disabled = true;
 };
 
 // Chat-Nachricht senden
 sendBtn.onclick = () => {
     const text = input.value.trim();
+
     if (text && dataChannel && dataChannel.readyState === "open") {
         dataChannel.send(text);
         addMessage("Ich", text);
