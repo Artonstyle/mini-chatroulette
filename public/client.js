@@ -6,6 +6,7 @@ let localStream;
 let peerConnection;
 let dataChannel;
 let isMuted = false;
+let currentFacingMode = "user";
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -14,6 +15,7 @@ const messagesDiv = document.querySelector(".chat-messages");
 const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
 const muteBtn = document.getElementById("btnMute");
+const switchCameraBtn = document.getElementById("btnSwitchCamera");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -96,12 +98,30 @@ function updateMuteButton() {
     if (!muteBtn) return;
 
     if (isMuted) {
-        muteBtn.textContent = "🔇 Unmute";
+        muteBtn.textContent = "🔇";
         muteBtn.classList.add("active");
+        muteBtn.setAttribute("aria-label", "Mikrofon einschalten");
+        muteBtn.title = "Mikrofon einschalten";
     } else {
-        muteBtn.textContent = "🎤 Mute";
+        muteBtn.textContent = "🎤";
         muteBtn.classList.remove("active");
+        muteBtn.setAttribute("aria-label", "Mikrofon stummschalten");
+        muteBtn.title = "Mikrofon stummschalten";
     }
+}
+
+function updateMediaButtons() {
+    const enabled = !!localStream;
+
+    if (muteBtn) {
+        muteBtn.disabled = !enabled;
+    }
+
+    if (switchCameraBtn) {
+        switchCameraBtn.disabled = !enabled;
+    }
+
+    updateMuteButton();
 }
 
 function resetMuteState() {
@@ -114,6 +134,40 @@ function applyMuteToStream() {
     const audioTrack = localStream.getAudioTracks()[0];
     if (!audioTrack) return;
     audioTrack.enabled = !isMuted;
+}
+
+async function getUserMediaForFacing(facingMode) {
+    try {
+        return await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { exact: facingMode } },
+            audio: true
+        });
+    } catch (err) {
+        return await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: facingMode },
+            audio: true
+        });
+    }
+}
+
+async function replaceTracksInPeerConnection(newStream) {
+    if (!peerConnection) return;
+
+    const senders = peerConnection.getSenders();
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    const newAudioTrack = newStream.getAudioTracks()[0];
+
+    for (const sender of senders) {
+        if (!sender.track) continue;
+
+        if (sender.track.kind === "video" && newVideoTrack) {
+            await sender.replaceTrack(newVideoTrack);
+        }
+
+        if (sender.track.kind === "audio" && newAudioTrack) {
+            await sender.replaceTrack(newAudioTrack);
+        }
+    }
 }
 
 function showSearchingOverlay(title = "Partner wird gesucht…", sub = "Bitte kurz warten") {
@@ -139,16 +193,36 @@ async function startCamera() {
     if (localStream) return true;
 
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+        localStream = await getUserMediaForFacing(currentFacingMode);
         localVideo.srcObject = localStream;
         applyMuteToStream();
+        updateMediaButtons();
         return true;
     } catch (err) {
         addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
         return false;
+    }
+}
+
+async function switchCamera() {
+    if (!localStream) return;
+
+    const nextFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    const oldStream = localStream;
+
+    try {
+        const newStream = await getUserMediaForFacing(nextFacingMode);
+        localStream = newStream;
+        currentFacingMode = nextFacingMode;
+
+        applyMuteToStream();
+        localVideo.srcObject = newStream;
+        await replaceTracksInPeerConnection(newStream);
+
+        oldStream.getTracks().forEach(track => track.stop());
+        updateMediaButtons();
+    } catch (err) {
+        console.warn("Kamerawechsel fehlgeschlagen:", err);
     }
 }
 
@@ -161,9 +235,9 @@ function closePeerConnection(showSearching = true) {
         remoteVideo.srcObject = null;
 
         if (showSearching) {
-            remoteVideo.src = SEARCHING_VIDEO_SRC;
-            remoteVideo.loop = true;
-            setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
+          remoteVideo.src = SEARCHING_VIDEO_SRC;
+          remoteVideo.loop = true;
+          setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
         }
 
         peerConnection.close();
@@ -226,6 +300,7 @@ function createPeerConnection() {
 ws.onopen = () => {
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = false;
+    updateMediaButtons();
 
     setRemoteStatus(
         "Bereit",
@@ -302,9 +377,7 @@ document.querySelector(".btn-start").onclick = async () => {
 
     document.querySelector(".btn-start").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
-    muteBtn.disabled = false;
-    applyMuteToStream();
-    updateMuteButton();
+    updateMediaButtons();
 };
 
 document.querySelector(".btn-next").onclick = async () => {
@@ -332,9 +405,7 @@ document.querySelector(".btn-next").onclick = async () => {
 
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
-    muteBtn.disabled = false;
-    applyMuteToStream();
-    updateMuteButton();
+    updateMediaButtons();
 };
 
 document.querySelector(".btn-stop").onclick = () => {
@@ -357,20 +428,29 @@ document.querySelector(".btn-stop").onclick = () => {
     document.querySelector(".btn-send").disabled = true;
     input.disabled = true;
 
-    muteBtn.disabled = true;
     resetMuteState();
+    currentFacingMode = "user";
+    updateMediaButtons();
 };
 
-muteBtn.onclick = () => {
-    if (!localStream) return;
+if (muteBtn) {
+    muteBtn.onclick = () => {
+        if (!localStream) return;
 
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (!audioTrack) return;
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (!audioTrack) return;
 
-    isMuted = !isMuted;
-    audioTrack.enabled = !isMuted;
-    updateMuteButton();
-};
+        isMuted = !isMuted;
+        audioTrack.enabled = !isMuted;
+        updateMuteButton();
+    };
+}
+
+if (switchCameraBtn) {
+    switchCameraBtn.onclick = async () => {
+        await switchCamera();
+    };
+}
 
 sendBtn.onclick = () => {
     const text = input.value.trim();
@@ -406,8 +486,8 @@ sendBtn.onclick = () => {
         }
 
         if (!localVideo.dataset.dragReady) {
-            localVideo.style.top = "70px";
-            localVideo.style.right = "10px";
+            localVideo.style.top = "110px";
+            localVideo.style.right = "14px";
             localVideo.dataset.dragReady = "true";
         }
     }
