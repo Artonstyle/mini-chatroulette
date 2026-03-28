@@ -326,8 +326,9 @@ video {
     display: block;
   }
 
+  /* 🔥 EINZIGE ÄNDERUNG IST HIER */
   .profile-form {
-    display: none;
+    display: flex;
   }
 
   body.filter-open .profile-form {
