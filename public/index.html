@@ -61,7 +61,14 @@
 
   <section class="videos">
     <div class="video-container">
-      <video id="localVideo" autoplay muted playsinline></video>
+      <div class="local-video-wrap">
+        <video id="localVideo" autoplay muted playsinline></video>
+
+        <div class="local-video-controls">
+          <button class="video-icon-btn" id="btnMute" disabled aria-label="Mikrofon stummschalten" title="Mikrofon stummschalten">🎤</button>
+          <button class="video-icon-btn" id="btnCamera" disabled aria-label="Kamera wechseln" title="Kamera wechseln">🔄</button>
+        </div>
+      </div>
 
       <div class="remote-wrap">
         <video id="remoteVideo" autoplay playsinline></video>
@@ -74,11 +81,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="video-side-controls">
-      <button class="side-control-btn" id="btnMute" type="button" aria-label="Mikrofon stummschalten" disabled>🎤</button>
-      <button class="side-control-btn" id="btnSwitchCamera" type="button" aria-label="Kamera wechseln" disabled>🔄</button>
     </div>
 
     <div class="buttons">
