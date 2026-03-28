@@ -580,6 +580,20 @@ video {
     word-break: break-word;
   }
 
+  /* NUR DAS HIER IST GEÄNDERT */
+  body.chat-open .chat-message.me .chat-label {
+    color: #25d366;
+  }
+
+  body.chat-open .chat-message.partner .chat-label {
+    color: #4da6ff;
+  }
+
+  body.chat-open .chat-message.me .chat-text,
+  body.chat-open .chat-message.partner .chat-text {
+    color: #fff;
+  }
+
   body.chat-open .chat-message.me .chat-label,
   body.chat-open .chat-message.me .chat-text,
   body.chat-open .chat-message.partner .chat-label,
