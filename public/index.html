@@ -30,23 +30,24 @@
     <div class="form-left">
       <label>Ich bin:
         <select id="gender">
-          <option>Mann</option>
-          <option>Frau</option>
+          <option value="male">Mann</option>
+          <option value="female">Frau</option>
         </select>
       </label>
 
       <label>Ich suche:
         <select id="search">
-          <option>Mann</option>
-          <option>Frau</option>
+          <option value="female">Frauen</option>
+          <option value="male">Männer</option>
         </select>
       </label>
 
       <label>Wähle Land aus:
         <select id="country">
-          <option>Deutschland</option>
-          <option>Österreich</option>
-          <option>Schweiz</option>
+          <option value="all">Alle Länder</option>
+          <option value="Deutschland">Deutschland</option>
+          <option value="Österreich">Österreich</option>
+          <option value="Schweiz">Schweiz</option>
         </select>
       </label>
 
@@ -160,7 +161,6 @@
         overlay.addEventListener("click", closePanels);
       }
 
-      // 🔔 Sicheres Badge über Event aus client.js
       window.addEventListener("partner-message-received", () => {
         if (!isMobile()) return;
         if (body.classList.contains("chat-open")) return;
