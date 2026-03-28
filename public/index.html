@@ -13,7 +13,7 @@
 </head>
 <body>
 
-  <!-- MOBILE TOPBAR -->
+  <!-- Mobile Topbar -->
   <div class="mobile-topbar">
     <div class="mobile-logo">Mini Chatroulette</div>
 
@@ -23,7 +23,9 @@
         <span id="chatBadge" class="mobile-badge">0</span>
       </button>
 
-      <button id="filterToggle" class="mobile-icon-btn" type="button" aria-label="Filter öffnen">⚙️</button>
+      <button id="filterToggle" class="mobile-icon-btn" type="button" aria-label="Filter öffnen">
+        ⚙️
+      </button>
     </div>
   </div>
 
@@ -31,7 +33,7 @@
 
   <header>Mini Chatroulette</header>
 
-  <!-- PROFIL -->
+  <!-- Profilbereich -->
   <section class="profile-form">
     <div class="form-left">
       <label>Ich bin:
@@ -64,7 +66,7 @@
     </div>
   </section>
 
-  <!-- VIDEOS -->
+  <!-- Videos -->
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
@@ -75,8 +77,8 @@
         <div id="remoteStatus" class="remote-status show">
           <div class="remote-status-inner">
             <div class="spinner"></div>
-            <div class="remote-status-title">Partner wird gesucht…</div>
-            <div class="remote-status-sub">Bitte kurz warten</div>
+            <div class="remote-status-title">Noch nicht gestartet</div>
+            <div class="remote-status-sub">Tippe auf Start</div>
           </div>
         </div>
       </div>
@@ -88,19 +90,18 @@
     </div>
   </section>
 
-  <!-- CHAT -->
+  <!-- Chat -->
   <section class="chat-box" id="chatBox">
     <div class="chat-messages"></div>
 
     <div class="chat-input">
-      <input id="msgInput" type="text" placeholder="Nachricht schreiben..." />
-      <button class="btn-send">💬 Senden</button>
+      <input id="msgInput" type="text" placeholder="Nachricht schreiben..." disabled>
+      <button class="btn-send" disabled>💬 Senden</button>
     </div>
   </section>
 
   <script src="client.js"></script>
 
-  <!-- MOBILE UI SCRIPT -->
   <script>
     (function () {
       const body = document.body;
@@ -109,8 +110,6 @@
       const chatBadge = document.getElementById("chatBadge");
       const overlay = document.getElementById("mobileOverlay");
       const chatMessages = document.querySelector(".chat-messages");
-      const remoteVideo = document.getElementById("remoteVideo");
-      const remoteStatus = document.getElementById("remoteStatus");
 
       let unread = 0;
 
@@ -155,31 +154,6 @@
         }
       }
 
-      function updateRemoteStatus() {
-        if (!remoteVideo || !remoteStatus) return;
-
-        const hasRemoteStream = !!remoteVideo.srcObject;
-        const hasRemoteSrc = !!remoteVideo.getAttribute("src");
-
-        if (hasRemoteStream) {
-          remoteStatus.classList.remove("show");
-          return;
-        }
-
-        // Wenn Suchvideo oder nichts da ist -> Status zeigen
-        if (!hasRemoteStream) {
-          remoteStatus.classList.add("show");
-
-          if (hasRemoteSrc) {
-            remoteStatus.querySelector(".remote-status-title").textContent = "Partner wird gesucht…";
-            remoteStatus.querySelector(".remote-status-sub").textContent = "Bitte kurz warten";
-          } else {
-            remoteStatus.querySelector(".remote-status-title").textContent = "Noch nicht gestartet";
-            remoteStatus.querySelector(".remote-status-sub").textContent = "Tippe auf Start";
-          }
-        }
-      }
-
       chatToggle.addEventListener("click", () => {
         if (!isMobile()) return;
 
@@ -219,7 +193,6 @@
 
               const text = (node.textContent || "").trim();
 
-              // Nur echte Partner-Nachrichten zählen
               if (text.startsWith("Partner:")) {
                 added++;
               }
@@ -236,10 +209,6 @@
 
         observer.observe(chatMessages, { childList: true });
       }
-
-      // Remote-Status regelmäßig prüfen, ohne client.js anzufassen
-      updateRemoteStatus();
-      setInterval(updateRemoteStatus, 500);
 
       window.addEventListener("resize", () => {
         if (!isMobile()) closePanels();
