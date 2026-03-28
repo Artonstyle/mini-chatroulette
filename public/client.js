@@ -8,6 +8,9 @@ let dataChannel;
 let isMuted = false;
 let currentFacingMode = "user";
 let currentVideoDeviceId = null;
+let autoFramingDetector = null;
+let autoFramingTimer = null;
+let autoFramingSession = 0;
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -165,10 +168,77 @@ function setMobileControlsVisible(visible) {
     localVideoWrap.classList.toggle("mobile-controls-open", visible);
 }
 
+function resetLocalVideoFraming() {
+    if (!localVideo) return;
+
+    localVideo.style.objectPosition = "50% 50%";
+    localVideo.style.transform = "scale(1)";
+}
+
+function stopAutoFraming() {
+    autoFramingSession += 1;
+
+    if (autoFramingTimer) {
+        clearTimeout(autoFramingTimer);
+        autoFramingTimer = null;
+    }
+
+    resetLocalVideoFraming();
+}
+
+async function startAutoFraming() {
+    stopAutoFraming();
+
+    if (!("FaceDetector" in window) || !localStream || !localVideo) {
+        return;
+    }
+
+    try {
+        autoFramingDetector ||= new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+    } catch {
+        return;
+    }
+
+    const session = autoFramingSession;
+
+    async function run() {
+        if (session !== autoFramingSession || !localStream || !localVideo.srcObject) {
+            return;
+        }
+
+        try {
+            if (localVideo.readyState >= 2 && localVideo.videoWidth > 0 && localVideo.videoHeight > 0) {
+                const faces = await autoFramingDetector.detect(localVideo);
+                const face = faces[0];
+
+                if (face?.boundingBox) {
+                    const { x, y, width, height } = face.boundingBox;
+                    const centerX = ((x + width / 2) / localVideo.videoWidth) * 100;
+                    const centerY = ((y + height / 2) / localVideo.videoHeight) * 100;
+                    const faceRatio = Math.max(width / localVideo.videoWidth, height / localVideo.videoHeight);
+                    const zoom = Math.min(Math.max(1.08, 0.34 / Math.max(faceRatio, 0.14)), 1.45);
+
+                    localVideo.style.objectPosition = `${centerX}% ${centerY}%`;
+                    localVideo.style.transform = `scale(${zoom.toFixed(3)})`;
+                } else {
+                    resetLocalVideoFraming();
+                }
+            }
+        } catch {
+            resetLocalVideoFraming();
+        }
+
+        autoFramingTimer = window.setTimeout(run, 420);
+    }
+
+    run();
+}
+
 function resetControlState() {
     isMuted = false;
     currentFacingMode = "user";
     currentVideoDeviceId = null;
+    stopAutoFraming();
     updateMuteButton();
     updateCameraButton();
 
@@ -299,6 +369,8 @@ async function setLocalStream(newStream, stopOld = true) {
     if (stopOld && oldStream) {
         oldStream.getTracks().forEach(track => track.stop());
     }
+
+    await startAutoFraming();
 }
 
 function showSearchingOverlay(title = "Partner wird gesucht...", sub = "Bitte kurz warten") {
@@ -626,25 +698,56 @@ sendBtn.onclick = () => {
 (function () {
     if (!localVideoWrap || !remoteVideo) return;
 
+    const activePointers = new Map();
     let dragging = false;
+    let pinching = false;
     let startX = 0;
     let startY = 0;
     let startLeft = 0;
     let startTop = 0;
+    let startDistance = 0;
+    let startWidth = 92;
+
+    function getPointerDistance() {
+        const [first, second] = [...activePointers.values()];
+        if (!first || !second) return 0;
+        return Math.hypot(second.x - first.x, second.y - first.y);
+    }
+
+    function clampLocalVideoPosition() {
+        let currentLeft = parseFloat(localVideoWrap.style.left || "0");
+        let currentTop = parseFloat(localVideoWrap.style.top || "0");
+
+        const maxLeft = window.innerWidth - localVideoWrap.offsetWidth - 8;
+        const maxTop = window.innerHeight - localVideoWrap.offsetHeight - 8;
+
+        if (currentLeft < 8) currentLeft = 8;
+        if (currentTop < 8) currentTop = 8;
+        if (currentLeft > maxLeft) currentLeft = maxLeft;
+        if (currentTop > maxTop) currentTop = maxTop;
+
+        localVideoWrap.style.left = currentLeft + "px";
+        localVideoWrap.style.top = currentTop + "px";
+    }
 
     function setInitialMobilePosition() {
         if (!isMobile()) {
             localVideoWrap.style.left = "";
             localVideoWrap.style.top = "";
             localVideoWrap.style.right = "";
+            localVideoWrap.style.width = "";
             localVideo.classList.remove("dragging");
             setMobileControlsVisible(false);
+            activePointers.clear();
+            dragging = false;
+            pinching = false;
             return;
         }
 
         if (!localVideoWrap.dataset.dragReady) {
             localVideoWrap.style.top = "110px";
             localVideoWrap.style.right = "14px";
+            localVideoWrap.style.width = "92px";
             localVideoWrap.dataset.dragReady = "true";
         }
     }
@@ -655,16 +758,27 @@ sendBtn.onclick = () => {
         const clickedButton = e.target.closest(".video-icon-btn");
         if (clickedButton) return;
 
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
         const rect = localVideoWrap.getBoundingClientRect();
         startLeft = rect.left;
         startTop = rect.top;
-        startX = e.clientX;
-        startY = e.clientY;
-        dragging = true;
 
         localVideoWrap.style.left = rect.left + "px";
         localVideoWrap.style.top = rect.top + "px";
         localVideoWrap.style.right = "auto";
+
+        if (activePointers.size === 1) {
+            startX = e.clientX;
+            startY = e.clientY;
+            dragging = true;
+            pinching = false;
+        } else if (activePointers.size === 2) {
+            dragging = false;
+            pinching = true;
+            startDistance = getPointerDistance();
+            startWidth = rect.width;
+        }
 
         localVideo.classList.add("dragging");
         setMobileControlsVisible(false);
@@ -672,7 +786,22 @@ sendBtn.onclick = () => {
     });
 
     window.addEventListener("pointermove", (e) => {
-        if (!dragging || !isMobile()) return;
+        if (!isMobile()) return;
+        if (!activePointers.has(e.pointerId)) return;
+
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pinching && activePointers.size >= 2) {
+            const nextDistance = getPointerDistance();
+            const scale = startDistance > 0 ? nextDistance / startDistance : 1;
+            const nextWidth = Math.min(Math.max(startWidth * scale, 92), Math.min(window.innerWidth * 0.55, 220));
+
+            localVideoWrap.style.width = nextWidth + "px";
+            clampLocalVideoPosition();
+            return;
+        }
+
+        if (!dragging) return;
 
         const deltaX = e.clientX - startX;
         const deltaY = e.clientY - startY;
@@ -692,9 +821,25 @@ sendBtn.onclick = () => {
         localVideoWrap.style.top = newTop + "px";
     });
 
-    function stopDrag() {
-        dragging = false;
+    function stopDrag(e) {
+        activePointers.delete(e.pointerId);
+
+        if (activePointers.size < 2) {
+            pinching = false;
+        }
+
+        if (activePointers.size === 1 && !pinching) {
+            const remainingPointer = [...activePointers.values()][0];
+            startX = remainingPointer.x;
+            startY = remainingPointer.y;
+            startLeft = localVideoWrap.getBoundingClientRect().left;
+            startTop = localVideoWrap.getBoundingClientRect().top;
+            dragging = true;
+            return;
+        }
+
         localVideo.classList.remove("dragging");
+        dragging = false;
     }
 
     window.addEventListener("pointerup", stopDrag);
