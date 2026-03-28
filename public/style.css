@@ -332,17 +332,17 @@ video {
     align-items: stretch;
     justify-content: center;
     position: fixed;
-    top: 50%;
+    top: 54%;
     left: 50%;
     transform: translate(-50%, -50%) scale(1);
-    width: calc(100% - 40px);
-    max-width: 420px;
-    z-index: 90;
-    background: rgba(0,0,0,0.45);
-    border-radius: 18px;
+    width: calc(100% - 28px);
+    max-width: 390px;
+    z-index: 35;
+    background: rgba(0,0,0,0.52);
+    border-radius: 22px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     border: 1px solid rgba(255,255,255,0.06);
-    padding: 18px;
+    padding: 16px;
     margin: 0;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -351,7 +351,7 @@ video {
 
   body.chatting .profile-form {
     opacity: 0;
-    transform: translate(-50%, -42%) scale(0.96);
+    transform: translate(-50%, -48%) scale(0.96);
     pointer-events: none;
   }
 
@@ -359,7 +359,7 @@ video {
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 12px;
+    gap: 10px;
     align-items: stretch;
   }
 
@@ -389,10 +389,10 @@ video {
   }
 
   .online-right {
-    margin-top: 12px;
+    margin-top: 10px;
     text-align: center;
     background: #111b21;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 10px;
     color: #25d366;
   }
@@ -488,14 +488,14 @@ video {
 
   #localVideo {
     position: fixed;
-    top: 70px;
-    right: 10px;
-    width: 100px;
+    top: 110px;
+    right: 14px;
+    width: 92px;
     height: auto;
     aspect-ratio: 3 / 4;
     min-height: auto;
     object-fit: cover;
-    z-index: 40;
+    z-index: 45;
     border-radius: 12px;
     border: 2px solid rgba(255,255,255,0.2);
     box-shadow: 0 8px 24px rgba(0,0,0,0.35);
