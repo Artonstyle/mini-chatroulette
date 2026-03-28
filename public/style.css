@@ -668,20 +668,23 @@ video {
     display: flex;
     flex-direction: column;
     gap: 0;
-    min-height: 100vh;
+    height: calc(100dvh - 104px);
+    min-height: calc(100vh - 104px);
   }
 
   body.mobile-split-view .remote-wrap,
   body.mobile-split-view .local-video-wrap {
+    flex: 1 1 0;
     position: relative;
     top: auto;
     right: auto;
     left: auto;
     width: 100%;
-    height: calc((100vh - 112px) / 2);
-    min-height: 220px;
+    height: auto;
+    min-height: 0;
     margin: 0;
     z-index: auto;
+    overflow: hidden;
   }
 
   body.mobile-split-view .local-video-wrap {
