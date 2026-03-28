@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Mini Chatroulette – Videochat online</title>
   <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- MOBILE TOPBAR -->
+  <!-- Mobile Topbar -->
   <div class="mobile-topbar">
     <div class="mobile-logo">Mini Chatroulette</div>
 
@@ -27,10 +29,9 @@
 
   <header>Mini Chatroulette</header>
 
-  <!-- PROFIL -->
+  <!-- Profil -->
   <section class="profile-form">
     <div class="form-left">
-
       <label>Ich bin:
         <select id="gender">
           <option>Mann</option>
@@ -61,7 +62,7 @@
     </div>
   </section>
 
-  <!-- VIDEOS -->
+  <!-- Videos -->
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
@@ -85,7 +86,7 @@
     </div>
   </section>
 
-  <!-- CHAT -->
+  <!-- Chat -->
   <section class="chat-box" id="chatBox">
     <div class="chat-messages"></div>
 
@@ -177,9 +178,7 @@
             m.addedNodes.forEach((node) => {
               if (node.nodeType !== 1) return;
 
-              const text = (node.textContent || "").trim();
-
-              if (text.startsWith("Partner:")) {
+              if (node.classList && node.classList.contains("partner")) {
                 added++;
               }
             });
