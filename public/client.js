@@ -36,12 +36,18 @@ const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
 // --- Hilfsfunktionen ---
 
 function addMessage(sender, text, isSystem = false) {
+    if (isSystem) return;
+
     const div = document.createElement("div");
-    div.textContent = `${sender}: ${text}`;
-    if (isSystem) {
-        div.style.color = "#ffc107";
-        div.style.fontStyle = "italic";
+
+    if (sender === "Ich") {
+        div.classList.add("me");
+    } else {
+        div.classList.add("partner");
     }
+
+    div.textContent = text;
+
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
