@@ -7,6 +7,7 @@ let peerConnection;
 let dataChannel;
 let isMuted = false;
 let currentFacingMode = "user";
+let currentVideoDeviceId = null;
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -17,6 +18,7 @@ const sendBtn = document.querySelector(".btn-send");
 const muteBtn = document.getElementById("btnMute");
 const cameraBtn = document.getElementById("btnCamera");
 const localVideoWrap = document.querySelector(".local-video-wrap");
+const localVideoControls = document.querySelector(".local-video-controls");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -37,6 +39,33 @@ const config = {
 };
 
 const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
+const MIC_ON_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M12 17v3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M9.5 20h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+    </svg>
+`;
+const MIC_OFF_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 15a3 3 0 0 0 2.68-1.65" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M9 9.5V7a3 3 0 1 1 6 0v3.2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M6.5 11.5a5.5 5.5 0 0 0 8.16 4.81" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M12 17v3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M9.5 20h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="m5 5 14 14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+    </svg>
+`;
+const CAMERA_SWITCH_ICON = `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4.5 9.5h10.2a2 2 0 0 0 1.45-.62l1.15-1.2H20a1.5 1.5 0 0 1 1.5 1.5v7.32A1.5 1.5 0 0 1 20 18H4.5A1.5 1.5 0 0 1 3 16.5V11A1.5 1.5 0 0 1 4.5 9.5Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M8.2 14.1a3.1 3.1 0 0 0 5.56 1.22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M15.6 15.3 14 15l-.34 1.62" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="M15.8 12.3a3.1 3.1 0 0 0-5.56-1.22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+        <path d="m8.4 11.1 1.6.3.34-1.62" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+    </svg>
+`;
 
 function addMessage(sender, text, isSystem = false) {
     if (isSystem) return;
@@ -97,33 +126,49 @@ function updateMuteButton() {
     if (!muteBtn) return;
 
     if (isMuted) {
-        muteBtn.textContent = "🔇";
+        muteBtn.innerHTML = MIC_OFF_ICON;
         muteBtn.classList.add("active");
         muteBtn.title = "Mikrofon an";
+        muteBtn.setAttribute("aria-label", "Mikrofon aktivieren");
     } else {
-        muteBtn.textContent = "🎤";
+        muteBtn.innerHTML = MIC_ON_ICON;
         muteBtn.classList.remove("active");
         muteBtn.title = "Mikrofon aus";
+        muteBtn.setAttribute("aria-label", "Mikrofon stummschalten");
     }
 }
 
 function updateCameraButton() {
     if (!cameraBtn) return;
 
+    cameraBtn.innerHTML = CAMERA_SWITCH_ICON;
+
     if (currentFacingMode === "environment") {
-        cameraBtn.textContent = "📷";
         cameraBtn.classList.add("active");
         cameraBtn.title = "Vorderkamera";
+        cameraBtn.setAttribute("aria-label", "Zur Vorderkamera wechseln");
     } else {
-        cameraBtn.textContent = "🔄";
         cameraBtn.classList.remove("active");
         cameraBtn.title = "Rückkamera";
+        cameraBtn.setAttribute("aria-label", "Zur Rückkamera wechseln");
     }
+}
+
+function isMobile() {
+    return window.innerWidth <= 800;
+}
+
+function setMobileControlsVisible(visible) {
+    if (!localVideoWrap || !localVideoControls) return;
+    if (!isMobile()) visible = false;
+
+    localVideoWrap.classList.toggle("mobile-controls-open", visible);
 }
 
 function resetControlState() {
     isMuted = false;
     currentFacingMode = "user";
+    currentVideoDeviceId = null;
     updateMuteButton();
     updateCameraButton();
 
@@ -159,6 +204,34 @@ async function getMediaStreamForFacingMode(facingMode) {
     }
 }
 
+async function getNextVideoDeviceId() {
+    if (!navigator.mediaDevices?.enumerateDevices) return null;
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoInputs = devices.filter((device) => device.kind === "videoinput");
+
+    if (videoInputs.length < 2) return null;
+
+    const currentIndex = videoInputs.findIndex((device) => device.deviceId === currentVideoDeviceId);
+
+    if (currentIndex === -1) {
+        return videoInputs[1]?.deviceId || videoInputs[0]?.deviceId || null;
+    }
+
+    return videoInputs[(currentIndex + 1) % videoInputs.length]?.deviceId || null;
+}
+
+async function getMediaStreamForNextCamera() {
+    const nextDeviceId = await getNextVideoDeviceId();
+
+    if (!nextDeviceId) return null;
+
+    return navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: nextDeviceId } },
+        audio: true
+    });
+}
+
 async function replaceTracksInPeerConnection(newStream) {
     if (!peerConnection) return;
 
@@ -177,10 +250,12 @@ async function replaceTracksInPeerConnection(newStream) {
 
 async function setLocalStream(newStream, stopOld = true) {
     const oldStream = localStream;
+    const videoTrack = newStream.getVideoTracks()[0];
 
     localStream = newStream;
     localVideo.srcObject = newStream;
     applyMuteToStream(newStream);
+    currentVideoDeviceId = videoTrack?.getSettings?.().deviceId || currentVideoDeviceId;
 
     if (peerConnection) {
         await replaceTracksInPeerConnection(newStream);
@@ -191,7 +266,7 @@ async function setLocalStream(newStream, stopOld = true) {
     }
 }
 
-function showSearchingOverlay(title = "Partner wird gesucht…", sub = "Bitte kurz warten") {
+function showSearchingOverlay(title = "Partner wird gesucht...", sub = "Bitte kurz warten") {
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
@@ -203,7 +278,7 @@ function showStoppedOverlay() {
     remoteVideo.src = "";
     remoteVideo.loop = false;
     setRemoteStatus(
-        "⛔ Suche wurde gestoppt",
+        "Suche wurde gestoppt",
         "Drücke Start, um erneut zu suchen",
         true,
         false
@@ -222,7 +297,7 @@ async function startCamera(forceRestart = false) {
         enableVideoControls();
         return true;
     } catch (err) {
-        addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
+        addMessage("System", "Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
         return false;
     }
 }
@@ -231,7 +306,22 @@ async function switchCamera() {
     const previousFacingMode = currentFacingMode;
     currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    const ok = await startCamera(true);
+    let ok = false;
+
+    try {
+        const newStream = await getMediaStreamForFacingMode(currentFacingMode);
+        await setLocalStream(newStream, true);
+        ok = true;
+    } catch {
+        try {
+            const newStream = await getMediaStreamForNextCamera();
+
+            if (newStream) {
+                await setLocalStream(newStream, true);
+                ok = true;
+            }
+        } catch {}
+    }
 
     if (!ok) {
         currentFacingMode = previousFacingMode;
@@ -239,6 +329,7 @@ async function switchCamera() {
         return;
     }
 
+    enableVideoControls();
     updateCameraButton();
 }
 
@@ -253,7 +344,7 @@ function closePeerConnection(showSearching = true) {
         if (showSearching) {
             remoteVideo.src = SEARCHING_VIDEO_SRC;
             remoteVideo.loop = true;
-            setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
+            setRemoteStatus("Partner wird gesucht...", "Bitte kurz warten", true, true);
         }
 
         peerConnection.close();
@@ -332,14 +423,14 @@ ws.onmessage = async (event) => {
 
     if (data.type === "matched" && data.should_offer) {
         createPeerConnection();
-        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut…", true, true);
+        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut...", true, true);
 
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
-        setRemoteStatus("Partner gefunden", "Warte auf Videoanruf…", true, true);
+        setRemoteStatus("Partner gefunden", "Warte auf Videoanruf...", true, true);
 
     } else if (data.type === "offer") {
         if (!peerConnection) createPeerConnection();
@@ -363,7 +454,7 @@ ws.onmessage = async (event) => {
         closePeerConnection(true);
 
     } else if (data.type === "no-match") {
-        setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
+        setRemoteStatus("Partner wird gesucht...", "Bitte kurz warten", true, true);
 
     } else if (data.type === "user-count") {
         const onlineCountElement = document.getElementById("onlineCount");
@@ -382,7 +473,7 @@ document.querySelector(".btn-start").onclick = async () => {
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
-    setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
+    setRemoteStatus("Partner wird gesucht...", "Bitte kurz warten", true, true);
 
     ws.send(JSON.stringify({
         type: "start",
@@ -410,7 +501,7 @@ document.querySelector(".btn-next").onclick = async () => {
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
-    setRemoteStatus("Neuer Partner wird gesucht…", "Bitte kurz warten", true, true);
+    setRemoteStatus("Neuer Partner wird gesucht...", "Bitte kurz warten", true, true);
 
     ws.send(JSON.stringify({
         type: "start",
@@ -445,6 +536,7 @@ document.querySelector(".btn-stop").onclick = () => {
     input.disabled = true;
 
     resetControlState();
+    setMobileControlsVisible(false);
 };
 
 muteBtn.onclick = async () => {
@@ -480,14 +572,12 @@ sendBtn.onclick = () => {
     if (!localVideoWrap) return;
 
     let dragging = false;
+    let moved = false;
     let startX = 0;
     let startY = 0;
     let startLeft = 0;
     let startTop = 0;
-
-    function isMobile() {
-        return window.innerWidth <= 800;
-    }
+    const dragThreshold = 8;
 
     function setInitialMobilePosition() {
         if (!isMobile()) {
@@ -495,6 +585,7 @@ sendBtn.onclick = () => {
             localVideoWrap.style.top = "";
             localVideoWrap.style.right = "";
             localVideo.classList.remove("dragging");
+            setMobileControlsVisible(false);
             return;
         }
 
@@ -511,27 +602,34 @@ sendBtn.onclick = () => {
         const clickedButton = e.target.closest(".video-icon-btn");
         if (clickedButton) return;
 
-        dragging = true;
-        localVideo.classList.add("dragging");
-
         const rect = localVideoWrap.getBoundingClientRect();
         startLeft = rect.left;
         startTop = rect.top;
         startX = e.clientX;
         startY = e.clientY;
+        moved = false;
+        dragging = true;
 
         localVideoWrap.style.left = rect.left + "px";
         localVideoWrap.style.top = rect.top + "px";
         localVideoWrap.style.right = "auto";
-
-        e.preventDefault();
     });
 
     window.addEventListener("pointermove", (e) => {
         if (!dragging || !isMobile()) return;
 
-        let newLeft = startLeft + (e.clientX - startX);
-        let newTop = startTop + (e.clientY - startY);
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        if (!moved && Math.hypot(deltaX, deltaY) < dragThreshold) {
+            return;
+        }
+
+        moved = true;
+        localVideo.classList.add("dragging");
+
+        let newLeft = startLeft + deltaX;
+        let newTop = startTop + deltaY;
 
         const maxLeft = window.innerWidth - localVideoWrap.offsetWidth - 56;
         const maxTop = window.innerHeight - localVideoWrap.offsetHeight - 8;
@@ -546,15 +644,32 @@ sendBtn.onclick = () => {
     });
 
     function stopDrag() {
+        const wasDragging = dragging;
+        const wasMoved = moved;
+
         dragging = false;
+        moved = false;
         localVideo.classList.remove("dragging");
+
+        if (wasDragging && !wasMoved && isMobile()) {
+            const nextVisible = !localVideoWrap.classList.contains("mobile-controls-open");
+            setMobileControlsVisible(nextVisible);
+        }
     }
 
     window.addEventListener("pointerup", stopDrag);
     window.addEventListener("pointercancel", stopDrag);
     window.addEventListener("resize", setInitialMobilePosition);
+    window.addEventListener("pointerdown", (e) => {
+        if (!isMobile()) return;
+        if (!localVideoWrap.classList.contains("mobile-controls-open")) return;
+        if (localVideoWrap.contains(e.target)) return;
+
+        setMobileControlsVisible(false);
+    });
 
     setInitialMobilePosition();
     updateMuteButton();
     updateCameraButton();
 })();
+
