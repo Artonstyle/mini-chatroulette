@@ -8,9 +8,6 @@ let dataChannel;
 let isMuted = false;
 let currentFacingMode = "user";
 let currentVideoDeviceId = null;
-let autoFramingDetector = null;
-let autoFramingTimer = null;
-let autoFramingSession = 0;
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -22,7 +19,7 @@ const muteBtn = document.getElementById("btnMute");
 const cameraBtn = document.getElementById("btnCamera");
 const localVideoWrap = document.querySelector(".local-video-wrap");
 const localVideoControls = document.querySelector(".local-video-controls");
-const framingDebug = document.getElementById("framingDebug");
+const filterButtons = document.querySelectorAll(".filter-chip");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -43,6 +40,29 @@ const config = {
 };
 
 const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
+const FILTER_PRESETS = {
+    normal: {
+        filter: "none",
+        label: "normal"
+    },
+    warm: {
+        filter: "saturate(1.14) contrast(1.04) brightness(1.03) sepia(0.08) hue-rotate(-8deg)",
+        label: "warm"
+    },
+    cool: {
+        filter: "saturate(1.08) contrast(1.06) brightness(1.02) hue-rotate(10deg)",
+        label: "cool"
+    },
+    beauty: {
+        filter: "brightness(1.06) contrast(0.97) saturate(1.08) blur(0.6px)",
+        label: "beauty"
+    },
+    mono: {
+        filter: "grayscale(1) contrast(1.08) brightness(1.02)",
+        label: "mono"
+    }
+};
+let currentFilter = "normal";
 const MIC_ON_ICON = `
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
@@ -169,103 +189,27 @@ function setMobileControlsVisible(visible) {
     localVideoWrap.classList.toggle("mobile-controls-open", visible);
 }
 
-function setFramingDebug(message, isVisible = true) {
-    if (!framingDebug) return;
+function applyLocalFilter(filterName) {
+    const preset = FILTER_PRESETS[filterName] || FILTER_PRESETS.normal;
+    currentFilter = FILTER_PRESETS[filterName] ? filterName : "normal";
 
-    framingDebug.textContent = message;
-    framingDebug.classList.toggle("show", Boolean(isVisible && isMobile() && message));
-}
-
-function resetLocalVideoFraming() {
-    if (!localVideo) return;
-
-    localVideo.style.objectPosition = "50% 50%";
-    localVideo.style.transform = "scale(1)";
-}
-
-function stopAutoFraming() {
-    autoFramingSession += 1;
-
-    if (autoFramingTimer) {
-        clearTimeout(autoFramingTimer);
-        autoFramingTimer = null;
+    if (localVideo) {
+        localVideo.style.filter = preset.filter;
     }
 
-    resetLocalVideoFraming();
-    setFramingDebug("", false);
-}
-
-async function startAutoFraming() {
-    stopAutoFraming();
-
-    if (!isMobile()) {
-        return;
+    if (localVideoWrap) {
+        localVideoWrap.dataset.filter = preset.label;
     }
 
-    if (!("FaceDetector" in window)) {
-        setFramingDebug("FaceDetector: nein");
-        return;
-    }
-
-    if (!localStream || !localVideo) {
-        setFramingDebug("Framing: kein Stream");
-        return;
-    }
-
-    try {
-        autoFramingDetector ||= new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
-    } catch {
-        setFramingDebug("FaceDetector: Fehler");
-        return;
-    }
-
-    setFramingDebug("FaceDetector: bereit");
-
-    const session = autoFramingSession;
-
-    async function run() {
-        if (session !== autoFramingSession || !localStream || !localVideo.srcObject) {
-            return;
-        }
-
-        try {
-            if (localVideo.readyState >= 2 && localVideo.videoWidth > 0 && localVideo.videoHeight > 0) {
-                const faces = await autoFramingDetector.detect(localVideo);
-                const face = faces[0];
-
-                if (face?.boundingBox) {
-                    const { x, y, width, height } = face.boundingBox;
-                    const rawCenterX = ((x + width / 2) / localVideo.videoWidth) * 100;
-                    const rawCenterY = ((y + height / 2) / localVideo.videoHeight) * 100;
-                    const centerX = Math.min(Math.max(rawCenterX, 18), 82);
-                    const centerY = Math.min(Math.max(rawCenterY, 18), 82);
-                    const faceRatio = Math.max(width / localVideo.videoWidth, height / localVideo.videoHeight);
-                    const zoom = Math.min(Math.max(1.22, 0.5 / Math.max(faceRatio, 0.16)), 1.9);
-
-                    localVideo.style.objectPosition = `${centerX}% ${centerY}%`;
-                    localVideo.style.transform = `scale(${zoom.toFixed(3)})`;
-                    setFramingDebug(`Gesicht erkannt · Zoom ${zoom.toFixed(2)}`);
-                } else {
-                    resetLocalVideoFraming();
-                    setFramingDebug("Kein Gesicht erkannt");
-                }
-            }
-        } catch {
-            resetLocalVideoFraming();
-            setFramingDebug("FaceDetector: Fehler");
-        }
-
-        autoFramingTimer = window.setTimeout(run, 180);
-    }
-
-    run();
+    filterButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.filter === currentFilter);
+    });
 }
 
 function resetControlState() {
     isMuted = false;
     currentFacingMode = "user";
     currentVideoDeviceId = null;
-    stopAutoFraming();
     updateMuteButton();
     updateCameraButton();
 
@@ -396,8 +340,6 @@ async function setLocalStream(newStream, stopOld = true) {
     if (stopOld && oldStream) {
         oldStream.getTracks().forEach(track => track.stop());
     }
-
-    await startAutoFraming();
 }
 
 function showSearchingOverlay(title = "Partner wird gesucht...", sub = "Bitte kurz warten") {
@@ -721,6 +663,12 @@ sendBtn.onclick = () => {
     }
 };
 
+filterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        applyLocalFilter(button.dataset.filter);
+    });
+});
+
 // --- Mobile Drag ---
 (function () {
     if (!localVideoWrap || !remoteVideo) return;
@@ -893,5 +841,6 @@ sendBtn.onclick = () => {
     setInitialMobilePosition();
     updateMuteButton();
     updateCameraButton();
+    applyLocalFilter(currentFilter);
 })();
 
