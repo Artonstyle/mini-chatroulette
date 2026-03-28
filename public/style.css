@@ -179,6 +179,16 @@ video {
 .btn-stop {background-color: #dc3545; color: #fff;}
 .btn-next {background-color: #007bff; color: #fff;}
 
+.btn-mute {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.btn-mute.active {
+  background-color: #ff3b30;
+  color: #fff;
+}
+
 .chat-box {
   background: rgba(50,50,50,0.95);
   padding: 15px;
@@ -197,7 +207,7 @@ video {
   margin-bottom: 10px;
 }
 
-/* 🔥 DESKTOP CHAT FARBEN */
+/* DESKTOP CHAT FARBEN */
 .chat-message {
   display: block;
   margin-bottom: 12px;
