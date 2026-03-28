@@ -91,7 +91,8 @@ video {
 
 .local-video-wrap {
   width: 48%;
-  height: 360px;
+  height: auto;
+  aspect-ratio: 16 / 9;
   position: relative;
   margin: 5px 0;
   overflow: hidden;
