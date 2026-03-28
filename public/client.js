@@ -15,7 +15,8 @@ const messagesDiv = document.querySelector(".chat-messages");
 const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
 const muteBtn = document.getElementById("btnMute");
-const switchCameraBtn = document.getElementById("btnSwitchCamera");
+const cameraBtn = document.getElementById("btnCamera");
+const localVideoWrap = document.querySelector(".local-video-wrap");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -36,8 +37,6 @@ const config = {
 };
 
 const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
-
-// --- Hilfsfunktionen ---
 
 function addMessage(sender, text, isSystem = false) {
     if (isSystem) return;
@@ -100,49 +99,59 @@ function updateMuteButton() {
     if (isMuted) {
         muteBtn.textContent = "🔇";
         muteBtn.classList.add("active");
-        muteBtn.setAttribute("aria-label", "Mikrofon einschalten");
-        muteBtn.title = "Mikrofon einschalten";
+        muteBtn.title = "Mikrofon an";
     } else {
         muteBtn.textContent = "🎤";
         muteBtn.classList.remove("active");
-        muteBtn.setAttribute("aria-label", "Mikrofon stummschalten");
-        muteBtn.title = "Mikrofon stummschalten";
+        muteBtn.title = "Mikrofon aus";
     }
 }
 
-function updateMediaButtons() {
-    const enabled = !!localStream;
+function updateCameraButton() {
+    if (!cameraBtn) return;
 
-    if (muteBtn) {
-        muteBtn.disabled = !enabled;
+    if (currentFacingMode === "environment") {
+        cameraBtn.textContent = "📷";
+        cameraBtn.classList.add("active");
+        cameraBtn.title = "Vorderkamera";
+    } else {
+        cameraBtn.textContent = "🔄";
+        cameraBtn.classList.remove("active");
+        cameraBtn.title = "Rückkamera";
     }
-
-    if (switchCameraBtn) {
-        switchCameraBtn.disabled = !enabled;
-    }
-
-    updateMuteButton();
 }
 
-function resetMuteState() {
+function resetControlState() {
     isMuted = false;
+    currentFacingMode = "user";
     updateMuteButton();
+    updateCameraButton();
+
+    if (muteBtn) muteBtn.disabled = true;
+    if (cameraBtn) cameraBtn.disabled = true;
 }
 
-function applyMuteToStream() {
-    if (!localStream) return;
-    const audioTrack = localStream.getAudioTracks()[0];
+function enableVideoControls() {
+    if (muteBtn) muteBtn.disabled = false;
+    if (cameraBtn) cameraBtn.disabled = false;
+    updateMuteButton();
+    updateCameraButton();
+}
+
+function applyMuteToStream(stream) {
+    if (!stream) return;
+    const audioTrack = stream.getAudioTracks()[0];
     if (!audioTrack) return;
     audioTrack.enabled = !isMuted;
 }
 
-async function getUserMediaForFacing(facingMode) {
+async function getMediaStreamForFacingMode(facingMode) {
     try {
         return await navigator.mediaDevices.getUserMedia({
             video: { facingMode: { exact: facingMode } },
             audio: true
         });
-    } catch (err) {
+    } catch {
         return await navigator.mediaDevices.getUserMedia({
             video: { facingMode: facingMode },
             audio: true
@@ -154,19 +163,31 @@ async function replaceTracksInPeerConnection(newStream) {
     if (!peerConnection) return;
 
     const senders = peerConnection.getSenders();
-    const newVideoTrack = newStream.getVideoTracks()[0];
-    const newAudioTrack = newStream.getAudioTracks()[0];
 
-    for (const sender of senders) {
-        if (!sender.track) continue;
+    for (const track of newStream.getTracks()) {
+        const sender = senders.find((s) => s.track && s.track.kind === track.kind);
 
-        if (sender.track.kind === "video" && newVideoTrack) {
-            await sender.replaceTrack(newVideoTrack);
+        if (sender) {
+            await sender.replaceTrack(track);
+        } else {
+            peerConnection.addTrack(track, newStream);
         }
+    }
+}
 
-        if (sender.track.kind === "audio" && newAudioTrack) {
-            await sender.replaceTrack(newAudioTrack);
-        }
+async function setLocalStream(newStream, stopOld = true) {
+    const oldStream = localStream;
+
+    localStream = newStream;
+    localVideo.srcObject = newStream;
+    applyMuteToStream(newStream);
+
+    if (peerConnection) {
+        await replaceTracksInPeerConnection(newStream);
+    }
+
+    if (stopOld && oldStream) {
+        oldStream.getTracks().forEach(track => track.stop());
     }
 }
 
@@ -189,14 +210,16 @@ function showStoppedOverlay() {
     );
 }
 
-async function startCamera() {
-    if (localStream) return true;
+async function startCamera(forceRestart = false) {
+    if (localStream && !forceRestart) {
+        enableVideoControls();
+        return true;
+    }
 
     try {
-        localStream = await getUserMediaForFacing(currentFacingMode);
-        localVideo.srcObject = localStream;
-        applyMuteToStream();
-        updateMediaButtons();
+        const newStream = await getMediaStreamForFacingMode(currentFacingMode);
+        await setLocalStream(newStream, true);
+        enableVideoControls();
         return true;
     } catch (err) {
         addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
@@ -205,25 +228,18 @@ async function startCamera() {
 }
 
 async function switchCamera() {
-    if (!localStream) return;
+    const previousFacingMode = currentFacingMode;
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
 
-    const nextFacingMode = currentFacingMode === "user" ? "environment" : "user";
-    const oldStream = localStream;
+    const ok = await startCamera(true);
 
-    try {
-        const newStream = await getUserMediaForFacing(nextFacingMode);
-        localStream = newStream;
-        currentFacingMode = nextFacingMode;
-
-        applyMuteToStream();
-        localVideo.srcObject = newStream;
-        await replaceTracksInPeerConnection(newStream);
-
-        oldStream.getTracks().forEach(track => track.stop());
-        updateMediaButtons();
-    } catch (err) {
-        console.warn("Kamerawechsel fehlgeschlagen:", err);
+    if (!ok) {
+        currentFacingMode = previousFacingMode;
+        updateCameraButton();
+        return;
     }
+
+    updateCameraButton();
 }
 
 function closePeerConnection(showSearching = true) {
@@ -235,9 +251,9 @@ function closePeerConnection(showSearching = true) {
         remoteVideo.srcObject = null;
 
         if (showSearching) {
-          remoteVideo.src = SEARCHING_VIDEO_SRC;
-          remoteVideo.loop = true;
-          setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
+            remoteVideo.src = SEARCHING_VIDEO_SRC;
+            remoteVideo.loop = true;
+            setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
         }
 
         peerConnection.close();
@@ -300,7 +316,6 @@ function createPeerConnection() {
 ws.onopen = () => {
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = false;
-    updateMediaButtons();
 
     setRemoteStatus(
         "Bereit",
@@ -308,6 +323,8 @@ ws.onopen = () => {
         true,
         false
     );
+
+    resetControlState();
 };
 
 ws.onmessage = async (event) => {
@@ -357,9 +374,8 @@ ws.onmessage = async (event) => {
 };
 
 // --- Buttons ---
-
 document.querySelector(".btn-start").onclick = async () => {
-    if (!await startCamera()) return;
+    if (!await startCamera(false)) return;
 
     document.body.classList.add("chatting");
 
@@ -377,12 +393,12 @@ document.querySelector(".btn-start").onclick = async () => {
 
     document.querySelector(".btn-start").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
-    updateMediaButtons();
+    enableVideoControls();
 };
 
 document.querySelector(".btn-next").onclick = async () => {
     if (!localStream) {
-        const ok = await startCamera();
+        const ok = await startCamera(false);
         if (!ok) return;
     }
 
@@ -405,7 +421,7 @@ document.querySelector(".btn-next").onclick = async () => {
 
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
-    updateMediaButtons();
+    enableVideoControls();
 };
 
 document.querySelector(".btn-stop").onclick = () => {
@@ -428,29 +444,26 @@ document.querySelector(".btn-stop").onclick = () => {
     document.querySelector(".btn-send").disabled = true;
     input.disabled = true;
 
-    resetMuteState();
-    currentFacingMode = "user";
-    updateMediaButtons();
+    resetControlState();
 };
 
-if (muteBtn) {
-    muteBtn.onclick = () => {
-        if (!localStream) return;
+muteBtn.onclick = async () => {
+    if (!localStream) {
+        const ok = await startCamera(false);
+        if (!ok) return;
+    }
 
-        const audioTrack = localStream.getAudioTracks()[0];
-        if (!audioTrack) return;
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (!audioTrack) return;
 
-        isMuted = !isMuted;
-        audioTrack.enabled = !isMuted;
-        updateMuteButton();
-    };
-}
+    isMuted = !isMuted;
+    audioTrack.enabled = !isMuted;
+    updateMuteButton();
+};
 
-if (switchCameraBtn) {
-    switchCameraBtn.onclick = async () => {
-        await switchCamera();
-    };
-}
+cameraBtn.onclick = async () => {
+    await switchCamera();
+};
 
 sendBtn.onclick = () => {
     const text = input.value.trim();
@@ -464,7 +477,7 @@ sendBtn.onclick = () => {
 
 // --- Mobile Drag ---
 (function () {
-    if (!localVideo) return;
+    if (!localVideoWrap) return;
 
     let dragging = false;
     let startX = 0;
@@ -478,35 +491,38 @@ sendBtn.onclick = () => {
 
     function setInitialMobilePosition() {
         if (!isMobile()) {
-            localVideo.style.left = "";
-            localVideo.style.top = "";
-            localVideo.style.right = "";
+            localVideoWrap.style.left = "";
+            localVideoWrap.style.top = "";
+            localVideoWrap.style.right = "";
             localVideo.classList.remove("dragging");
             return;
         }
 
-        if (!localVideo.dataset.dragReady) {
-            localVideo.style.top = "110px";
-            localVideo.style.right = "14px";
-            localVideo.dataset.dragReady = "true";
+        if (!localVideoWrap.dataset.dragReady) {
+            localVideoWrap.style.top = "110px";
+            localVideoWrap.style.right = "14px";
+            localVideoWrap.dataset.dragReady = "true";
         }
     }
 
-    localVideo.addEventListener("pointerdown", (e) => {
+    localVideoWrap.addEventListener("pointerdown", (e) => {
         if (!isMobile()) return;
+
+        const clickedButton = e.target.closest(".video-icon-btn");
+        if (clickedButton) return;
 
         dragging = true;
         localVideo.classList.add("dragging");
 
-        const rect = localVideo.getBoundingClientRect();
+        const rect = localVideoWrap.getBoundingClientRect();
         startLeft = rect.left;
         startTop = rect.top;
         startX = e.clientX;
         startY = e.clientY;
 
-        localVideo.style.left = rect.left + "px";
-        localVideo.style.top = rect.top + "px";
-        localVideo.style.right = "auto";
+        localVideoWrap.style.left = rect.left + "px";
+        localVideoWrap.style.top = rect.top + "px";
+        localVideoWrap.style.right = "auto";
 
         e.preventDefault();
     });
@@ -517,16 +533,16 @@ sendBtn.onclick = () => {
         let newLeft = startLeft + (e.clientX - startX);
         let newTop = startTop + (e.clientY - startY);
 
-        const maxLeft = window.innerWidth - localVideo.offsetWidth - 8;
-        const maxTop = window.innerHeight - localVideo.offsetHeight - 8;
+        const maxLeft = window.innerWidth - localVideoWrap.offsetWidth - 56;
+        const maxTop = window.innerHeight - localVideoWrap.offsetHeight - 8;
 
         if (newLeft < 8) newLeft = 8;
         if (newTop < 8) newTop = 8;
         if (newLeft > maxLeft) newLeft = maxLeft;
         if (newTop > maxTop) newTop = maxTop;
 
-        localVideo.style.left = newLeft + "px";
-        localVideo.style.top = newTop + "px";
+        localVideoWrap.style.left = newLeft + "px";
+        localVideoWrap.style.top = newTop + "px";
     });
 
     function stopDrag() {
@@ -539,4 +555,6 @@ sendBtn.onclick = () => {
     window.addEventListener("resize", setInitialMobilePosition);
 
     setInitialMobilePosition();
+    updateMuteButton();
+    updateCameraButton();
 })();
