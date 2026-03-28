@@ -569,10 +569,9 @@ sendBtn.onclick = () => {
 
 // --- Mobile Drag ---
 (function () {
-    if (!localVideoWrap) return;
+    if (!localVideoWrap || !remoteVideo) return;
 
     let dragging = false;
-    let moved = false;
     let startX = 0;
     let startY = 0;
     let startLeft = 0;
@@ -607,12 +606,16 @@ sendBtn.onclick = () => {
         startTop = rect.top;
         startX = e.clientX;
         startY = e.clientY;
-        moved = false;
         dragging = true;
 
         localVideoWrap.style.left = rect.left + "px";
         localVideoWrap.style.top = rect.top + "px";
         localVideoWrap.style.right = "auto";
+
+        localVideo.classList.add("dragging");
+        setMobileControlsVisible(false);
+        localVideoWrap.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
     });
 
     window.addEventListener("pointermove", (e) => {
@@ -620,13 +623,9 @@ sendBtn.onclick = () => {
 
         const deltaX = e.clientX - startX;
         const deltaY = e.clientY - startY;
+        const distance = Math.hypot(deltaX, deltaY);
 
-        if (!moved && Math.hypot(deltaX, deltaY) < dragThreshold) {
-            return;
-        }
-
-        moved = true;
-        localVideo.classList.add("dragging");
+        if (distance < dragThreshold) return;
 
         let newLeft = startLeft + deltaX;
         let newTop = startTop + deltaY;
@@ -644,26 +643,27 @@ sendBtn.onclick = () => {
     });
 
     function stopDrag() {
-        const wasDragging = dragging;
-        const wasMoved = moved;
-
         dragging = false;
-        moved = false;
         localVideo.classList.remove("dragging");
-
-        if (wasDragging && !wasMoved && isMobile()) {
-            const nextVisible = !localVideoWrap.classList.contains("mobile-controls-open");
-            setMobileControlsVisible(nextVisible);
-        }
     }
 
     window.addEventListener("pointerup", stopDrag);
     window.addEventListener("pointercancel", stopDrag);
     window.addEventListener("resize", setInitialMobilePosition);
+
+    remoteVideo.addEventListener("pointerdown", (e) => {
+        if (!isMobile()) return;
+        if (e.target.closest(".video-icon-btn")) return;
+
+        const nextVisible = !localVideoWrap.classList.contains("mobile-controls-open");
+        setMobileControlsVisible(nextVisible);
+    });
+
     window.addEventListener("pointerdown", (e) => {
         if (!isMobile()) return;
         if (!localVideoWrap.classList.contains("mobile-controls-open")) return;
         if (localVideoWrap.contains(e.target)) return;
+        if (remoteVideo.contains(e.target)) return;
 
         setMobileControlsVisible(false);
     });
