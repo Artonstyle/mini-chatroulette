@@ -213,10 +213,12 @@ async function startAutoFraming() {
 
                 if (face?.boundingBox) {
                     const { x, y, width, height } = face.boundingBox;
-                    const centerX = ((x + width / 2) / localVideo.videoWidth) * 100;
-                    const centerY = ((y + height / 2) / localVideo.videoHeight) * 100;
+                    const rawCenterX = ((x + width / 2) / localVideo.videoWidth) * 100;
+                    const rawCenterY = ((y + height / 2) / localVideo.videoHeight) * 100;
+                    const centerX = Math.min(Math.max(rawCenterX, 18), 82);
+                    const centerY = Math.min(Math.max(rawCenterY, 18), 82);
                     const faceRatio = Math.max(width / localVideo.videoWidth, height / localVideo.videoHeight);
-                    const zoom = Math.min(Math.max(1.08, 0.34 / Math.max(faceRatio, 0.14)), 1.45);
+                    const zoom = Math.min(Math.max(1.22, 0.5 / Math.max(faceRatio, 0.16)), 1.9);
 
                     localVideo.style.objectPosition = `${centerX}% ${centerY}%`;
                     localVideo.style.transform = `scale(${zoom.toFixed(3)})`;
@@ -228,7 +230,7 @@ async function startAutoFraming() {
             resetLocalVideoFraming();
         }
 
-        autoFramingTimer = window.setTimeout(run, 420);
+        autoFramingTimer = window.setTimeout(run, 180);
     }
 
     run();
