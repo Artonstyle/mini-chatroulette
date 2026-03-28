@@ -45,24 +45,28 @@ function addMessage(sender, text, isSystem = false) {
     const label = document.createElement("div");
     label.classList.add("chat-label");
 
-    const bubble = document.createElement("div");
-    bubble.classList.add("chat-bubble");
+    const content = document.createElement("div");
+    content.classList.add("chat-text");
 
     if (sender === "Ich") {
         wrapper.classList.add("me");
-        label.textContent = "Ich";
+        label.textContent = "Ich:";
     } else {
         wrapper.classList.add("partner");
-        label.textContent = "Partner";
+        label.textContent = "Partner:";
     }
 
-    bubble.textContent = text;
+    content.textContent = text;
 
     wrapper.appendChild(label);
-    wrapper.appendChild(bubble);
-
+    wrapper.appendChild(content);
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    // 🔔 Sicheres Event für Badge oben
+    if (sender === "Partner") {
+        window.dispatchEvent(new CustomEvent("partner-message-received"));
+    }
 }
 
 function setRemoteStatus(title, sub = "", show = true, loading = true) {
@@ -217,7 +221,6 @@ ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
 
     if (data.type === "matched" && data.should_offer) {
-        // CALLER: Erstelle Offer
         createPeerConnection();
         setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut…", true, true);
         addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
@@ -227,12 +230,10 @@ ws.onmessage = async (event) => {
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
-        // ANSWERER: Partner gefunden, warte auf Offer
         setRemoteStatus("Partner gefunden", "Warte auf Videoanruf…", true, true);
         addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
 
     } else if (data.type === "offer") {
-        // ANSWERER: Empfange Offer
         if (!peerConnection) createPeerConnection();
 
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
