@@ -3,17 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Mini Chatroulette – Videochat online</title>
   <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Mobile Topbar -->
   <div class="mobile-topbar">
     <div class="mobile-logo">Mini Chatroulette</div>
 
@@ -29,7 +26,6 @@
 
   <header>Mini Chatroulette</header>
 
-  <!-- Profil -->
   <section class="profile-form">
     <div class="form-left">
       <label>Ich bin:
@@ -62,7 +58,6 @@
     </div>
   </section>
 
-  <!-- Videos -->
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
@@ -86,7 +81,6 @@
     </div>
   </section>
 
-  <!-- Chat -->
   <section class="chat-box" id="chatBox">
     <div class="chat-messages"></div>
 
@@ -104,7 +98,6 @@
       const chatToggle = document.getElementById("chatToggle");
       const chatBadge = document.getElementById("chatBadge");
       const overlay = document.getElementById("mobileOverlay");
-      const chatMessages = document.querySelector(".chat-messages");
 
       let unread = 0;
 
@@ -167,33 +160,16 @@
         overlay.addEventListener("click", closePanels);
       }
 
-      if (chatMessages) {
-        const observer = new MutationObserver((mutations) => {
-          if (!isMobile()) return;
-          if (body.classList.contains("chat-open")) return;
+      // 🔔 Sicheres Badge über Event aus client.js
+      window.addEventListener("partner-message-received", () => {
+        if (!isMobile()) return;
+        if (body.classList.contains("chat-open")) return;
 
-          let added = 0;
-
-          for (const m of mutations) {
-            m.addedNodes.forEach((node) => {
-              if (node.nodeType !== 1) return;
-
-              if (node.classList && node.classList.contains("partner")) {
-                added++;
-              }
-            });
-          }
-
-          if (added > 0) {
-            unread += added;
-            updateBadge();
-            playSound();
-            vibrate();
-          }
-        });
-
-        observer.observe(chatMessages, { childList: true });
-      }
+        unread += 1;
+        updateBadge();
+        playSound();
+        vibrate();
+      });
 
       window.addEventListener("resize", () => {
         if (!isMobile()) closePanels();
