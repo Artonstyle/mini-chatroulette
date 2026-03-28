@@ -197,6 +197,34 @@ video {
   margin-bottom: 10px;
 }
 
+/* 🔥 DESKTOP CHAT FARBEN */
+.chat-message {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.chat-label {
+  font-size: 13px;
+  margin-bottom: 3px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+}
+
+.chat-message.me .chat-label {
+  color: #25d366;
+}
+
+.chat-message.partner .chat-label {
+  color: #4da6ff;
+}
+
+.chat-text {
+  font-size: 15px;
+  color: #fff;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 .chat-input {
   display: flex;
   gap: 10px;
@@ -580,7 +608,6 @@ video {
     word-break: break-word;
   }
 
-  /* NUR DAS HIER IST GEÄNDERT */
   body.chat-open .chat-message.me .chat-label {
     color: #25d366;
   }
