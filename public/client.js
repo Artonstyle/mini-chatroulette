@@ -36,19 +36,32 @@ const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
 // --- Hilfsfunktionen ---
 
 function addMessage(sender, text, isSystem = false) {
+    // System-Nachrichten komplett ausblenden
     if (isSystem) return;
 
-    const div = document.createElement("div");
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("chat-message");
+
+    const label = document.createElement("div");
+    label.classList.add("chat-label");
+
+    const bubble = document.createElement("div");
+    bubble.classList.add("chat-bubble");
 
     if (sender === "Ich") {
-        div.classList.add("me");
+        wrapper.classList.add("me");
+        label.textContent = "Ich";
     } else {
-        div.classList.add("partner");
+        wrapper.classList.add("partner");
+        label.textContent = "Partner";
     }
 
-    div.textContent = text;
+    bubble.textContent = text;
 
-    messagesDiv.appendChild(div);
+    wrapper.appendChild(label);
+    wrapper.appendChild(bubble);
+
+    messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
