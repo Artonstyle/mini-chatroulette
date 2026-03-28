@@ -111,6 +111,11 @@ video {
   margin: 0;
 }
 
+.local-video-wrap #localVideo {
+  object-fit: contain;
+  background: #000;
+}
+
 .local-video-controls {
   position: absolute;
   right: 10px;
@@ -176,20 +181,19 @@ video {
 .video-icon-btn {
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 14px;
-  background: rgba(90,90,90,0.26);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: #f2f2f2;
   font-size: 17px;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+  box-shadow: none;
+  padding: 0;
 }
 
 .video-icon-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: block;
   margin: 0 auto;
 }
@@ -201,8 +205,13 @@ video {
 }
 
 .video-icon-btn.active {
-  background: rgba(170,40,40,0.78);
-  border-color: rgba(255,255,255,0.12);
+  color: #ff7a7a;
+  filter: drop-shadow(0 0 10px rgba(255, 122, 122, 0.35));
+}
+
+#btnCamera,
+#btnLayout {
+  display: none;
 }
 
 .buttons {
@@ -631,10 +640,17 @@ video {
     width: 44px;
     height: 44px;
     font-size: 18px;
-    border-radius: 14px;
-    background: rgba(88,88,88,0.30);
+    border-radius: 0;
+    background: transparent;
     color: #f0f0f0;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: none;
+  }
+
+  #btnCamera,
+  #btnLayout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .buttons {
