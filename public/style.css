@@ -571,6 +571,7 @@ video {
     height: auto;
     aspect-ratio: 3 / 4;
     z-index: 45;
+    touch-action: none;
   }
 
   .remote-wrap {
