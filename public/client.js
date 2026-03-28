@@ -47,11 +47,16 @@ function addMessage(sender, text, isSystem = false) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function setRemoteStatus(title, sub = "", show = true) {
+function setRemoteStatus(title, sub = "", show = true, loading = true) {
     if (!remoteStatus) return;
 
     if (remoteStatusTitle) remoteStatusTitle.textContent = title || "";
     if (remoteStatusSub) remoteStatusSub.textContent = sub || "";
+
+    const spinner = remoteStatus.querySelector(".spinner");
+    if (spinner) {
+        spinner.style.display = loading ? "block" : "none";
+    }
 
     if (show) {
         remoteStatus.classList.add("show");
@@ -88,14 +93,14 @@ function resetRemoteToSearchingOverlay(title = "Partner wird gesucht…", sub = 
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
-    setRemoteStatus(title, sub, true);
+    setRemoteStatus(title, sub, true, true);
 }
 
 function resetRemoteToStoppedOverlay() {
     remoteVideo.srcObject = null;
     remoteVideo.src = "";
     remoteVideo.loop = false;
-    setRemoteStatus("⛔ Suche wurde gestoppt", "Drücke Start, um erneut zu suchen", true);
+    setRemoteStatus("⛔ Suche wurde gestoppt", "Drücke Start, um erneut zu suchen", true, false);
 }
 
 function closePeerConnection(showSearchingOverlay = true) {
@@ -133,7 +138,7 @@ function createPeerConnection() {
         remoteVideo.src = "";
         remoteVideo.srcObject = event.streams[0];
         remoteVideo.loop = false;
-        setRemoteStatus("", "", false);
+        setRemoteStatus("", "", false, false);
 
         addMessage("System", "🎥 Videoanruf gestartet!", true);
         document.querySelector(".btn-next").disabled = false;
@@ -177,7 +182,7 @@ ws.onopen = () => {
     addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = false;
-    setRemoteStatus("Noch nicht gestartet", "Tippe auf Start", true);
+    setRemoteStatus("Noch nicht gestartet", "Tippe auf Start", true, false);
 };
 
 ws.onmessage = async (event) => {
@@ -185,7 +190,7 @@ ws.onmessage = async (event) => {
 
     if (data.type === "matched" && data.should_offer) {
         createPeerConnection();
-        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut…", true);
+        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut…", true, true);
         addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
 
         const offer = await peerConnection.createOffer();
@@ -193,7 +198,7 @@ ws.onmessage = async (event) => {
         ws.send(JSON.stringify({ type: "offer", offer }));
 
     } else if (data.type === "matched" && !data.should_offer) {
-        setRemoteStatus("Partner gefunden", "Warte auf Verbindungsaufbau…", true);
+        setRemoteStatus("Partner gefunden", "Warte auf Verbindungsaufbau…", true, true);
         addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
 
     } else if (data.type === "offer") {
@@ -219,7 +224,7 @@ ws.onmessage = async (event) => {
         closePeerConnection(true);
 
     } else if (data.type === "no-match") {
-        setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true);
+        setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
         addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
 
     } else if (data.type === "user-count") {
