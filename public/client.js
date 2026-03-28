@@ -18,7 +18,7 @@ const remoteStatus = document.getElementById("remoteStatus");
 const remoteStatusTitle = document.querySelector(".remote-status-title");
 const remoteStatusSub = document.querySelector(".remote-status-sub");
 
-// Für zukünftige Profil-Logik
+// Für Profil-Logik
 const genderSelect = document.getElementById("gender");
 const searchSelect = document.getElementById("search");
 const countrySelect = document.getElementById("country");
@@ -36,7 +36,6 @@ const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
 // --- Hilfsfunktionen ---
 
 function addMessage(sender, text, isSystem = false) {
-    // System-Nachrichten komplett ausblenden
     if (isSystem) return;
 
     const wrapper = document.createElement("div");
@@ -63,7 +62,6 @@ function addMessage(sender, text, isSystem = false) {
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // Sicheres Event für Badge oben
     if (sender === "Partner") {
         window.dispatchEvent(new CustomEvent("partner-message-received"));
     }
@@ -113,8 +111,12 @@ function showStoppedOverlay() {
 
 async function startCamera() {
     if (localStream) return true;
+
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
         localVideo.srcObject = localStream;
         return true;
     } catch (err) {
@@ -125,11 +127,10 @@ async function startCamera() {
 
 function closePeerConnection(showSearching = true) {
     if (peerConnection) {
-        if (remoteVideo.srcObject) {
-            if (remoteVideo.srcObject.getTracks) {
-                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-            }
+        if (remoteVideo.srcObject && remoteVideo.srcObject.getTracks) {
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
         }
+
         remoteVideo.srcObject = null;
 
         if (showSearching) {
@@ -157,7 +158,6 @@ function createPeerConnection() {
         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
     }
 
-    // Remote-Stream empfangen
     peerConnection.ontrack = (event) => {
         remoteVideo.src = "";
         remoteVideo.srcObject = event.streams[0];
@@ -170,19 +170,16 @@ function createPeerConnection() {
         input.disabled = false;
     };
 
-    // ICE-Kandidaten senden
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
         }
     };
 
-    // DataChannel für Chat (vom CALLER erstellt)
     dataChannel = peerConnection.createDataChannel("chat");
     dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
     dataChannel.onmessage = (event) => addMessage("Partner", event.data);
 
-    // DataChannel EMPFANGEN (vom ANSWERER empfangen)
     peerConnection.ondatachannel = (event) => {
         dataChannel = event.channel;
         dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
@@ -205,7 +202,6 @@ function createPeerConnection() {
 
 // --- WebSocket Events ---
 ws.onopen = () => {
-    addMessage("System", "✅ Verbunden mit Server", true);
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = false;
 
@@ -223,7 +219,6 @@ ws.onmessage = async (event) => {
     if (data.type === "matched" && data.should_offer) {
         createPeerConnection();
         setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut…", true, true);
-        addMessage("System", "Partner gefunden. Starte Videoanruf (Offer)...", true);
 
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
@@ -231,7 +226,6 @@ ws.onmessage = async (event) => {
 
     } else if (data.type === "matched" && !data.should_offer) {
         setRemoteStatus("Partner gefunden", "Warte auf Videoanruf…", true, true);
-        addMessage("System", "Partner gefunden. Warte auf Videoanruf (Offer)...", true);
 
     } else if (data.type === "offer") {
         if (!peerConnection) createPeerConnection();
@@ -252,12 +246,10 @@ ws.onmessage = async (event) => {
         }
 
     } else if (data.type === "partner-left") {
-        addMessage("System", "Ihr Partner hat die Verbindung getrennt.", true);
         closePeerConnection(true);
 
     } else if (data.type === "no-match") {
         setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
-        addMessage("System", "Kein passender Partner gefunden. Wir warten weiter...", true);
 
     } else if (data.type === "user-count") {
         const onlineCountElement = document.getElementById("onlineCount");
@@ -267,7 +259,7 @@ ws.onmessage = async (event) => {
     }
 };
 
-// --- Buttons mit Logik ---
+// --- Buttons ---
 
 document.querySelector(".btn-start").onclick = async () => {
     if (!await startCamera()) return;
@@ -286,7 +278,6 @@ document.querySelector(".btn-start").onclick = async () => {
         country: countrySelect.value
     }));
 
-    addMessage("System", "Suche nach Partner...", true);
     document.querySelector(".btn-start").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
 };
@@ -314,7 +305,6 @@ document.querySelector(".btn-next").onclick = async () => {
         country: countrySelect.value
     }));
 
-    addMessage("System", "Suche nach neuem Partner...", true);
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
 };
@@ -333,8 +323,6 @@ document.querySelector(".btn-stop").onclick = () => {
     closePeerConnection(false);
     showStoppedOverlay();
 
-    addMessage("System", "Suche wurde gestoppt. Drücke Start, um erneut zu suchen.", true);
-
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = true;
     document.querySelector(".btn-next").disabled = true;
@@ -342,19 +330,17 @@ document.querySelector(".btn-stop").onclick = () => {
     input.disabled = true;
 };
 
-// Chat-Nachricht senden
 sendBtn.onclick = () => {
     const text = input.value.trim();
+
     if (text && dataChannel && dataChannel.readyState === "open") {
         dataChannel.send(text);
         addMessage("Ich", text);
         input.value = "";
-    } else if (text) {
-        addMessage("System", "Chat-Kanal ist noch nicht bereit.", true);
     }
 };
 
-// --- Mobile Drag für eigenes Video ---
+// --- Mobile Drag ---
 (function () {
     if (!localVideo) return;
 
