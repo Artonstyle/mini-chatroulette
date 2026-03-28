@@ -602,7 +602,7 @@ video {
     touch-action: none;
     cursor: grab;
     margin: 0;
-    transition: transform 0.22s ease, object-position 0.22s ease;
+    transition: transform 0.12s ease, object-position 0.12s ease;
   }
 
   #localVideo.dragging {
