@@ -378,6 +378,13 @@ video {
     box-shadow: 0 4px 18px rgba(0,0,0,0.15);
   }
 
+  .mobile-chat-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    margin: 0 auto;
+  }
+
   .mobile-badge {
     display: none;
     position: absolute;
