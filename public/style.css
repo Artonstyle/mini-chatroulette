@@ -613,18 +613,21 @@ video {
     display: none;
     position: absolute;
     left: 50%;
-    bottom: -32px;
+    top: 6px;
     transform: translateX(-50%);
-    white-space: nowrap;
-    padding: 5px 9px;
-    border-radius: 999px;
-    background: rgba(5, 10, 16, 0.78);
-    color: #eaf6ff;
-    font-size: 11px;
-    line-height: 1;
-    letter-spacing: 0.02em;
+    max-width: calc(100% - 12px);
+    white-space: normal;
+    text-align: center;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: rgba(0, 184, 148, 0.94);
+    color: #03130f;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
     box-shadow: 0 6px 18px rgba(0,0,0,0.28);
     pointer-events: none;
+    z-index: 60;
   }
 
   .framing-debug.show {
