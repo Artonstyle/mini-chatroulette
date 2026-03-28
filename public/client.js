@@ -31,7 +31,6 @@ const config = {
     ]
 };
 
-// Platzhalter für "Suchen"-Animation
 const SEARCHING_VIDEO_SRC = "/assets/searching.mp4";
 
 // --- Hilfsfunktionen ---
@@ -183,10 +182,16 @@ function createPeerConnection() {
 
 // --- WebSocket Events ---
 ws.onopen = () => {
-    addMessage("System", "✅ Verbunden mit Signalisierungsserver. Klicken Sie auf Start.", true);
+    addMessage("System", "✅ Verbunden mit Server", true);
     document.querySelector(".btn-start").disabled = false;
     document.querySelector(".btn-stop").disabled = false;
-    setRemoteStatus("Noch nicht gestartet", "Drücke Start", true, false);
+
+    setRemoteStatus(
+        "Bereit",
+        "Wähle Optionen und drücke Start",
+        true,
+        false
+    );
 };
 
 ws.onmessage = async (event) => {
