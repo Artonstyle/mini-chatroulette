@@ -63,7 +63,7 @@ function addMessage(sender, text, isSystem = false) {
     messagesDiv.appendChild(wrapper);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    // 🔔 Sicheres Event für Badge oben
+    // Sicheres Event für Badge oben
     if (sender === "Partner") {
         window.dispatchEvent(new CustomEvent("partner-message-received"));
     }
@@ -279,7 +279,12 @@ document.querySelector(".btn-start").onclick = async () => {
     remoteVideo.loop = true;
     setRemoteStatus("Partner wird gesucht…", "Bitte kurz warten", true, true);
 
-    ws.send(JSON.stringify({ type: "start" }));
+    ws.send(JSON.stringify({
+        type: "start",
+        gender: genderSelect.value,
+        search: searchSelect.value,
+        country: countrySelect.value
+    }));
 
     addMessage("System", "Suche nach Partner...", true);
     document.querySelector(".btn-start").disabled = true;
@@ -302,7 +307,12 @@ document.querySelector(".btn-next").onclick = async () => {
     remoteVideo.loop = true;
     setRemoteStatus("Neuer Partner wird gesucht…", "Bitte kurz warten", true, true);
 
-    ws.send(JSON.stringify({ type: "start" }));
+    ws.send(JSON.stringify({
+        type: "start",
+        gender: genderSelect.value,
+        search: searchSelect.value,
+        country: countrySelect.value
+    }));
 
     addMessage("System", "Suche nach neuem Partner...", true);
     document.querySelector(".btn-next").disabled = true;
