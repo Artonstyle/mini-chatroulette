@@ -22,6 +22,7 @@ const muteBtn = document.getElementById("btnMute");
 const cameraBtn = document.getElementById("btnCamera");
 const localVideoWrap = document.querySelector(".local-video-wrap");
 const localVideoControls = document.querySelector(".local-video-controls");
+const framingDebug = document.getElementById("framingDebug");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -168,6 +169,13 @@ function setMobileControlsVisible(visible) {
     localVideoWrap.classList.toggle("mobile-controls-open", visible);
 }
 
+function setFramingDebug(message, isVisible = true) {
+    if (!framingDebug) return;
+
+    framingDebug.textContent = message;
+    framingDebug.classList.toggle("show", Boolean(isVisible && isMobile() && message));
+}
+
 function resetLocalVideoFraming() {
     if (!localVideo) return;
 
@@ -184,20 +192,34 @@ function stopAutoFraming() {
     }
 
     resetLocalVideoFraming();
+    setFramingDebug("", false);
 }
 
 async function startAutoFraming() {
     stopAutoFraming();
 
-    if (!("FaceDetector" in window) || !localStream || !localVideo) {
+    if (!isMobile()) {
+        return;
+    }
+
+    if (!("FaceDetector" in window)) {
+        setFramingDebug("FaceDetector: nein");
+        return;
+    }
+
+    if (!localStream || !localVideo) {
+        setFramingDebug("Framing: kein Stream");
         return;
     }
 
     try {
         autoFramingDetector ||= new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
     } catch {
+        setFramingDebug("FaceDetector: Fehler");
         return;
     }
+
+    setFramingDebug("FaceDetector: bereit");
 
     const session = autoFramingSession;
 
@@ -222,12 +244,15 @@ async function startAutoFraming() {
 
                     localVideo.style.objectPosition = `${centerX}% ${centerY}%`;
                     localVideo.style.transform = `scale(${zoom.toFixed(3)})`;
+                    setFramingDebug(`Gesicht erkannt · Zoom ${zoom.toFixed(2)}`);
                 } else {
                     resetLocalVideoFraming();
+                    setFramingDebug("Kein Gesicht erkannt");
                 }
             }
         } catch {
             resetLocalVideoFraming();
+            setFramingDebug("FaceDetector: Fehler");
         }
 
         autoFramingTimer = window.setTimeout(run, 180);
