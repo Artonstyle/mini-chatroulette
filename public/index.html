@@ -3,17 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Mini Chatroulette – Videochat online</title>
   <meta name="description" content="Treffe neue Leute per Videochat – kostenlos Mini Chatroulette online.">
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="R18AgRj5XCuOv_p3Lr0YY-XwHXl67vZXX75hyb7442k" />
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Mobile Topbar -->
+  <!-- MOBILE TOPBAR -->
   <div class="mobile-topbar">
     <div class="mobile-logo">Mini Chatroulette</div>
 
@@ -22,10 +20,6 @@
         💬
         <span id="chatBadge" class="mobile-badge">0</span>
       </button>
-
-      <button id="filterToggle" class="mobile-icon-btn" type="button" aria-label="Filter öffnen">
-        ⚙️
-      </button>
     </div>
   </div>
 
@@ -33,9 +27,10 @@
 
   <header>Mini Chatroulette</header>
 
-  <!-- Profilbereich -->
+  <!-- PROFIL -->
   <section class="profile-form">
     <div class="form-left">
+
       <label>Ich bin:
         <select id="gender">
           <option>Mann</option>
@@ -50,7 +45,7 @@
         </select>
       </label>
 
-      <label>Mein Land:
+      <label>Wähle Land aus:
         <select id="country">
           <option>Deutschland</option>
           <option>Österreich</option>
@@ -58,7 +53,7 @@
         </select>
       </label>
 
-      <button class="btn-start" disabled>Start</button>
+      <button class="btn-start" disabled>▶ Start</button>
     </div>
 
     <div class="online-right">
@@ -66,7 +61,7 @@
     </div>
   </section>
 
-  <!-- Videos -->
+  <!-- VIDEOS -->
   <section class="videos">
     <div class="video-container">
       <video id="localVideo" autoplay muted playsinline></video>
@@ -77,8 +72,8 @@
         <div id="remoteStatus" class="remote-status show">
           <div class="remote-status-inner">
             <div class="spinner"></div>
-            <div class="remote-status-title">Noch nicht gestartet</div>
-            <div class="remote-status-sub">Tippe auf Start</div>
+            <div class="remote-status-title">Bereit</div>
+            <div class="remote-status-sub">Wähle Optionen und drücke Start</div>
           </div>
         </div>
       </div>
@@ -90,7 +85,7 @@
     </div>
   </section>
 
-  <!-- Chat -->
+  <!-- CHAT -->
   <section class="chat-box" id="chatBox">
     <div class="chat-messages"></div>
 
@@ -106,7 +101,6 @@
     (function () {
       const body = document.body;
       const chatToggle = document.getElementById("chatToggle");
-      const filterToggle = document.getElementById("filterToggle");
       const chatBadge = document.getElementById("chatBadge");
       const overlay = document.getElementById("mobileOverlay");
       const chatMessages = document.querySelector(".chat-messages");
@@ -119,7 +113,6 @@
 
       function closePanels() {
         body.classList.remove("chat-open");
-        body.classList.remove("filter-open");
       }
 
       function updateBadge() {
@@ -154,31 +147,24 @@
         }
       }
 
-      chatToggle.addEventListener("click", () => {
-        if (!isMobile()) return;
+      if (chatToggle) {
+        chatToggle.addEventListener("click", () => {
+          if (!isMobile()) return;
 
-        const open = !body.classList.contains("chat-open");
-        closePanels();
+          const open = !body.classList.contains("chat-open");
+          closePanels();
 
-        if (open) {
-          body.classList.add("chat-open");
-          unread = 0;
-          updateBadge();
-        }
-      });
+          if (open) {
+            body.classList.add("chat-open");
+            unread = 0;
+            updateBadge();
+          }
+        });
+      }
 
-      filterToggle.addEventListener("click", () => {
-        if (!isMobile()) return;
-
-        const open = !body.classList.contains("filter-open");
-        closePanels();
-
-        if (open) {
-          body.classList.add("filter-open");
-        }
-      });
-
-      overlay.addEventListener("click", closePanels);
+      if (overlay) {
+        overlay.addEventListener("click", closePanels);
+      }
 
       if (chatMessages) {
         const observer = new MutationObserver((mutations) => {
