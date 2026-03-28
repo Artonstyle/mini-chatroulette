@@ -680,7 +680,7 @@ sendBtn.onclick = () => {
         let newLeft = startLeft + deltaX;
         let newTop = startTop + deltaY;
 
-        const maxLeft = window.innerWidth - localVideoWrap.offsetWidth - 56;
+        const maxLeft = window.innerWidth - localVideoWrap.offsetWidth - 8;
         const maxTop = window.innerHeight - localVideoWrap.offsetHeight - 8;
 
         if (newLeft < 8) newLeft = 8;
