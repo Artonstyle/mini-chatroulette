@@ -252,6 +252,8 @@ ws.onmessage = async (event) => {
 document.querySelector(".btn-start").onclick = async () => {
     if (!await startCamera()) return;
 
+    document.body.classList.add("chatting");
+
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
     remoteVideo.loop = true;
@@ -288,6 +290,8 @@ document.querySelector(".btn-next").onclick = async () => {
 };
 
 document.querySelector(".btn-stop").onclick = () => {
+    document.body.classList.remove("chatting");
+
     ws.send(JSON.stringify({ type: "stop" }));
 
     if (localStream) {
