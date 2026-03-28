@@ -186,6 +186,14 @@ video {
   box-shadow: 0 8px 22px rgba(0,0,0,0.18);
 }
 
+.video-icon-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  margin: 0 auto;
+}
+
+
 .video-icon-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -591,13 +599,23 @@ video {
   }
 
   .local-video-controls {
-    position: absolute;
-    right: -56px;
-    top: 0;
+    position: fixed;
+    right: 14px;
+    bottom: 108px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     z-index: 56;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .local-video-wrap.mobile-controls-open .local-video-controls {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
   }
 
   .video-icon-btn {
