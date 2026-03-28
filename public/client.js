@@ -5,6 +5,7 @@ const ws = new WebSocket(WS_URL);
 let localStream;
 let peerConnection;
 let dataChannel;
+let isMuted = false;
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -12,6 +13,7 @@ const remoteVideo = document.getElementById("remoteVideo");
 const messagesDiv = document.querySelector(".chat-messages");
 const input = document.querySelector(".chat-input input");
 const sendBtn = document.querySelector(".btn-send");
+const muteBtn = document.getElementById("btnMute");
 
 // Overlay-Elemente
 const remoteStatus = document.getElementById("remoteStatus");
@@ -90,6 +92,30 @@ function setRemoteStatus(title, sub = "", show = true, loading = true) {
     }
 }
 
+function updateMuteButton() {
+    if (!muteBtn) return;
+
+    if (isMuted) {
+        muteBtn.textContent = "🔇 Unmute";
+        muteBtn.classList.add("active");
+    } else {
+        muteBtn.textContent = "🎤 Mute";
+        muteBtn.classList.remove("active");
+    }
+}
+
+function resetMuteState() {
+    isMuted = false;
+    updateMuteButton();
+}
+
+function applyMuteToStream() {
+    if (!localStream) return;
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (!audioTrack) return;
+    audioTrack.enabled = !isMuted;
+}
+
 function showSearchingOverlay(title = "Partner wird gesucht…", sub = "Bitte kurz warten") {
     remoteVideo.srcObject = null;
     remoteVideo.src = SEARCHING_VIDEO_SRC;
@@ -118,6 +144,7 @@ async function startCamera() {
             audio: true
         });
         localVideo.srcObject = localStream;
+        applyMuteToStream();
         return true;
     } catch (err) {
         addMessage("System", "❌ Fehler beim Zugriff auf Kamera/Mikrofon. Bitte erlauben Sie den Zugriff.", true);
@@ -144,7 +171,6 @@ function closePeerConnection(showSearching = true) {
     }
 
     dataChannel = null;
-    addMessage("System", "Verbindung zum Partner beendet.", true);
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-send").disabled = true;
     input.disabled = true;
@@ -164,7 +190,6 @@ function createPeerConnection() {
         remoteVideo.loop = false;
         setRemoteStatus("", "", false, false);
 
-        addMessage("System", "🎥 Videoanruf gestartet!", true);
         document.querySelector(".btn-next").disabled = false;
         document.querySelector(".btn-send").disabled = false;
         input.disabled = false;
@@ -177,12 +202,10 @@ function createPeerConnection() {
     };
 
     dataChannel = peerConnection.createDataChannel("chat");
-    dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
     dataChannel.onmessage = (event) => addMessage("Partner", event.data);
 
     peerConnection.ondatachannel = (event) => {
         dataChannel = event.channel;
-        dataChannel.onopen = () => addMessage("System", "💬 Chat-Kanal geöffnet.", true);
         dataChannel.onmessage = (e) => addMessage("Partner", e.data);
     };
 
@@ -194,7 +217,6 @@ function createPeerConnection() {
                 peerConnection.iceConnectionState === "failed"
             )
         ) {
-            addMessage("System", `⚠️ Verbindung getrennt: ${peerConnection.iceConnectionState}`, true);
             closePeerConnection(true);
         }
     };
@@ -280,6 +302,9 @@ document.querySelector(".btn-start").onclick = async () => {
 
     document.querySelector(".btn-start").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
+    muteBtn.disabled = false;
+    applyMuteToStream();
+    updateMuteButton();
 };
 
 document.querySelector(".btn-next").onclick = async () => {
@@ -307,6 +332,9 @@ document.querySelector(".btn-next").onclick = async () => {
 
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-stop").disabled = false;
+    muteBtn.disabled = false;
+    applyMuteToStream();
+    updateMuteButton();
 };
 
 document.querySelector(".btn-stop").onclick = () => {
@@ -328,6 +356,20 @@ document.querySelector(".btn-stop").onclick = () => {
     document.querySelector(".btn-next").disabled = true;
     document.querySelector(".btn-send").disabled = true;
     input.disabled = true;
+
+    muteBtn.disabled = true;
+    resetMuteState();
+};
+
+muteBtn.onclick = () => {
+    if (!localStream) return;
+
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (!audioTrack) return;
+
+    isMuted = !isMuted;
+    audioTrack.enabled = !isMuted;
+    updateMuteButton();
 };
 
 sendBtn.onclick = () => {
