@@ -64,13 +64,13 @@ button.btn-start {
 }
 
 .videos {
+  position: relative;
   background: rgba(50,50,50,0.95);
   padding: 15px;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   max-width: 1200px;
   margin: 10px auto;
-  position: relative;
 }
 
 .video-container {
@@ -89,6 +89,13 @@ video {
   margin: 5px 0;
 }
 
+.local-video-wrap {
+  width: 48%;
+  height: 360px;
+  position: relative;
+  margin: 5px 0;
+}
+
 .remote-wrap {
   width: 48%;
   height: 360px;
@@ -96,10 +103,21 @@ video {
   margin: 5px 0;
 }
 
+.local-video-wrap #localVideo,
 .remote-wrap #remoteVideo {
   width: 100%;
   height: 100%;
   margin: 0;
+}
+
+.local-video-controls {
+  position: absolute;
+  right: 10px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 30;
 }
 
 .remote-status {
@@ -154,6 +172,30 @@ video {
   to { transform: rotate(360deg); }
 }
 
+.video-icon-btn {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  background: rgba(90,90,90,0.26);
+  color: #f2f2f2;
+  font-size: 17px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+}
+
+.video-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.video-icon-btn.active {
+  background: rgba(170,40,40,0.78);
+  border-color: rgba(255,255,255,0.12);
+}
+
 .buttons {
   margin-top: 10px;
   display: flex;
@@ -169,62 +211,22 @@ video {
   cursor: pointer;
   font-size: 1em;
   font-weight: bold;
-  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-  color: #fff;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
 .buttons button:hover {
-  transform: scale(1.04);
+  transform: scale(1.03);
   box-shadow: 0 0 12px rgba(255,255,255,0.15);
 }
 
 .btn-next {
-  background: rgba(19, 33, 54, 0.94);
-  color: #dfeaff;
+  background: linear-gradient(180deg, rgba(26,33,44,0.96), rgba(18,22,31,0.96));
+  color: #e8edf3;
 }
 
 .btn-stop {
-  background: rgba(58, 19, 25, 0.94);
-  color: #ffe1e5;
-}
-
-.video-side-controls {
-  position: absolute;
-  top: 26px;
-  right: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 60;
-}
-
-.side-control-btn {
-  width: 46px;
-  height: 46px;
-  border: none;
-  border-radius: 16px;
-  background: rgba(120,120,120,0.22);
-  color: #e8e8e8;
-  font-size: 20px;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  transition: transform 0.2s, background 0.2s, opacity 0.2s;
-}
-
-.side-control-btn:hover {
-  transform: scale(1.05);
-}
-
-.side-control-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.side-control-btn.active {
-  background: rgba(255,59,48,0.88);
-  color: #fff;
+  background: linear-gradient(180deg, rgba(52,22,27,0.96), rgba(30,12,16,0.96));
+  color: #f5f5f5;
 }
 
 .chat-box {
@@ -245,7 +247,6 @@ video {
   margin-bottom: 10px;
 }
 
-/* DESKTOP CHAT FARBEN */
 .chat-message {
   display: block;
   margin-bottom: 12px;
@@ -547,6 +548,16 @@ video {
     width: 100%;
   }
 
+  .local-video-wrap {
+    position: fixed;
+    top: 110px;
+    right: 14px;
+    width: 92px;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    z-index: 45;
+  }
+
   .remote-wrap {
     width: 100%;
     height: 100vh;
@@ -563,34 +574,40 @@ video {
   }
 
   #localVideo {
-    position: fixed;
-    top: 110px;
-    right: 14px;
-    width: 92px;
-    height: auto;
-    aspect-ratio: 3 / 4;
+    width: 100%;
+    height: 100%;
     min-height: auto;
     object-fit: cover;
-    z-index: 45;
     border-radius: 12px;
     border: 2px solid rgba(255,255,255,0.2);
     box-shadow: 0 8px 24px rgba(0,0,0,0.35);
     touch-action: none;
     cursor: grab;
+    margin: 0;
   }
 
   #localVideo.dragging {
     cursor: grabbing;
   }
 
-  .video-side-controls {
-    position: fixed;
-    top: 214px;
-    right: 14px;
+  .local-video-controls {
+    position: absolute;
+    right: -56px;
+    top: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    z-index: 55;
+    z-index: 56;
+  }
+
+  .video-icon-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    border-radius: 14px;
+    background: rgba(88,88,88,0.30);
+    color: #f0f0f0;
+    border: 1px solid rgba(255,255,255,0.08);
   }
 
   .buttons {
@@ -611,8 +628,9 @@ video {
   .buttons button {
     flex: 1;
     min-width: 0;
-    padding: 16px 12px;
+    min-height: 64px;
     border-radius: 16px;
+    font-size: 16px;
   }
 
   .chat-box {
@@ -625,7 +643,7 @@ video {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 82px;
+    bottom: 92px;
     z-index: 70;
     background: rgba(10, 10, 10, 0.92);
     backdrop-filter: blur(8px);
