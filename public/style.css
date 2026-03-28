@@ -91,8 +91,7 @@ video {
 
 .local-video-wrap {
   width: 48%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  height: 360px;
   position: relative;
   margin: 5px 0;
   overflow: hidden;
@@ -113,7 +112,7 @@ video {
 }
 
 .local-video-wrap #localVideo {
-  object-fit: contain;
+  object-fit: cover;
   background: #000;
 }
 
@@ -197,6 +196,11 @@ video {
   height: 24px;
   display: block;
   margin: 0 auto;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.55));
+}
+
+#btnVideo {
+  color: #9ae6ff;
 }
 
 
