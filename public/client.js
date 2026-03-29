@@ -85,6 +85,7 @@ const LAYOUT_SPLIT_ICON = `
         <rect x="4" y="13" width="16" height="6.2" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
     </svg>
 `;
+
 let mobileLayoutMode = "overlay";
 let overlayLayoutState = null;
 
@@ -153,11 +154,11 @@ function startHeartbeat() {
         const now = Date.now();
 
         if (now - lastPongAt > HEARTBEAT_TIMEOUT_MS) {
-            console.warn("Heartbeat timeout – schließe WebSocket");
+            console.warn("Heartbeat timeout – Verbindung wird geschlossen");
             try {
                 ws.close();
             } catch (err) {
-                console.warn("Fehler beim Schließen nach Heartbeat Timeout:", err);
+                console.warn("Fehler beim Schließen des WebSocket:", err);
             }
             stopHeartbeat();
             return;
@@ -169,7 +170,7 @@ function startHeartbeat() {
                 ts: now
             }));
         } catch (err) {
-            console.warn("Fehler beim Senden von Ping:", err);
+            console.warn("Fehler beim Senden von ping:", err);
         }
     }, HEARTBEAT_INTERVAL_MS);
 }
@@ -346,7 +347,6 @@ async function getNextVideoDeviceId() {
 
 async function getMediaStreamForNextCamera() {
     const nextDeviceId = await getNextVideoDeviceId();
-
     if (!nextDeviceId) return null;
 
     return navigator.mediaDevices.getUserMedia({
@@ -357,7 +357,6 @@ async function getMediaStreamForNextCamera() {
 
 async function getVideoStreamForNextCamera() {
     const nextDeviceId = await getNextVideoDeviceId();
-
     if (!nextDeviceId) return null;
 
     return navigator.mediaDevices.getUserMedia({
@@ -521,7 +520,6 @@ function closePeerConnection(showSearching = true) {
     input.disabled = true;
 }
 
-// Optional: falls Server heartbeat timeout meldet
 function handleConnectionLost() {
     closePeerConnection(false);
     setRemoteStatus("Verbindung unterbrochen", "Bitte Seite neu laden oder erneut verbinden", true, false);
@@ -600,6 +598,18 @@ ws.onmessage = async (event) => {
 
     if (data.type === "pong") {
         lastPongAt = Date.now();
+        return;
+    }
+
+    if (data.type === "server-ping") {
+        try {
+            ws.send(JSON.stringify({
+                type: "pong",
+                ts: Date.now()
+            }));
+        } catch (err) {
+            console.warn("Fehler beim Antworten auf server-ping:", err);
+        }
         return;
     }
 
