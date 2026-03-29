@@ -9,6 +9,12 @@ let isMuted = false;
 let currentFacingMode = "user";
 let currentVideoDeviceId = null;
 
+// Heartbeat
+let heartbeatInterval = null;
+let lastPongAt = Date.now();
+const HEARTBEAT_INTERVAL_MS = 20000;
+const HEARTBEAT_TIMEOUT_MS = 45000;
+
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
@@ -134,6 +140,44 @@ function setRemoteStatus(title, sub = "", show = true, loading = true) {
         remoteStatus.classList.add("show");
     } else {
         remoteStatus.classList.remove("show");
+    }
+}
+
+function startHeartbeat() {
+    stopHeartbeat();
+    lastPongAt = Date.now();
+
+    heartbeatInterval = setInterval(() => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+
+        const now = Date.now();
+
+        if (now - lastPongAt > HEARTBEAT_TIMEOUT_MS) {
+            console.warn("Heartbeat timeout – schließe WebSocket");
+            try {
+                ws.close();
+            } catch (err) {
+                console.warn("Fehler beim Schließen nach Heartbeat Timeout:", err);
+            }
+            stopHeartbeat();
+            return;
+        }
+
+        try {
+            ws.send(JSON.stringify({
+                type: "ping",
+                ts: now
+            }));
+        } catch (err) {
+            console.warn("Fehler beim Senden von Ping:", err);
+        }
+    }, HEARTBEAT_INTERVAL_MS);
+}
+
+function stopHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
     }
 }
 
@@ -477,6 +521,18 @@ function closePeerConnection(showSearching = true) {
     input.disabled = true;
 }
 
+// Optional: falls Server heartbeat timeout meldet
+function handleConnectionLost() {
+    closePeerConnection(false);
+    setRemoteStatus("Verbindung unterbrochen", "Bitte Seite neu laden oder erneut verbinden", true, false);
+
+    document.querySelector(".btn-start").disabled = false;
+    document.querySelector(".btn-stop").disabled = true;
+    document.querySelector(".btn-next").disabled = true;
+    document.querySelector(".btn-send").disabled = true;
+    input.disabled = true;
+}
+
 function createPeerConnection() {
     closePeerConnection(false);
     peerConnection = new RTCPeerConnection(config);
@@ -536,10 +592,16 @@ ws.onopen = () => {
     );
 
     resetControlState();
+    startHeartbeat();
 };
 
 ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
+
+    if (data.type === "pong") {
+        lastPongAt = Date.now();
+        return;
+    }
 
     if (data.type === "matched" && data.should_offer) {
         createPeerConnection();
@@ -582,6 +644,15 @@ ws.onmessage = async (event) => {
             onlineCountElement.textContent = data.count;
         }
     }
+};
+
+ws.onclose = () => {
+    stopHeartbeat();
+    handleConnectionLost();
+};
+
+ws.onerror = () => {
+    stopHeartbeat();
 };
 
 // --- Buttons ---
@@ -872,4 +943,3 @@ sendBtn.onclick = () => {
     updateCameraButton();
     updateLayoutButton();
 })();
-
