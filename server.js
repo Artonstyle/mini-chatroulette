@@ -12,6 +12,8 @@ const waitingUsers = [];
 const pairs = new Map();
 const profiles = new Map();
 
+const HEARTBEAT_INTERVAL_MS = 30000;
+
 function broadcastUserCount() {
     const count = wss.clients.size;
     const message = JSON.stringify({ type: "user-count", count });
@@ -101,9 +103,15 @@ function disconnectPair(ws, notifyPartner = true) {
     }
 }
 
+function markAlive(ws) {
+    ws.isAlive = true;
+    ws.lastPingAt = Date.now();
+}
+
 wss.on("connection", (ws) => {
     console.log("🔗 Neuer Client verbunden");
 
+    markAlive(ws);
     broadcastUserCount();
 
     ws.on("message", (msg) => {
@@ -113,6 +121,15 @@ wss.on("connection", (ws) => {
             data = JSON.parse(msg);
         } catch (err) {
             console.warn("Ungültige JSON Nachricht:", err);
+            return;
+        }
+
+        if (data.type === "ping") {
+            markAlive(ws);
+            ws.send(JSON.stringify({
+                type: "pong",
+                ts: Date.now()
+            }));
             return;
         }
 
@@ -157,6 +174,41 @@ wss.on("connection", (ws) => {
 
         broadcastUserCount();
     });
+
+    ws.on("error", (err) => {
+        console.warn("WebSocket Fehler:", err.message);
+
+        removeFromWaiting(ws);
+        disconnectPair(ws, true);
+        profiles.delete(ws);
+    });
+});
+
+const heartbeatTimer = setInterval(() => {
+    wss.clients.forEach((ws) => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+
+        if (!ws.isAlive) {
+            console.warn("💔 Heartbeat Timeout – Verbindung wird beendet");
+            ws.terminate();
+            return;
+        }
+
+        ws.isAlive = false;
+
+        try {
+            ws.send(JSON.stringify({
+                type: "server-ping",
+                ts: Date.now()
+            }));
+        } catch (err) {
+            console.warn("Fehler beim Server-Heartbeat:", err.message);
+        }
+    });
+}, HEARTBEAT_INTERVAL_MS);
+
+wss.on("close", () => {
+    clearInterval(heartbeatTimer);
 });
 
 const PORT = process.env.PORT || 3000;
