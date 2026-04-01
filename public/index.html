@@ -24,6 +24,35 @@
         </svg>
         <span id="chatBadge" class="mobile-badge">0</span>
       </button>
+      <div class="moderation-actions moderation-actions-top">
+        <button class="btn-moderation-menu" type="button" aria-label="Moderation öffnen" title="Moderation öffnen">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 7h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M5 17h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="moderation-menu">
+          <button class="btn-report" type="button">Melden</button>
+          <button class="btn-block" type="button">Blockieren</button>
+        </div>
+        <div class="report-panel">
+          <div class="report-panel-title">Melden</div>
+          <select id="reportReason">
+            <option value="Nacktheit">Nacktheit</option>
+            <option value="Belästigung">Belästigung</option>
+            <option value="Hassrede">Hassrede</option>
+            <option value="Spam / Fake">Spam / Fake</option>
+            <option value="Minderjährige Gefahr">Minderjährige Gefahr</option>
+            <option value="Sonstiges">Sonstiges</option>
+          </select>
+          <textarea id="reportText" rows="3" placeholder="Zusätzliche Details für den Admin..."></textarea>
+          <div class="report-panel-actions">
+            <button class="btn-report-send" type="button">An Admin melden</button>
+            <button class="btn-report-cancel" type="button">Abbrechen</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -92,36 +121,6 @@
 
       <div class="remote-wrap">
         <video id="remoteVideo" autoplay playsinline></video>
-
-        <div class="moderation-actions">
-          <button class="btn-moderation-menu" type="button" aria-label="Moderation öffnen" title="Moderation öffnen">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 7h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M5 17h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </button>
-          <div class="moderation-menu">
-            <button class="btn-report" type="button">Melden</button>
-            <button class="btn-block" type="button">Blockieren</button>
-          </div>
-          <div class="report-panel">
-            <div class="report-panel-title">Melden</div>
-            <select id="reportReason">
-              <option value="Nacktheit">Nacktheit</option>
-              <option value="Belästigung">Belästigung</option>
-              <option value="Hassrede">Hassrede</option>
-              <option value="Spam / Fake">Spam / Fake</option>
-              <option value="Minderjährige Gefahr">Minderjährige Gefahr</option>
-              <option value="Sonstiges">Sonstiges</option>
-            </select>
-            <textarea id="reportText" rows="3" placeholder="Zusätzliche Details für den Admin..."></textarea>
-            <div class="report-panel-actions">
-              <button class="btn-report-send" type="button">An Admin melden</button>
-              <button class="btn-report-cancel" type="button">Abbrechen</button>
-            </div>
-          </div>
-        </div>
 
         <div class="buttons remote-buttons">
           <button class="btn-stop" disabled>Stop</button>
