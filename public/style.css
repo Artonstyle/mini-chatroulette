@@ -2268,6 +2268,17 @@ body.chatting .moderation-actions.revealed {
   width: 100%;
 }
 
+#locationText {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #26323b;
+  color: #fff;
+  font: inherit;
+  box-sizing: border-box;
+}
+
 .local-video-wrap .online-right {
   order: -1;
   margin: 0 0 10px 0;

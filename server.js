@@ -19,6 +19,7 @@ const bannedAddresses = new Set();
 const blockedAddresses = new Map();
 const adminSessions = new Map();
 const geoCache = new Map();
+const locationCache = new Map();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "miniadmin123";
 let nextClientId = 1;
 let nextReportId = 1;
@@ -56,7 +57,12 @@ function isPrivateIp(address) {
 
 function httpsJson(url) {
     return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
+        https.get(url, {
+            headers: {
+                "User-Agent": "MiniChatroulette/1.0 (admin@mini-chatroulette.local)",
+                "Accept": "application/json"
+            }
+        }, (res) => {
             let raw = "";
             res.on("data", (chunk) => {
                 raw += chunk;
@@ -70,6 +76,61 @@ function httpsJson(url) {
             });
         }).on("error", reject);
     });
+}
+
+function toRadians(value) {
+    return (value * Math.PI) / 180;
+}
+
+function calculateDistanceKm(firstCoords, secondCoords) {
+    if (!firstCoords || !secondCoords) return null;
+
+    const earthRadiusKm = 6371;
+    const deltaLat = toRadians(secondCoords.lat - firstCoords.lat);
+    const deltaLon = toRadians(secondCoords.lon - firstCoords.lon);
+    const lat1 = toRadians(firstCoords.lat);
+    const lat2 = toRadians(secondCoords.lat);
+
+    const a =
+        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(earthRadiusKm * c);
+}
+
+async function geocodeLocationText(rawLocation) {
+    const location = String(rawLocation || "").trim();
+    if (!location) return null;
+
+    const cacheKey = location.toLowerCase();
+    if (locationCache.has(cacheKey)) {
+        return locationCache.get(cacheKey);
+    }
+
+    try {
+        const results = await httpsJson(
+            `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=de&q=${encodeURIComponent(location)}`
+        );
+
+        const first = Array.isArray(results) ? results[0] : null;
+        if (!first) {
+            locationCache.set(cacheKey, null);
+            return null;
+        }
+
+        const normalized = {
+            label: first.display_name || location,
+            lat: Number(first.lat),
+            lon: Number(first.lon)
+        };
+
+        locationCache.set(cacheKey, normalized);
+        return normalized;
+    } catch (_) {
+        return null;
+    }
 }
 
 async function lookupGeoInfo(address) {
@@ -228,18 +289,21 @@ function normalizeProfile(data = {}) {
     return {
         gender: data.gender || "male",
         search: data.search || "female",
-        country: data.country || "all"
+        country: data.country || "all",
+        locationText: String(data.locationText || "").trim(),
+        location: null
     };
 }
 
 function getPublicProfile(profile) {
     if (!profile) {
-        return { gender: "unknown", country: "Unbekannt" };
+        return { gender: "unknown", country: "Unbekannt", locationLabel: "" };
     }
 
     return {
         gender: profile.gender || "unknown",
-        country: profile.country && profile.country !== "all" ? profile.country : "Unbekannt"
+        country: profile.country && profile.country !== "all" ? profile.country : "Unbekannt",
+        locationLabel: profile.location?.label || profile.locationText || ""
     };
 }
 
@@ -312,15 +376,21 @@ function matchClients(firstWs, secondWs) {
     pairs.set(firstWs, secondWs);
     pairs.set(secondWs, firstWs);
 
+    const firstProfile = profiles.get(firstWs);
+    const secondProfile = profiles.get(secondWs);
+    const distanceKm = calculateDistanceKm(firstProfile?.location, secondProfile?.location);
+
     firstWs.send(JSON.stringify({
         type: "matched",
         should_offer: true,
-        partner: getPublicProfile(profiles.get(secondWs))
+        partner: getPublicProfile(secondProfile),
+        distanceKm
     }));
     secondWs.send(JSON.stringify({
         type: "matched",
         should_offer: false,
-        partner: getPublicProfile(profiles.get(firstWs))
+        partner: getPublicProfile(firstProfile),
+        distanceKm
     }));
 }
 
@@ -466,11 +536,16 @@ wss.on("connection", (ws, req) => {
     console.log("Neuer Client verbunden");
     broadcastUserCount();
 
-    ws.on("message", (msg) => {
+    ws.on("message", async (msg) => {
         const data = JSON.parse(msg);
 
         if (data.type === "start") {
-            profiles.set(ws, normalizeProfile(data));
+            const profile = normalizeProfile(data);
+            if (profile.locationText) {
+                profile.location = await geocodeLocationText(profile.locationText);
+            }
+
+            profiles.set(ws, profile);
             releaseClient(ws, false);
             removeFromWaiting(ws);
 

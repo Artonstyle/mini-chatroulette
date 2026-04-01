@@ -68,6 +68,7 @@ const remoteStatusSub = document.querySelector(".remote-status-sub");
 const genderSelect = document.getElementById("gender");
 const searchSelect = document.getElementById("search");
 const countrySelect = document.getElementById("country");
+const locationInput = document.getElementById("locationText");
 
 const config = {
     iceServers: [
@@ -977,12 +978,19 @@ ws.onclose = () => {
 
 ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
+    const distanceInfo =
+        Number.isFinite(data.distanceKm)
+            ? `ca. ${data.distanceKm} km entfernt`
+            : (data.partner?.locationLabel ? `Ort: ${data.partner.locationLabel}` : "");
 
     if (data.type === "matched" && data.should_offer) {
         manualStopRequested = false;
         manualNextRequested = false;
         createPeerConnection();
-        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut...", true, true);
+        setRemoteStatus("Partner gefunden", distanceInfo || "Verbindung wird aufgebaut...", true, true);
+        if (distanceInfo) {
+            addMessage("System", `Partner: ${distanceInfo}`, true);
+        }
 
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
@@ -991,7 +999,10 @@ ws.onmessage = async (event) => {
     } else if (data.type === "matched" && !data.should_offer) {
         manualStopRequested = false;
         manualNextRequested = false;
-        setRemoteStatus("Partner gefunden", "Warte auf Videoanruf...", true, true);
+        setRemoteStatus("Partner gefunden", distanceInfo || "Warte auf Videoanruf...", true, true);
+        if (distanceInfo) {
+            addMessage("System", `Partner: ${distanceInfo}`, true);
+        }
 
     } else if (data.type === "offer") {
         if (!peerConnection) createPeerConnection();
@@ -1068,7 +1079,8 @@ startBtn.onclick = async () => {
         type: "start",
         gender: genderSelect.value,
         search: searchSelect.value,
-        country: countrySelect.value
+        country: countrySelect.value,
+        locationText: locationInput?.value?.trim() || ""
     }));
 
     startBtn.disabled = true;
@@ -1100,7 +1112,8 @@ nextBtn.onclick = async () => {
         type: "start",
         gender: genderSelect.value,
         search: searchSelect.value,
-        country: countrySelect.value
+        country: countrySelect.value,
+        locationText: locationInput?.value?.trim() || ""
     }));
 
     nextBtn.disabled = true;
