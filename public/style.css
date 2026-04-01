@@ -3106,8 +3106,8 @@ body.bg-4 .btn-send {
     z-index: 45;
     touch-action: none;
     background: #000;
+    border: 1px solid rgba(255,255,255,0.82);
     box-shadow: 0 8px 20px rgba(0,0,0,0.22);
-    border: none;
     border-radius: 14px;
     overflow: hidden;
   }
