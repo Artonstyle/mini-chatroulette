@@ -347,12 +347,18 @@
     }
 
     function renderUsers(users) {
+      function toGermanGender(value) {
+        if (value === "male") return "Mann";
+        if (value === "female") return "Frau";
+        return value || "Unbekannt";
+      }
+
       usersBody.innerHTML = users.map((user) => `
         <tr>
           <td>#${user.id}</td>
           <td><span class="pill state-${user.state}">${user.state}</span></td>
-          <td>${user.gender} sucht ${user.search}</td>
-          <td>${user.geo.country}<br><span class="muted">${user.geo.region} ${user.geo.city !== "-" ? "· " + user.geo.city : ""}</span></td>
+          <td>${toGermanGender(user.gender)} sucht ${toGermanGender(user.search)}</td>
+          <td>${user.geo.country}<br><span class="muted">${user.geo.region !== "-" ? user.geo.region : "Region unbekannt"}${user.geo.city !== "-" ? " · " + user.geo.city : " · Stadt unbekannt"}</span></td>
           <td>${user.address}</td>
           <td>${user.partnerId ? `#${user.partnerId}` : "-"}</td>
           <td>

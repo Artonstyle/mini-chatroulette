@@ -90,12 +90,12 @@ async function lookupGeoInfo(address) {
         };
     } else {
         try {
-            const data = await httpsJson(`https://api.country.is/${encodeURIComponent(ip)}?fields=country,city,subdivision,asn`);
+            const data = await httpsJson(`https://ipwho.is/${encodeURIComponent(ip)}?fields=country,region,city,connection`);
             info = {
                 country: data.country || "Unbekannt",
-                region: data.subdivision || "-",
+                region: data.region || "-",
                 city: data.city || "-",
-                asn: data.asn?.name || data.asn?.asn || "-"
+                asn: data.connection?.isp || data.connection?.org || data.connection?.asn || "-"
             };
         } catch (_) {
             info = {
