@@ -1995,11 +1995,11 @@ body.chatting .moderation-actions.revealed {
 .report-panel {
   display: none;
   min-width: 176px;
-  padding: 10px;
-  border-radius: 16px;
-  background: rgba(10, 16, 26, 0.96);
-  border: 1px solid rgba(255,255,255,0.07);
-  box-shadow: 0 18px 32px rgba(0,0,0,0.28);
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(10, 16, 26, 0.94);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.24);
 }
 
 .moderation-actions.menu-open .moderation-menu {
@@ -2197,14 +2197,14 @@ body.chatting .moderation-actions.revealed {
 }
 
 .btn-report {
-  background: linear-gradient(180deg, rgba(255, 182, 72, 0.18), rgba(255, 139, 47, 0.12));
-  color: #ffd59a;
+  background: rgba(255, 182, 72, 0.12);
+  color: #ffc66b;
   box-shadow: none;
 }
 
 .btn-block {
-  background: linear-gradient(180deg, rgba(240, 75, 99, 0.18), rgba(191, 23, 53, 0.12));
-  color: #ffb4c0;
+  background: rgba(240, 75, 99, 0.12);
+  color: #ff9eb0;
   box-shadow: none;
 }
 
@@ -3389,9 +3389,9 @@ body.bg-4 .btn-send {
   .moderation-actions-top .moderation-menu,
   .moderation-actions-top .report-panel {
     position: absolute;
-    top: calc(100% + 10px);
+    top: calc(100% + 6px);
     right: 0;
-    width: min(220px, calc(100vw - 24px));
+    width: min(196px, calc(100vw - 24px));
     min-width: 176px;
   }
 
