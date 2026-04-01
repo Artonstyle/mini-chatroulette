@@ -1884,6 +1884,17 @@ video {
   margin: 0;
 }
 
+.local-video-wrap:not(.has-media) #localVideo,
+.remote-wrap:not(.has-media) #remoteVideo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.local-video-wrap.has-media #localVideo,
+.remote-wrap.has-media #remoteVideo {
+  opacity: 1;
+}
+
 .local-video-wrap #localVideo {
   object-fit: contain;
   background: #000;
@@ -3130,6 +3141,11 @@ body.bg-4 .btn-send {
     touch-action: none;
     cursor: grab;
     margin: 0;
+  }
+
+  .local-video-wrap:not(.has-media) #localVideo,
+  .remote-wrap:not(.has-media) #remoteVideo {
+    opacity: 0 !important;
   }
 
   body:not(.mobile-split-view) .local-video-wrap {

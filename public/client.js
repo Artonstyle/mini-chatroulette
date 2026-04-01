@@ -221,15 +221,29 @@ function applyLocalBackground(imageDataUrl) {
     localStorage.removeItem(LOCAL_BG_STORAGE_KEY);
 }
 
+function clearVideoElement(videoEl) {
+    if (!videoEl) return;
+    try {
+        videoEl.pause();
+    } catch (_) {}
+    videoEl.srcObject = null;
+    videoEl.removeAttribute("src");
+    try {
+        videoEl.load();
+    } catch (_) {}
+}
+
 function updateMsnVideoLaunchers() {
     if (localVideoWrap) {
-        localVideoWrap.classList.toggle("has-live-video", Boolean(localStream && localVideo.srcObject));
+        const hasLocalMedia = Boolean(localStream && localVideo.srcObject);
+        localVideoWrap.classList.toggle("has-live-video", hasLocalMedia);
+        localVideoWrap.classList.toggle("has-media", hasLocalMedia);
     }
 
-    const remoteHasLiveVideo = Boolean(remoteVideo && (remoteVideo.srcObject || (remoteVideo.src && remoteVideo.src !== SEARCHING_VIDEO_SRC)));
-    const remoteSearching = remoteVideo?.src?.includes(SEARCHING_VIDEO_SRC);
+    const remoteHasLiveVideo = Boolean(remoteVideo && remoteVideo.srcObject);
     if (remoteVideo.parentElement) {
-        remoteVideo.parentElement.classList.toggle("has-live-video", remoteHasLiveVideo && !remoteSearching);
+        remoteVideo.parentElement.classList.toggle("has-live-video", remoteHasLiveVideo);
+        remoteVideo.parentElement.classList.toggle("has-media", remoteHasLiveVideo);
     }
 }
 
@@ -697,9 +711,7 @@ async function setLocalStream(newStream, stopOld = true) {
 }
 
 function showSearchingOverlay(title = "Partner wird gesucht...", sub = "Bitte kurz warten") {
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
+    clearVideoElement(remoteVideo);
     if (remoteWrap) {
         remoteWrap.style.removeProperty("aspect-ratio");
     }
@@ -708,9 +720,7 @@ function showSearchingOverlay(title = "Partner wird gesucht...", sub = "Bitte ku
 }
 
 function showStoppedOverlay() {
-    remoteVideo.srcObject = null;
-    remoteVideo.src = "";
-    remoteVideo.loop = false;
+    clearVideoElement(remoteVideo);
     if (remoteWrap) {
         remoteWrap.style.removeProperty("aspect-ratio");
     }
@@ -816,11 +826,9 @@ function closePeerConnection(showSearching = true) {
             remoteVideo.srcObject.getTracks().forEach(track => track.stop());
         }
 
-        remoteVideo.srcObject = null;
+        clearVideoElement(remoteVideo);
 
         if (showSearching && !manualStopRequested) {
-            remoteVideo.src = SEARCHING_VIDEO_SRC;
-            remoteVideo.loop = true;
             setRemoteStatus("Partner wird gesucht...", "Bitte kurz warten", true, true);
         }
 
@@ -845,9 +853,7 @@ function createPeerConnection() {
 
     peerConnection.ontrack = (event) => {
         document.body.classList.add("connected");
-        remoteVideo.src = "";
         remoteVideo.srcObject = event.streams[0];
-        remoteVideo.loop = false;
         syncRemoteVideoAspectRatio();
         setRemoteStatus("", "", false, false);
         updateMsnVideoLaunchers();
@@ -1012,9 +1018,7 @@ startBtn.onclick = async () => {
     document.body.classList.remove("filter-open");
     setRemoteButtonsVisible(false, false);
 
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
+    clearVideoElement(remoteVideo);
     setRemoteStatus("Partner wird gesucht...", "Bitte kurz warten", true, true);
 
     ws.send(JSON.stringify({
@@ -1046,9 +1050,7 @@ nextBtn.onclick = async () => {
         closePeerConnection(false);
     }
 
-    remoteVideo.srcObject = null;
-    remoteVideo.src = SEARCHING_VIDEO_SRC;
-    remoteVideo.loop = true;
+    clearVideoElement(remoteVideo);
     setRemoteStatus("Neuer Partner wird gesucht...", "Bitte kurz warten", true, true);
 
     ws.send(JSON.stringify({
@@ -1076,7 +1078,7 @@ stopBtn.onclick = () => {
 
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
-        localVideo.srcObject = null;
+        clearVideoElement(localVideo);
         localStream = null;
     }
 
