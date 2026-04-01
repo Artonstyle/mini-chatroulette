@@ -5,6 +5,7 @@ const WS_URL =
         : "wss://mini-chatroulette.onrender.com";
 try {
     localStorage.removeItem("mini-chatroulette-custom-bg");
+    localStorage.removeItem("mini-chatroulette-background");
     document.body?.classList.remove("custom-bg-active");
     document.body?.style.removeProperty("--custom-bg-image");
 } catch (_) {}
@@ -1345,7 +1346,7 @@ sendBtn.onclick = () => {
         mobileLayoutMode = savedLayout;
     }
     applyTheme(savedTheme);
-    applyBackground(savedBackground);
+    applyBackground(isMobile() ? "bg-1" : savedBackground);
     applyLocalBackground("");
     applyDesktopLayout(savedDesktopLayout);
     applyMobileLayoutMode();
