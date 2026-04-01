@@ -1994,7 +1994,7 @@ body.chatting .moderation-actions.revealed {
 .moderation-menu,
 .report-panel {
   display: none;
-  min-width: 176px;
+  min-width: 132px;
   padding: 8px;
   border-radius: 14px;
   background: rgba(10, 16, 26, 0.94);
@@ -3391,8 +3391,8 @@ body.bg-4 .btn-send {
     position: absolute;
     top: calc(100% + 6px);
     right: 0;
-    width: min(196px, calc(100vw - 24px));
-    min-width: 176px;
+    width: min(140px, calc(100vw - 24px));
+    min-width: 132px;
   }
 
   .btn-report,
@@ -3403,7 +3403,7 @@ body.bg-4 .btn-send {
   .moderation-menu,
   .report-panel {
     width: auto;
-    min-width: 176px;
+    min-width: 132px;
   }
 
   .buttons button {
