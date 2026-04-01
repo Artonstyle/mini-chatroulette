@@ -63,6 +63,7 @@ const localVideoControls = document.querySelector(".local-video-controls");
 const remoteStatus = document.getElementById("remoteStatus");
 const remoteStatusTitle = document.querySelector(".remote-status-title");
 const remoteStatusSub = document.querySelector(".remote-status-sub");
+const matchMetaBar = document.getElementById("matchMetaBar");
 
 // Für Profil-Logik
 const genderSelect = document.getElementById("gender");
@@ -526,6 +527,12 @@ function setRemoteButtonsVisible(visible, autoHide = false) {
     }
 }
 
+function setMatchMeta(text = "") {
+    if (!matchMetaBar) return;
+    matchMetaBar.textContent = text || "";
+    matchMetaBar.classList.toggle("show", Boolean(text));
+}
+
 function setModerationMenuOpen(open) {
     if (!moderationActions) return;
     moderationActions.classList.toggle("menu-open", open);
@@ -746,6 +753,7 @@ function showSearchingOverlay(title = "Partner wird gesucht...", sub = "Bitte ku
     if (remoteWrap) {
         remoteWrap.style.removeProperty("aspect-ratio");
     }
+    setMatchMeta("");
     setRemoteStatus(title, sub, true, true);
     updateMsnVideoLaunchers();
 }
@@ -755,6 +763,7 @@ function showStoppedOverlay() {
     if (remoteWrap) {
         remoteWrap.style.removeProperty("aspect-ratio");
     }
+    setMatchMeta("");
     setRemoteStatus(
         "Suche wurde gestoppt",
         "Drücke Start, um erneut zu suchen",
@@ -980,7 +989,7 @@ ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
     const distanceInfo =
         Number.isFinite(data.distanceKm)
-            ? `ca. ${data.distanceKm} km entfernt`
+            ? `Partner ist ca. ${data.distanceKm} km entfernt`
             : (data.partner?.locationLabel ? `Ort: ${data.partner.locationLabel}` : "");
 
     if (data.type === "matched" && data.should_offer) {
@@ -988,8 +997,9 @@ ws.onmessage = async (event) => {
         manualNextRequested = false;
         createPeerConnection();
         setRemoteStatus("Partner gefunden", distanceInfo || "Verbindung wird aufgebaut...", true, true);
+        setMatchMeta(distanceInfo);
         if (distanceInfo) {
-            addMessage("System", `Partner: ${distanceInfo}`, true);
+            addMessage("System", distanceInfo, true);
         }
 
         const offer = await peerConnection.createOffer();
@@ -1000,8 +1010,9 @@ ws.onmessage = async (event) => {
         manualStopRequested = false;
         manualNextRequested = false;
         setRemoteStatus("Partner gefunden", distanceInfo || "Warte auf Videoanruf...", true, true);
+        setMatchMeta(distanceInfo);
         if (distanceInfo) {
-            addMessage("System", `Partner: ${distanceInfo}`, true);
+            addMessage("System", distanceInfo, true);
         }
 
     } else if (data.type === "offer") {
@@ -1071,6 +1082,7 @@ startBtn.onclick = async () => {
     document.body.classList.add("chatting");
     document.body.classList.remove("filter-open");
     setRemoteButtonsVisible(false, false);
+    setMatchMeta("");
 
     clearVideoElement(remoteVideo);
     setRemoteStatus("Partner wird gesucht...", "Bitte kurz warten", true, true);
@@ -1099,6 +1111,7 @@ nextBtn.onclick = async () => {
     document.body.classList.add("chatting");
     document.body.classList.remove("filter-open");
     setRemoteButtonsVisible(false, false);
+    setMatchMeta("");
 
     if (peerConnection) {
         ws.send(JSON.stringify({ type: "next" }));
