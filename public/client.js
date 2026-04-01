@@ -35,6 +35,8 @@ const sendBtn = document.querySelector(".btn-send");
 const startBtn = document.querySelector(".btn-start");
 const nextBtn = document.querySelector(".btn-next");
 const stopBtn = document.querySelector(".btn-stop");
+const reportBtn = document.querySelector(".btn-report");
+const blockBtn = document.querySelector(".btn-block");
 const muteBtn = document.getElementById("btnMute");
 const videoBtn = document.getElementById("btnVideo");
 const cameraBtn = document.getElementById("btnCamera");
@@ -493,10 +495,10 @@ function setMobileControlsVisible(visible) {
 }
 
 function setRemoteButtonsVisible(visible, autoHide = false) {
-    const remoteButtons = document.querySelector(".remote-buttons");
-    if (!remoteButtons) return;
+    const controls = document.querySelectorAll(".remote-buttons, .moderation-actions");
+    if (!controls.length) return;
 
-    remoteButtons.classList.toggle("revealed", visible);
+    controls.forEach((control) => control.classList.toggle("revealed", visible));
 
     if (remoteButtonsRevealTimer) {
         clearTimeout(remoteButtonsRevealTimer);
@@ -505,7 +507,7 @@ function setRemoteButtonsVisible(visible, autoHide = false) {
 
     if (visible && autoHide && document.body.classList.contains("chatting")) {
         remoteButtonsRevealTimer = setTimeout(() => {
-            remoteButtons.classList.remove("revealed");
+            controls.forEach((control) => control.classList.remove("revealed"));
             remoteButtonsRevealTimer = null;
         }, 3000);
     }
@@ -995,6 +997,15 @@ ws.onmessage = async (event) => {
         if (onlineCountElement) {
             onlineCountElement.textContent = data.count;
         }
+    } else if (data.type === "report-saved") {
+        addMessage("System", "Meldung wurde gespeichert.", true);
+    } else if (data.type === "blocked") {
+        addMessage("System", "Nutzer wurde blockiert.", true);
+        manualNextRequested = false;
+        showSearchingOverlay("Nutzer blockiert", "Suche einen neuen Partner...");
+    } else if (data.type === "banned") {
+        showStoppedOverlay();
+        addMessage("System", "Dieses Gerät wurde gesperrt.", true);
     }
 };
 
@@ -1095,6 +1106,25 @@ stopBtn.onclick = () => {
     setMobileControlsVisible(false);
     setRemoteButtonsVisible(true, false);
 };
+
+if (reportBtn) {
+    reportBtn.onclick = () => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({
+            type: "report",
+            reason: "Unangemessenes Verhalten"
+        }));
+    };
+}
+
+if (blockBtn) {
+    blockBtn.onclick = () => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        manualNextRequested = true;
+        ws.send(JSON.stringify({ type: "block" }));
+        closePeerConnection(true);
+    };
+}
 
 muteBtn.onclick = async () => {
     if (!localStream) {

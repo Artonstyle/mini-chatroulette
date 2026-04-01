@@ -1,16 +1,129 @@
 const http = require("http");
 const WebSocket = require("ws");
 const express = require("express");
+const crypto = require("crypto");
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+app.use(express.json());
 app.use(express.static("public"));
 
 const waitingClients = [];
 const pairs = new Map();
 const profiles = new Map();
+const reports = [];
+const bannedAddresses = new Set();
+const blockedAddresses = new Map();
+const adminSessions = new Map();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "miniadmin123";
+let nextClientId = 1;
+let nextReportId = 1;
+
+function getClientAddress(req) {
+    const forwarded = req.headers["x-forwarded-for"];
+    if (typeof forwarded === "string" && forwarded.trim()) {
+        return forwarded.split(",")[0].trim();
+    }
+
+    return req.socket.remoteAddress || "unbekannt";
+}
+
+function createAdminToken() {
+    return crypto.randomBytes(24).toString("hex");
+}
+
+function requireAdmin(req, res, next) {
+    const token = req.headers["x-admin-token"];
+
+    if (!token || !adminSessions.has(token)) {
+        return res.status(401).json({ ok: false, error: "Nicht autorisiert" });
+    }
+
+    next();
+}
+
+function getClientState(ws) {
+    if (pairs.has(ws)) return "verbunden";
+    if (waitingClients.includes(ws)) return "wartet";
+    return "bereit";
+}
+
+function addMutualBlock(firstAddress, secondAddress) {
+    if (!firstAddress || !secondAddress || firstAddress === secondAddress) return;
+
+    if (!blockedAddresses.has(firstAddress)) {
+        blockedAddresses.set(firstAddress, new Set());
+    }
+
+    if (!blockedAddresses.has(secondAddress)) {
+        blockedAddresses.set(secondAddress, new Set());
+    }
+
+    blockedAddresses.get(firstAddress).add(secondAddress);
+    blockedAddresses.get(secondAddress).add(firstAddress);
+}
+
+function isBlocked(firstWs, secondWs) {
+    const firstAddress = firstWs?.clientAddress;
+    const secondAddress = secondWs?.clientAddress;
+
+    if (!firstAddress || !secondAddress) return false;
+
+    return (
+        blockedAddresses.get(firstAddress)?.has(secondAddress) ||
+        blockedAddresses.get(secondAddress)?.has(firstAddress) ||
+        false
+    );
+}
+
+function collectAdminOverview() {
+    const users = Array.from(wss.clients)
+        .filter((client) => client.readyState === WebSocket.OPEN)
+        .map((client) => {
+            const partner = pairs.get(client);
+            const profile = profiles.get(client);
+
+            return {
+                id: client.clientId,
+                address: client.clientAddress,
+                connectedAt: client.connectedAt,
+                state: getClientState(client),
+                partnerId: partner?.clientId || null,
+                gender: profile?.gender || "unknown",
+                search: profile?.search || "unknown",
+                country: profile?.country || "all"
+            };
+        });
+
+    const uniquePairs = [];
+    const seen = new Set();
+
+    pairs.forEach((partner, client) => {
+        const key = [client.clientId, partner.clientId].sort((a, b) => a - b).join(":");
+        if (seen.has(key)) return;
+        seen.add(key);
+        uniquePairs.push({
+            firstId: client.clientId,
+            secondId: partner.clientId
+        });
+    });
+
+    return {
+        stats: {
+            online: users.length,
+            waiting: waitingClients.filter((client) => client.readyState === WebSocket.OPEN).length,
+            connectedPairs: uniquePairs.length,
+            reports: reports.length,
+            bans: bannedAddresses.size
+        },
+        users,
+        pairs: uniquePairs,
+        reports: reports.slice().reverse(),
+        bans: Array.from(bannedAddresses)
+    };
+}
 
 function broadcastUserCount() {
     const count = wss.clients.size;
@@ -67,6 +180,7 @@ function strictlyMatches(firstWs, secondWs) {
     const secondProfile = profiles.get(secondWs);
 
     if (!firstProfile || !secondProfile) return false;
+    if (isBlocked(firstWs, secondWs)) return false;
 
     return (
         firstProfile.search === secondProfile.gender &&
@@ -80,6 +194,7 @@ function canFallbackMatch(firstWs, secondWs) {
     const secondProfile = profiles.get(secondWs);
 
     if (!firstProfile || !secondProfile) return false;
+    if (isBlocked(firstWs, secondWs)) return false;
 
     return countriesCompatible(firstProfile, secondProfile);
 }
@@ -135,7 +250,99 @@ function releaseClient(ws, notifyPartner = true) {
     }
 }
 
-wss.on("connection", (ws) => {
+function banClientByAddress(address) {
+    if (!address) return;
+
+    bannedAddresses.add(address);
+
+    Array.from(wss.clients).forEach((client) => {
+        if (client.clientAddress !== address) return;
+
+        releaseClient(client, true);
+        removeFromWaiting(client);
+        profiles.delete(client);
+
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: "banned" }));
+            client.close();
+        }
+    });
+}
+
+app.post("/admin/login", (req, res) => {
+    const password = req.body?.password;
+
+    if (password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ ok: false, error: "Falsches Passwort" });
+    }
+
+    const token = createAdminToken();
+    adminSessions.set(token, Date.now());
+    res.json({ ok: true, token });
+});
+
+app.get("/admin/overview", requireAdmin, (req, res) => {
+    res.json({ ok: true, ...collectAdminOverview() });
+});
+
+app.post("/admin/ban", requireAdmin, (req, res) => {
+    const { clientId, address } = req.body || {};
+    let targetAddress = address;
+
+    if (!targetAddress && clientId) {
+        const targetClient = Array.from(wss.clients).find((client) => client.clientId === Number(clientId));
+        targetAddress = targetClient?.clientAddress;
+    }
+
+    if (!targetAddress) {
+        return res.status(400).json({ ok: false, error: "Kein Nutzer gefunden" });
+    }
+
+    banClientByAddress(targetAddress);
+    broadcastUserCount();
+    res.json({ ok: true });
+});
+
+app.post("/admin/unban", requireAdmin, (req, res) => {
+    const { address } = req.body || {};
+
+    if (!address) {
+        return res.status(400).json({ ok: false, error: "Keine Adresse angegeben" });
+    }
+
+    bannedAddresses.delete(address);
+    res.json({ ok: true });
+});
+
+app.post("/admin/disconnect", requireAdmin, (req, res) => {
+    const { clientId } = req.body || {};
+    const targetClient = Array.from(wss.clients).find((client) => client.clientId === Number(clientId));
+
+    if (!targetClient) {
+        return res.status(404).json({ ok: false, error: "Nutzer nicht gefunden" });
+    }
+
+    releaseClient(targetClient, true);
+    removeFromWaiting(targetClient);
+
+    if (targetClient.readyState === WebSocket.OPEN) {
+        targetClient.send(JSON.stringify({ type: "partner-left" }));
+    }
+
+    broadcastUserCount();
+    res.json({ ok: true });
+});
+
+wss.on("connection", (ws, req) => {
+    ws.clientId = nextClientId++;
+    ws.clientAddress = getClientAddress(req);
+    ws.connectedAt = new Date().toISOString();
+
+    if (bannedAddresses.has(ws.clientAddress)) {
+        ws.close();
+        return;
+    }
+
     console.log("Neuer Client verbunden");
     broadcastUserCount();
 
@@ -160,6 +367,35 @@ wss.on("connection", (ws) => {
 
             if (data.type === "stop") {
                 removeFromWaiting(ws);
+            }
+        } else if (data.type === "report") {
+            const partner = pairs.get(ws);
+            const report = {
+                id: nextReportId++,
+                createdAt: new Date().toISOString(),
+                reporterId: ws.clientId,
+                reporterAddress: ws.clientAddress,
+                targetId: partner?.clientId || null,
+                targetAddress: partner?.clientAddress || null,
+                partner: getPublicProfile(profiles.get(partner)),
+                reason: data.reason || "Unangemessenes Verhalten"
+            };
+
+            reports.push(report);
+
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "report-saved" }));
+            }
+        } else if (data.type === "block") {
+            const partner = pairs.get(ws);
+
+            if (partner) {
+                addMutualBlock(ws.clientAddress, partner.clientAddress);
+                releaseClient(ws, true);
+
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: "blocked" }));
+                }
             }
         } else if (["offer", "answer", "candidate"].includes(data.type)) {
             const partner = pairs.get(ws);

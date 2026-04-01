@@ -1940,6 +1940,25 @@ body.chatting .remote-buttons.revealed {
   pointer-events: auto;
 }
 
+.moderation-actions {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 10px;
+  z-index: 35;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+body.chatting .moderation-actions.revealed {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .remote-status {
   position: absolute;
   inset: 0;
@@ -2056,6 +2075,31 @@ body.chatting .remote-buttons.revealed {
   font-weight: 800;
   letter-spacing: 0.02em;
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.btn-report,
+.btn-block {
+  min-width: 118px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.btn-report {
+  background: linear-gradient(180deg, #ffb648, #ff8b2f);
+  color: #1a0d00;
+  box-shadow: 0 10px 20px rgba(255, 145, 48, 0.22);
+}
+
+.btn-block {
+  background: linear-gradient(180deg, #f04b63, #bf1735);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(210, 40, 76, 0.22);
 }
 
 .buttons button:hover {
@@ -3223,6 +3267,30 @@ body.bg-4 .btn-send {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
+  }
+
+  .moderation-actions {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 92px;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+  }
+
+  .moderation-actions.revealed {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .btn-report,
+  .btn-block {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
   }
 
   .buttons button {

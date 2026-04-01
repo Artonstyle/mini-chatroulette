@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Chatroulette Admin</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1017;
+      --panel: #121a25;
+      --panel-2: #182230;
+      --line: rgba(255,255,255,0.08);
+      --text: #eef5ff;
+      --muted: #95a6bc;
+      --good: #3dde7f;
+      --warn: #ffb347;
+      --bad: #ff5d7c;
+      --blue: #4aa8ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #0b1017, #101827 65%, #0c121b);
+      color: var(--text);
+    }
+
+    .shell {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .muted { color: var(--muted); }
+
+    .login,
+    .panel {
+      background: linear-gradient(180deg, rgba(20,29,40,0.96), rgba(13,19,28,0.98));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+    }
+
+    .login {
+      max-width: 420px;
+      margin: 70px auto;
+      padding: 24px;
+    }
+
+    .login h2 {
+      margin: 0 0 10px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0d141d;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #36e17b, #18b557);
+      color: #08120a;
+    }
+
+    .btn-ghost {
+      background: #203043;
+      color: #e5efff;
+    }
+
+    .btn-warn {
+      background: linear-gradient(180deg, #ffb348, #ff8f25);
+      color: #261400;
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, #ff5b77, #cc2644);
+      color: white;
+    }
+
+    .dashboard {
+      display: none;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .dashboard.show { display: grid; }
+
+    .stats {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stat {
+      padding: 18px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.7rem;
+      margin-top: 10px;
+    }
+
+    .users-panel { grid-column: span 8; padding: 18px; }
+    .reports-panel { grid-column: span 4; padding: 18px; }
+    .bans-panel { grid-column: 1 / -1; padding: 18px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.94rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: top;
+    }
+
+    .pill {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .state-verbunden { background: rgba(61, 222, 127, 0.18); color: var(--good); }
+    .state-wartet { background: rgba(255,179,71,0.18); color: var(--warn); }
+    .state-bereit { background: rgba(74,168,255,0.18); color: var(--blue); }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .report-card,
+    .ban-row {
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .notice {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .error {
+      color: #ff8aa0;
+      margin-top: 10px;
+      min-height: 1.2em;
+    }
+
+    @media (max-width: 980px) {
+      .stats,
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .users-panel,
+      .reports-panel,
+      .bans-panel {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="login" id="loginBox">
+      <h2>Admin Login</h2>
+      <div class="muted">Erste Version für Reports, Nutzer, Sperren und Übersicht.</div>
+      <div class="field">
+        <label for="password">Passwort</label>
+        <input id="password" type="password" placeholder="Admin Passwort">
+      </div>
+      <div class="actions" style="margin-top:16px;">
+        <button id="loginBtn" class="btn-primary" type="button">Einloggen</button>
+      </div>
+      <div id="loginError" class="error"></div>
+    </section>
+
+    <section class="dashboard" id="dashboard">
+      <div class="topbar" style="grid-column:1 / -1;">
+        <div>
+          <h1>Mini Chatroulette Admin</h1>
+          <div class="muted">Nutzer, Reports, Sperren und aktuelle Verbindungen</div>
+        </div>
+        <div class="actions">
+          <button id="refreshBtn" class="btn-ghost" type="button">Aktualisieren</button>
+          <button id="logoutBtn" class="btn-danger" type="button">Logout</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="panel stat"><div class="muted">Online</div><strong id="statOnline">0</strong></div>
+        <div class="panel stat"><div class="muted">Wartet</div><strong id="statWaiting">0</strong></div>
+        <div class="panel stat"><div class="muted">Paare</div><strong id="statPairs">0</strong></div>
+        <div class="panel stat"><div class="muted">Reports</div><strong id="statReports">0</strong></div>
+        <div class="panel stat"><div class="muted">Sperren</div><strong id="statBans">0</strong></div>
+      </div>
+
+      <section class="panel users-panel">
+        <h3>Nutzer</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Suche</th>
+              <th>Land</th>
+              <th>Adresse</th>
+              <th>Partner</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </section>
+
+      <section class="panel reports-panel">
+        <h3>Reports</h3>
+        <div id="reportsList" class="stack"></div>
+      </section>
+
+      <section class="panel bans-panel">
+        <h3>Sperrliste</h3>
+        <div id="bansList" class="stack"></div>
+        <div class="notice">Hinweis: In dieser ersten Version werden Sperren über die erkannte Verbindungs-Adresse gesetzt.</div>
+      </section>
+    </section>
+  </div>
+
+  <script>
+    const tokenKey = "mini-chatroulette-admin-token";
+    const loginBox = document.getElementById("loginBox");
+    const dashboard = document.getElementById("dashboard");
+    const passwordInput = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const loginError = document.getElementById("loginError");
+    const usersBody = document.getElementById("usersBody");
+    const reportsList = document.getElementById("reportsList");
+    const bansList = document.getElementById("bansList");
+
+    let refreshTimer = null;
+
+    function getToken() {
+      return localStorage.getItem(tokenKey) || "";
+    }
+
+    function setLoggedIn(loggedIn) {
+      loginBox.style.display = loggedIn ? "none" : "block";
+      dashboard.classList.toggle("show", loggedIn);
+    }
+
+    async function api(path, options = {}) {
+      const token = getToken();
+      const response = await fetch(path, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+          ...(token ? { "x-admin-token": token } : {})
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Fehler");
+      }
+      return data;
+    }
+
+    function renderStats(stats) {
+      document.getElementById("statOnline").textContent = stats.online;
+      document.getElementById("statWaiting").textContent = stats.waiting;
+      document.getElementById("statPairs").textContent = stats.connectedPairs;
+      document.getElementById("statReports").textContent = stats.reports;
+      document.getElementById("statBans").textContent = stats.bans;
+    }
+
+    function renderUsers(users) {
+      usersBody.innerHTML = users.map((user) => `
+        <tr>
+          <td>#${user.id}</td>
+          <td><span class="pill state-${user.state}">${user.state}</span></td>
+          <td>${user.gender} sucht ${user.search}</td>
+          <td>${user.country}</td>
+          <td>${user.address}</td>
+          <td>${user.partnerId ? `#${user.partnerId}` : "-"}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-danger" onclick="banUser('${user.address}')">Sperren</button>
+              <button class="btn-ghost" onclick="disconnectUser(${user.id})">Trennen</button>
+            </div>
+          </td>
+        </tr>
+      `).join("") || `<tr><td colspan="7" class="muted">Keine aktiven Nutzer</td></tr>`;
+    }
+
+    function renderReports(reports) {
+      reportsList.innerHTML = reports.map((report) => `
+        <div class="report-card">
+          <strong>Report #${report.id}</strong>
+          <div class="muted">${new Date(report.createdAt).toLocaleString("de-DE")}</div>
+          <div>Reporter: #${report.reporterId} / Ziel: ${report.targetId ? "#" + report.targetId : "unbekannt"}</div>
+          <div>Grund: ${report.reason}</div>
+          <div>Adresse Ziel: ${report.targetAddress || "unbekannt"}</div>
+          ${report.targetAddress ? `<div class="actions" style="margin-top:10px;"><button class="btn-danger" onclick="banUser('${report.targetAddress}')">Ziel sperren</button></div>` : ""}
+        </div>
+      `).join("") || `<div class="muted">Keine Reports vorhanden</div>`;
+    }
+
+    function renderBans(bans) {
+      bansList.innerHTML = bans.map((address) => `
+        <div class="ban-row">
+          <div><strong>${address}</strong></div>
+          <div class="actions" style="margin-top:10px;">
+            <button class="btn-ghost" onclick="unbanUser('${address}')">Entsperren</button>
+          </div>
+        </div>
+      `).join("") || `<div class="muted">Keine Sperren vorhanden</div>`;
+    }
+
+    async function loadOverview() {
+      const data = await api("/admin/overview");
+      renderStats(data.stats);
+      renderUsers(data.users);
+      renderReports(data.reports);
+      renderBans(data.bans);
+    }
+
+    async function login() {
+      loginError.textContent = "";
+      try {
+        const response = await fetch("/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: passwordInput.value })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Login fehlgeschlagen");
+        localStorage.setItem(tokenKey, data.token);
+        setLoggedIn(true);
+        await loadOverview();
+        refreshTimer = setInterval(loadOverview, 5000);
+      } catch (error) {
+        loginError.textContent = error.message;
+      }
+    }
+
+    async function banUser(address) {
+      await api("/admin/ban", {
+        method: "POST",
+        body: JSON.stringify({ address })
+      });
+      await loadOverview();
+    }
+
+    async function unbanUser(address) {
+      await api("/admin/unban", {
+        method: "POST",
+        body: JSON.stringify({ address })
+      });
+      await loadOverview();
+    }
+
+    async function disconnectUser(clientId) {
+      await api("/admin/disconnect", {
+        method: "POST",
+        body: JSON.stringify({ clientId })
+      });
+      await loadOverview();
+    }
+
+    window.banUser = banUser;
+    window.unbanUser = unbanUser;
+    window.disconnectUser = disconnectUser;
+
+    loginBtn.addEventListener("click", login);
+    refreshBtn.addEventListener("click", loadOverview);
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem(tokenKey);
+      if (refreshTimer) clearInterval(refreshTimer);
+      setLoggedIn(false);
+    });
+
+    if (getToken()) {
+      setLoggedIn(true);
+      loadOverview().then(() => {
+        refreshTimer = setInterval(loadOverview, 5000);
+      }).catch(() => {
+        localStorage.removeItem(tokenKey);
+        setLoggedIn(false);
+      });
+    }
+  </script>
+</body>
+</html>
