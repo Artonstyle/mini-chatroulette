@@ -59,8 +59,8 @@ header.dragging {
 .match-meta-bar {
   display: none;
   width: fit-content;
-  max-width: min(92vw, 520px);
-  margin: -6px auto 10px;
+  max-width: min(92vw, 420px);
+  margin: 0;
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(10, 18, 28, 0.72);
@@ -72,6 +72,11 @@ header.dragging {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  transform: translateX(-50%);
+  z-index: 36;
 }
 
 .match-meta-bar.show {
@@ -3038,7 +3043,8 @@ body.bg-4 .btn-send {
 
   .match-meta-bar {
     position: fixed;
-    top: 62px;
+    top: auto;
+    bottom: 94px;
     left: 12px;
     right: 12px;
     z-index: 79;
