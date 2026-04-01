@@ -1322,8 +1322,12 @@ sendBtn.onclick = () => {
 
         if (document.body.classList.contains("chatting")) {
             const clickedRemoteButton = e.target.closest(".remote-buttons");
-            if (!clickedRemoteButton) {
+            const clickedTopbarButton = e.target.closest(".mobile-topbar");
+
+            if (!clickedRemoteButton && !clickedTopbarButton) {
                 setRemoteButtonsVisible(true, true);
+                setMobileControlsVisible(true);
+                return;
             }
         }
 
