@@ -2798,18 +2798,34 @@ body.bg-4 .btn-send {
     padding: 74px 16px 10px;
     max-width: 100%;
     flex: none;
-    background: #303030;
+    background: rgba(12, 18, 28, 0.82);
     border-radius: 20px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.24);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
   .buttons {
     margin-top: 12px;
   }
 
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 22%, rgba(68, 222, 255, 0.18), transparent 18%),
+      radial-gradient(circle at 18% 82%, rgba(76, 255, 162, 0.14), transparent 24%),
+      radial-gradient(circle at 82% 80%, rgba(94, 125, 255, 0.16), transparent 22%),
+      linear-gradient(180deg, #05070c 0%, #09111b 48%, #04070d 100%);
+    animation: mobileIntroGlow 7s ease-in-out infinite alternate;
+  }
+
   body {
     padding: 0;
-    background: #111b21;
+    background: #05070c;
     animation: none;
     overflow-x: hidden;
   }
@@ -3074,7 +3090,7 @@ body.bg-4 .btn-send {
     padding: 0;
     border-radius: 0;
     box-shadow: none;
-    background: #111b21;
+    background: transparent;
     min-height: 100vh;
   }
 
@@ -3357,5 +3373,16 @@ body.bg-4 .btn-send {
 
   .remote-status {
     border-radius: 0;
+  }
+}
+
+@keyframes mobileIntroGlow {
+  0% {
+    filter: brightness(0.95) saturate(1);
+    transform: scale(1);
+  }
+  100% {
+    filter: brightness(1.08) saturate(1.08);
+    transform: scale(1.04);
   }
 }
