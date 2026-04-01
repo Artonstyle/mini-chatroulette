@@ -3,6 +3,11 @@ const WS_URL =
     window.location.protocol === "http:" || window.location.protocol === "https:"
         ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`
         : "wss://mini-chatroulette.onrender.com";
+try {
+    localStorage.removeItem("mini-chatroulette-custom-bg");
+    document.body?.classList.remove("custom-bg-active");
+    document.body?.style.removeProperty("--custom-bg-image");
+} catch (_) {}
 const ws = new WebSocket(WS_URL);
 const titleEl = document.querySelector("header");
 
