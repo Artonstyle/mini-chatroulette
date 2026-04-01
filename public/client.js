@@ -26,6 +26,7 @@ let manualStopRequested = false;
 let manualNextRequested = false;
 let mobileControlsRevealTimer = null;
 let matchMetaRevealTimer = null;
+let currentMatchMetaText = "";
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -530,6 +531,7 @@ function setRemoteButtonsVisible(visible, autoHide = false) {
 
 function setMatchMeta(text = "") {
     if (!matchMetaBar) return;
+    currentMatchMetaText = text || "";
     matchMetaBar.textContent = text || "";
     matchMetaBar.classList.toggle("show", Boolean(text));
 
@@ -544,6 +546,13 @@ function setMatchMeta(text = "") {
             matchMetaRevealTimer = null;
         }, 3000);
     }
+}
+
+function revealMatchMeta() {
+    if (!matchMetaBar) return;
+    const text = currentMatchMetaText || matchMetaBar.textContent?.trim();
+    if (!text) return;
+    setMatchMeta(text);
 }
 
 function setModerationMenuOpen(open) {
@@ -1450,6 +1459,7 @@ sendBtn.onclick = () => {
             if (!clickedRemoteButton && !clickedTopbarButton) {
                 setRemoteButtonsVisible(true, true);
                 setMobileControlsVisible(true);
+                revealMatchMeta();
                 return;
             }
         }
