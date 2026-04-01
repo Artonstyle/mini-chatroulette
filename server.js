@@ -1,4 +1,5 @@
 const http = require("http");
+const https = require("https");
 const WebSocket = require("ws");
 const express = require("express");
 const crypto = require("crypto");
@@ -17,6 +18,7 @@ const reports = [];
 const bannedAddresses = new Set();
 const blockedAddresses = new Map();
 const adminSessions = new Map();
+const geoCache = new Map();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "miniadmin123";
 let nextClientId = 1;
 let nextReportId = 1;
@@ -28,6 +30,85 @@ function getClientAddress(req) {
     }
 
     return req.socket.remoteAddress || "unbekannt";
+}
+
+function normalizeIp(address) {
+    if (!address) return "unbekannt";
+    if (address.startsWith("::ffff:")) {
+        return address.slice(7);
+    }
+    return address;
+}
+
+function isPrivateIp(address) {
+    if (!address || address === "unbekannt") return true;
+
+    return (
+        address === "::1" ||
+        address === "127.0.0.1" ||
+        address.startsWith("10.") ||
+        address.startsWith("192.168.") ||
+        /^172\.(1[6-9]|2\d|3[0-1])\./.test(address) ||
+        address.startsWith("fc") ||
+        address.startsWith("fd")
+    );
+}
+
+function httpsJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            let raw = "";
+            res.on("data", (chunk) => {
+                raw += chunk;
+            });
+            res.on("end", () => {
+                try {
+                    resolve(JSON.parse(raw));
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }).on("error", reject);
+    });
+}
+
+async function lookupGeoInfo(address) {
+    const ip = normalizeIp(address);
+
+    if (geoCache.has(ip)) {
+        return geoCache.get(ip);
+    }
+
+    let info;
+
+    if (isPrivateIp(ip)) {
+        info = {
+            country: "Lokal / Unbekannt",
+            region: "-",
+            city: "-",
+            asn: "-"
+        };
+    } else {
+        try {
+            const data = await httpsJson(`https://api.country.is/${encodeURIComponent(ip)}?fields=country,city,subdivision,asn`);
+            info = {
+                country: data.country || "Unbekannt",
+                region: data.subdivision || "-",
+                city: data.city || "-",
+                asn: data.asn?.name || data.asn?.asn || "-"
+            };
+        } catch (_) {
+            info = {
+                country: "Unbekannt",
+                region: "-",
+                city: "-",
+                asn: "-"
+            };
+        }
+    }
+
+    geoCache.set(ip, info);
+    return info;
 }
 
 function createAdminToken() {
@@ -88,6 +169,12 @@ function collectAdminOverview() {
             return {
                 id: client.clientId,
                 address: client.clientAddress,
+                geo: client.geo || {
+                    country: "Lädt...",
+                    region: "-",
+                    city: "-",
+                    asn: "-"
+                },
                 connectedAt: client.connectedAt,
                 state: getClientState(client),
                 partnerId: partner?.clientId || null,
@@ -356,8 +443,20 @@ app.post("/admin/message", requireAdmin, (req, res) => {
 
 wss.on("connection", (ws, req) => {
     ws.clientId = nextClientId++;
-    ws.clientAddress = getClientAddress(req);
+    ws.clientAddress = normalizeIp(getClientAddress(req));
     ws.connectedAt = new Date().toISOString();
+    ws.geo = {
+        country: "Lädt...",
+        region: "-",
+        city: "-",
+        asn: "-"
+    };
+
+    lookupGeoInfo(ws.clientAddress)
+        .then((geo) => {
+            ws.geo = geo;
+        })
+        .catch(() => {});
 
     if (bannedAddresses.has(ws.clientAddress)) {
         ws.close();

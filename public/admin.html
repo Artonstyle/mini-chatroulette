@@ -269,8 +269,8 @@
               <th>ID</th>
               <th>Status</th>
               <th>Suche</th>
-              <th>Land</th>
-              <th>Adresse</th>
+              <th>Land / Ort</th>
+              <th>IP / Adresse</th>
               <th>Partner</th>
               <th>Aktionen</th>
             </tr>
@@ -352,7 +352,7 @@
           <td>#${user.id}</td>
           <td><span class="pill state-${user.state}">${user.state}</span></td>
           <td>${user.gender} sucht ${user.search}</td>
-          <td>${user.country}</td>
+          <td>${user.geo.country}<br><span class="muted">${user.geo.region} ${user.geo.city !== "-" ? "· " + user.geo.city : ""}</span></td>
           <td>${user.address}</td>
           <td>${user.partnerId ? `#${user.partnerId}` : "-"}</td>
           <td>
