@@ -199,6 +199,19 @@
       min-height: 1.2em;
     }
 
+    .message-box {
+      width: 100%;
+      min-height: 74px;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #0d141d;
+      color: #fff;
+      font: inherit;
+      resize: vertical;
+    }
+
     @media (max-width: 980px) {
       .stats,
       .dashboard {
@@ -346,6 +359,7 @@
             <div class="actions">
               <button class="btn-danger" onclick="banUser('${user.address}')">Sperren</button>
               <button class="btn-ghost" onclick="disconnectUser(${user.id})">Trennen</button>
+              <button class="btn-warn" onclick="messageUser(${user.id})">Nachricht</button>
             </div>
           </td>
         </tr>
@@ -359,8 +373,13 @@
           <div class="muted">${new Date(report.createdAt).toLocaleString("de-DE")}</div>
           <div>Reporter: #${report.reporterId} / Ziel: ${report.targetId ? "#" + report.targetId : "unbekannt"}</div>
           <div>Grund: ${report.reason}</div>
+          ${report.details ? `<div>Text: ${report.details}</div>` : ""}
           <div>Adresse Ziel: ${report.targetAddress || "unbekannt"}</div>
-          ${report.targetAddress ? `<div class="actions" style="margin-top:10px;"><button class="btn-danger" onclick="banUser('${report.targetAddress}')">Ziel sperren</button></div>` : ""}
+          <div class="actions" style="margin-top:10px;">
+            ${report.targetAddress ? `<button class="btn-danger" onclick="banUser('${report.targetAddress}')">Ziel sperren</button>` : ""}
+            ${report.targetId ? `<button class="btn-warn" onclick="messageUser(${report.targetId})">Ziel schreiben</button>` : ""}
+            <button class="btn-ghost" onclick="messageUser(${report.reporterId})">Reporter schreiben</button>
+          </div>
         </div>
       `).join("") || `<div class="muted">Keine Reports vorhanden</div>`;
     }
@@ -427,9 +446,20 @@
       await loadOverview();
     }
 
+    async function messageUser(clientId) {
+      const text = window.prompt("Nachricht an Nutzer eingeben:");
+      if (!text || !text.trim()) return;
+      await api("/admin/message", {
+        method: "POST",
+        body: JSON.stringify({ clientId, text })
+      });
+      await loadOverview();
+    }
+
     window.banUser = banUser;
     window.unbanUser = unbanUser;
     window.disconnectUser = disconnectUser;
+    window.messageUser = messageUser;
 
     loginBtn.addEventListener("click", login);
     refreshBtn.addEventListener("click", loadOverview);

@@ -1945,6 +1945,8 @@ body.chatting .remote-buttons.revealed {
   left: 12px;
   bottom: 12px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
   z-index: 35;
   opacity: 0;
@@ -1957,6 +1959,97 @@ body.chatting .moderation-actions.revealed {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.btn-moderation-menu {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(11, 18, 29, 0.84);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 12px 22px rgba(0,0,0,0.22);
+}
+
+.btn-moderation-menu svg {
+  width: 22px;
+  height: 22px;
+}
+
+.moderation-menu,
+.report-panel {
+  display: none;
+  min-width: 220px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(10, 16, 26, 0.94);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 18px 32px rgba(0,0,0,0.28);
+}
+
+.moderation-actions.menu-open .moderation-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moderation-actions.report-open .report-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moderation-actions.report-open .moderation-menu {
+  display: none;
+}
+
+.report-panel-title {
+  font-weight: 800;
+}
+
+.report-panel select,
+.report-panel textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #172333;
+  color: #fff;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.report-panel textarea {
+  resize: vertical;
+  min-height: 82px;
+}
+
+.report-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-report-send,
+.btn-report-cancel {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-report-send {
+  background: linear-gradient(180deg, #36e17b, #18b557);
+  color: #06130a;
+}
+
+.btn-report-cancel {
+  background: #263243;
+  color: #edf4ff;
 }
 
 .remote-status {
@@ -3274,7 +3367,7 @@ body.bg-4 .btn-send {
     left: 12px;
     right: 12px;
     bottom: 92px;
-    justify-content: center;
+    align-items: stretch;
     opacity: 0;
     transform: translateY(10px);
     pointer-events: none;
@@ -3288,9 +3381,13 @@ body.bg-4 .btn-send {
 
   .btn-report,
   .btn-block {
-    flex: 1;
-    min-width: 0;
     min-height: 42px;
+  }
+
+  .moderation-menu,
+  .report-panel {
+    width: 100%;
+    min-width: 0;
   }
 
   .buttons button {

@@ -37,6 +37,14 @@ const nextBtn = document.querySelector(".btn-next");
 const stopBtn = document.querySelector(".btn-stop");
 const reportBtn = document.querySelector(".btn-report");
 const blockBtn = document.querySelector(".btn-block");
+const moderationMenuBtn = document.querySelector(".btn-moderation-menu");
+const moderationActions = document.querySelector(".moderation-actions");
+const moderationMenu = document.querySelector(".moderation-menu");
+const reportPanel = document.querySelector(".report-panel");
+const reportReasonSelect = document.getElementById("reportReason");
+const reportTextInput = document.getElementById("reportText");
+const reportSendBtn = document.querySelector(".btn-report-send");
+const reportCancelBtn = document.querySelector(".btn-report-cancel");
 const muteBtn = document.getElementById("btnMute");
 const videoBtn = document.getElementById("btnVideo");
 const cameraBtn = document.getElementById("btnCamera");
@@ -343,8 +351,6 @@ function initTitleDrag() {
 }
 
 function addMessage(sender, text, isSystem = false) {
-    if (isSystem) return;
-
     const wrapper = document.createElement("div");
     wrapper.classList.add("chat-message");
 
@@ -354,7 +360,13 @@ function addMessage(sender, text, isSystem = false) {
     const content = document.createElement("div");
     content.classList.add("chat-text");
 
-    if (sender === "Ich") {
+    if (isSystem || sender === "System") {
+        wrapper.classList.add("partner");
+        label.textContent = "System:";
+    } else if (sender === "Admin") {
+        wrapper.classList.add("partner");
+        label.textContent = "Admin:";
+    } else if (sender === "Ich") {
         wrapper.classList.add("me");
         label.textContent = "Ich:";
     } else {
@@ -510,6 +522,22 @@ function setRemoteButtonsVisible(visible, autoHide = false) {
             controls.forEach((control) => control.classList.remove("revealed"));
             remoteButtonsRevealTimer = null;
         }, 3000);
+    }
+}
+
+function setModerationMenuOpen(open) {
+    if (!moderationActions) return;
+    moderationActions.classList.toggle("menu-open", open);
+    if (!open) {
+        moderationActions.classList.remove("report-open");
+    }
+}
+
+function setReportPanelOpen(open) {
+    if (!moderationActions) return;
+    moderationActions.classList.toggle("report-open", open);
+    if (open) {
+        moderationActions.classList.add("menu-open");
     }
 }
 
@@ -999,6 +1027,8 @@ ws.onmessage = async (event) => {
         }
     } else if (data.type === "report-saved") {
         addMessage("System", "Meldung wurde gespeichert.", true);
+        setReportPanelOpen(false);
+        if (reportTextInput) reportTextInput.value = "";
     } else if (data.type === "blocked") {
         addMessage("System", "Nutzer wurde blockiert.", true);
         manualNextRequested = false;
@@ -1006,6 +1036,8 @@ ws.onmessage = async (event) => {
     } else if (data.type === "banned") {
         showStoppedOverlay();
         addMessage("System", "Dieses Gerät wurde gesperrt.", true);
+    } else if (data.type === "admin-message") {
+        addMessage("Admin", data.text || "", false);
     }
 };
 
@@ -1109,11 +1141,7 @@ stopBtn.onclick = () => {
 
 if (reportBtn) {
     reportBtn.onclick = () => {
-        if (ws.readyState !== WebSocket.OPEN) return;
-        ws.send(JSON.stringify({
-            type: "report",
-            reason: "Unangemessenes Verhalten"
-        }));
+        setReportPanelOpen(true);
     };
 }
 
@@ -1123,6 +1151,32 @@ if (blockBtn) {
         manualNextRequested = true;
         ws.send(JSON.stringify({ type: "block" }));
         closePeerConnection(true);
+    };
+}
+
+if (moderationMenuBtn) {
+    moderationMenuBtn.onclick = () => {
+        const willOpen = !moderationActions.classList.contains("menu-open");
+        setModerationMenuOpen(willOpen);
+    };
+}
+
+if (reportCancelBtn) {
+    reportCancelBtn.onclick = () => {
+        setReportPanelOpen(false);
+    };
+}
+
+if (reportSendBtn) {
+    reportSendBtn.onclick = () => {
+        if (ws.readyState !== WebSocket.OPEN) return;
+        const reason = reportReasonSelect?.value || "Sonstiges";
+        const details = reportTextInput?.value?.trim() || "";
+        ws.send(JSON.stringify({
+            type: "report",
+            reason,
+            details
+        }));
     };
 }
 

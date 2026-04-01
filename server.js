@@ -91,6 +91,7 @@ function collectAdminOverview() {
                 connectedAt: client.connectedAt,
                 state: getClientState(client),
                 partnerId: partner?.clientId || null,
+                partnerAddress: partner?.clientAddress || null,
                 gender: profile?.gender || "unknown",
                 search: profile?.search || "unknown",
                 country: profile?.country || "all"
@@ -333,6 +334,26 @@ app.post("/admin/disconnect", requireAdmin, (req, res) => {
     res.json({ ok: true });
 });
 
+app.post("/admin/message", requireAdmin, (req, res) => {
+    const { clientId, text } = req.body || {};
+    const targetClient = Array.from(wss.clients).find((client) => client.clientId === Number(clientId));
+
+    if (!targetClient || targetClient.readyState !== WebSocket.OPEN) {
+        return res.status(404).json({ ok: false, error: "Nutzer nicht gefunden" });
+    }
+
+    if (!text || !String(text).trim()) {
+        return res.status(400).json({ ok: false, error: "Keine Nachricht angegeben" });
+    }
+
+    targetClient.send(JSON.stringify({
+        type: "admin-message",
+        text: String(text).trim()
+    }));
+
+    res.json({ ok: true });
+});
+
 wss.on("connection", (ws, req) => {
     ws.clientId = nextClientId++;
     ws.clientAddress = getClientAddress(req);
@@ -378,7 +399,8 @@ wss.on("connection", (ws, req) => {
                 targetId: partner?.clientId || null,
                 targetAddress: partner?.clientAddress || null,
                 partner: getPublicProfile(profiles.get(partner)),
-                reason: data.reason || "Unangemessenes Verhalten"
+                reason: data.reason || "Unangemessenes Verhalten",
+                details: data.details || ""
             };
 
             reports.push(report);
