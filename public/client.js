@@ -25,6 +25,7 @@ let remoteButtonsRevealTimer = null;
 let manualStopRequested = false;
 let manualNextRequested = false;
 let mobileControlsRevealTimer = null;
+let matchMetaRevealTimer = null;
 
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
@@ -531,6 +532,18 @@ function setMatchMeta(text = "") {
     if (!matchMetaBar) return;
     matchMetaBar.textContent = text || "";
     matchMetaBar.classList.toggle("show", Boolean(text));
+
+    if (matchMetaRevealTimer) {
+        clearTimeout(matchMetaRevealTimer);
+        matchMetaRevealTimer = null;
+    }
+
+    if (text && isMobile()) {
+        matchMetaRevealTimer = setTimeout(() => {
+            matchMetaBar.classList.remove("show");
+            matchMetaRevealTimer = null;
+        }, 3000);
+    }
 }
 
 function setModerationMenuOpen(open) {
