@@ -203,9 +203,6 @@ function applyBackground(backgroundName) {
 }
 
 function cycleBackground() {
-    if (document.body.classList.contains("custom-bg-active")) {
-        applyLocalBackground("");
-    }
     const currentBackground = BACKGROUNDS.find((bgName) => document.body.classList.contains(bgName)) || "bg-1";
     const currentIndex = BACKGROUNDS.indexOf(currentBackground);
     const nextBackground = BACKGROUNDS[(currentIndex + 1) % BACKGROUNDS.length];
@@ -213,16 +210,9 @@ function cycleBackground() {
 }
 
 function applyLocalBackground(imageDataUrl) {
-    if (!imageDataUrl) {
-        document.body.classList.remove("custom-bg-active");
-        document.body.style.removeProperty("--custom-bg-image");
-        localStorage.removeItem(LOCAL_BG_STORAGE_KEY);
-        return;
-    }
-
-    document.body.style.setProperty("--custom-bg-image", `url("${imageDataUrl}")`);
-    document.body.classList.add("custom-bg-active");
-    localStorage.setItem(LOCAL_BG_STORAGE_KEY, imageDataUrl);
+    document.body.classList.remove("custom-bg-active");
+    document.body.style.removeProperty("--custom-bg-image");
+    localStorage.removeItem(LOCAL_BG_STORAGE_KEY);
 }
 
 function updateMsnVideoLaunchers() {
@@ -241,21 +231,13 @@ function updatePartnerMeta(partner) {
 }
 
 function handleLocalBackgroundSelection(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-        if (typeof reader.result === "string") {
-            applyLocalBackground(reader.result);
-        }
-    };
-    reader.readAsDataURL(file);
+    void event;
+    applyLocalBackground("");
     event.target.value = "";
 }
 
 function openLocalBackgroundPicker() {
-    localBgInput?.click();
+    applyLocalBackground("");
 }
 
 function updateDesktopLayoutButton() {
@@ -1352,7 +1334,6 @@ sendBtn.onclick = () => {
     setRemoteButtonsVisible(true, false);
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "theme-1";
     const savedBackground = localStorage.getItem(BG_STORAGE_KEY) || "bg-1";
-    const savedLocalBackground = localStorage.getItem(LOCAL_BG_STORAGE_KEY);
     const savedDesktopLayout = localStorage.getItem(DESKTOP_LAYOUT_STORAGE_KEY) || "desktop-layout-1";
     const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
     if (savedLayout === "split" || savedLayout === "overlay") {
@@ -1360,9 +1341,7 @@ sendBtn.onclick = () => {
     }
     applyTheme(savedTheme);
     applyBackground(savedBackground);
-    if (savedLocalBackground) {
-        applyLocalBackground(savedLocalBackground);
-    }
+    applyLocalBackground("");
     applyDesktopLayout(savedDesktopLayout);
     applyMobileLayoutMode();
     updateMsnVideoLaunchers();
@@ -1382,10 +1361,6 @@ sendBtn.onclick = () => {
 
     if (bgToggleMobile) {
         bgToggleMobile.addEventListener("click", cycleBackground);
-    }
-
-    if (localBgInput) {
-        localBgInput.addEventListener("change", handleLocalBackgroundSelection);
     }
 
     if (desktopLayoutToggle) {

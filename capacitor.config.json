@@ -1,0 +1,9 @@
+{
+  "appId": "com.artonstyle.minichatroulette",
+  "appName": "Mini Chatroulette",
+  "webDir": "public",
+  "server": {
+    "url": "https://mini-chatroulette.onrender.com",
+    "cleartext": false
+  }
+}
