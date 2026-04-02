@@ -59,7 +59,7 @@ header.dragging {
 .match-meta-bar {
   display: none;
   width: fit-content;
-  max-width: min(92vw, 420px);
+  max-width: min(50vw, 420px);
   margin: 0;
   padding: 8px 14px;
   border-radius: 999px;
@@ -72,12 +72,13 @@ header.dragging {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-  position: fixed;
-  left: 50%;
-  bottom: 108px;
-  transform: translateX(-50%);
+  position: absolute;
+  right: 248px;
+  bottom: 16px;
+  transform: none;
   z-index: 36;
   pointer-events: none;
+  text-align: right;
 }
 
 .match-meta-bar.show {
