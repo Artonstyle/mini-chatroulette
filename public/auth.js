@@ -50,6 +50,21 @@
     if (type) authStatus.classList.add(type);
   }
 
+  function escapeHtml(text) {
+    return String(text || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    authTabs.forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
+    authPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.authPanel === tab));
+  }
+
   function openModal(tab = activeTab) {
     if (!authModal) return;
     authModal.hidden = false;
@@ -63,40 +78,15 @@
     body.classList.remove("auth-open");
   }
 
-  function switchTab(tab) {
-    activeTab = tab;
-    authTabs.forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
-    authPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.authPanel === tab));
-  }
-
   function updateAuthButtons() {
     const loggedIn = Boolean(currentSession?.user);
-    const label = loggedIn ? (currentProfile?.display_name || currentProfile?.username || "Profil") : "Anmelden";
+    const label = loggedIn
+      ? (currentProfile?.display_name || currentProfile?.username || "Profil")
+      : "Anmelden";
 
     if (authToggleDesktop) authToggleDesktop.textContent = label;
     if (authToggleMobile) authToggleMobile.classList.toggle("logged-in", loggedIn);
     body.classList.toggle("auth-logged-in", loggedIn);
-  }
-
-  function fillProfileFields() {
-    if (!currentProfile) return;
-    if (profileUsername) profileUsername.value = currentProfile.username || "";
-    if (profileDisplayName) profileDisplayName.value = currentProfile.display_name || "";
-
-    if (genderInput && currentProfile.gender && genderInput.value !== currentProfile.gender) {
-      genderInput.value = currentProfile.gender;
-    }
-
-    if (searchInput) {
-      const nextSearch = currentProfile.seeking_gender === "everyone" ? searchInput.value : currentProfile.seeking_gender;
-      if (nextSearch && searchInput.value !== nextSearch) {
-        searchInput.value = nextSearch;
-      }
-    }
-
-    if (locationInput && currentProfile.location_label && !locationInput.value.trim()) {
-      locationInput.value = currentProfile.location_label;
-    }
   }
 
   function updateProfileSummary() {
@@ -110,15 +100,68 @@
 
     const email = currentSession.user.email || "ohne E-Mail";
     const name = currentProfile?.display_name || currentProfile?.username || email;
-    authProfileSummary.innerHTML = `<strong>${name}</strong><span>${email}</span>`;
+    authProfileSummary.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>`;
 
     if (authAdminLink) {
       authAdminLink.hidden = !currentProfile?.is_admin;
     }
   }
 
+  function fillProfileFields() {
+    if (!currentProfile) return;
+
+    if (profileUsername) profileUsername.value = currentProfile.username || "";
+    if (profileDisplayName) profileDisplayName.value = currentProfile.display_name || "";
+
+    if (genderInput && currentProfile.gender && genderInput.value !== currentProfile.gender) {
+      genderInput.value = currentProfile.gender;
+    }
+
+    if (searchInput && currentProfile.seeking_gender && currentProfile.seeking_gender !== "everyone") {
+      if (searchInput.value !== currentProfile.seeking_gender) {
+        searchInput.value = currentProfile.seeking_gender;
+      }
+    }
+
+    if (locationInput && currentProfile.location_label) {
+      locationInput.value = currentProfile.location_label;
+    }
+  }
+
+  function buildProfilePayload(extra = {}) {
+    const fallbackUsername =
+      currentProfile?.username ||
+      currentSession?.user?.user_metadata?.username ||
+      currentSession?.user?.email?.split("@")[0] ||
+      null;
+
+    const fallbackDisplayName =
+      currentProfile?.display_name ||
+      currentSession?.user?.user_metadata?.display_name ||
+      fallbackUsername;
+
+    return {
+      id: currentSession.user.id,
+      username: profileUsername?.value?.trim() || fallbackUsername,
+      display_name: profileDisplayName?.value?.trim() || fallbackDisplayName,
+      gender: genderInput?.value || currentProfile?.gender || "unknown",
+      seeking_gender: searchInput?.value || currentProfile?.seeking_gender || "unknown",
+      location_label: locationInput?.value?.trim() || currentProfile?.location_label || null,
+      ...extra
+    };
+  }
+
+  async function ensureProfile() {
+    if (!currentSession?.user) return;
+
+    const payload = buildProfilePayload();
+    const { error } = await client.from("profiles").upsert(payload);
+    if (error) throw error;
+  }
+
   async function loadInbox() {
     if (!authInboxList) return;
+
     if (!currentSession?.user) {
       authInboxList.innerHTML = '<div class="auth-empty">Melde dich an, um Nachrichten zu sehen.</div>';
       return;
@@ -171,6 +214,16 @@
       .single();
 
     if (error) {
+      if (error.code === "PGRST116") {
+        try {
+          await ensureProfile();
+          return await loadProfile();
+        } catch {
+          setStatus("Profil konnte gerade nicht geladen werden.", "error");
+          return;
+        }
+      }
+
       setStatus("Profil konnte gerade nicht geladen werden.", "error");
       return;
     }
@@ -185,21 +238,20 @@
   async function saveProfile(extra = {}) {
     if (!currentSession?.user) return;
 
-    const payload = {
-      id: currentSession.user.id,
-      username: profileUsername?.value?.trim() || currentProfile?.username || null,
-      display_name: profileDisplayName?.value?.trim() || currentProfile?.display_name || null,
-      gender: genderInput?.value || currentProfile?.gender || "unknown",
-      seeking_gender: searchInput?.value || currentProfile?.seeking_gender || "unknown",
-      location_label: locationInput?.value?.trim() || currentProfile?.location_label || null,
-      ...extra
-    };
-
+    const payload = buildProfilePayload(extra);
     const { error } = await client.from("profiles").upsert(payload);
+
     if (error) {
       setStatus("Profil konnte nicht gespeichert werden.", "error");
       return;
     }
+
+    await client.auth.updateUser({
+      data: {
+        username: payload.username,
+        display_name: payload.display_name
+      }
+    });
 
     setStatus("Profil gespeichert.", "success");
     await loadProfile();
@@ -208,19 +260,11 @@
   function queueProfileSave() {
     if (!currentSession?.user) return;
     if (profileSaveTimer) clearTimeout(profileSaveTimer);
+
     profileSaveTimer = setTimeout(() => {
       saveProfile();
       profileSaveTimer = null;
     }, 600);
-  }
-
-  function escapeHtml(text) {
-    return String(text || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
   }
 
   async function handleLogin() {
@@ -234,6 +278,7 @@
 
     setStatus("Login läuft...");
     const { data, error } = await client.auth.signInWithPassword({ email, password });
+
     if (error) {
       setStatus(error.message || "Login fehlgeschlagen.", "error");
       return;
@@ -242,6 +287,7 @@
     currentSession = data.session;
     setStatus("Eingeloggt.", "success");
     switchTab("profile");
+    await ensureProfile();
     await loadProfile();
   }
 
@@ -282,6 +328,7 @@
     currentSession = data.session;
     setStatus("Konto erstellt und eingeloggt.", "success");
     switchTab("profile");
+    await ensureProfile();
     await loadProfile();
   }
 
@@ -301,6 +348,13 @@
     currentSession = data.session;
     updateAuthButtons();
     updateProfileSummary();
+
+    if (currentSession?.user) {
+      try {
+        await ensureProfile();
+      } catch {}
+    }
+
     await loadProfile();
   }
 
