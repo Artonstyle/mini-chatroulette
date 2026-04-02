@@ -1450,20 +1450,23 @@ sendBtn.onclick = () => {
     });
 
     window.addEventListener("pointerdown", (e) => {
-        if (!isMobile()) return;
+        const chatting = document.body.classList.contains("chatting");
+        const clickedRemoteButton = e.target.closest(".remote-buttons");
+        const clickedTopbarButton = e.target.closest(".mobile-topbar");
+        const clickedProfileForm = e.target.closest(".profile-form");
+        const clickedLocalControls = e.target.closest(".local-video-controls");
 
-        if (document.body.classList.contains("chatting")) {
-            const clickedRemoteButton = e.target.closest(".remote-buttons");
-            const clickedTopbarButton = e.target.closest(".mobile-topbar");
+        if (chatting && !clickedRemoteButton && !clickedTopbarButton && !clickedProfileForm && !clickedLocalControls) {
+            setRemoteButtonsVisible(true, true);
+            revealMatchMeta();
 
-            if (!clickedRemoteButton && !clickedTopbarButton) {
-                setRemoteButtonsVisible(true, true);
+            if (isMobile()) {
                 setMobileControlsVisible(true);
-                revealMatchMeta();
                 return;
             }
         }
 
+        if (!isMobile()) return;
         if (!localVideoWrap.classList.contains("mobile-controls-open")) return;
         if (localVideoWrap.contains(e.target)) return;
         if (remoteVideo.contains(e.target)) return;
