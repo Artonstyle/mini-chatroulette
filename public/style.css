@@ -72,11 +72,12 @@ header.dragging {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-  position: absolute;
+  position: fixed;
   left: 50%;
-  bottom: 92px;
+  bottom: 108px;
   transform: translateX(-50%);
   z-index: 36;
+  pointer-events: none;
 }
 
 .match-meta-bar.show {

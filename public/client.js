@@ -1009,10 +1009,13 @@ ws.onclose = () => {
 
 ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
+    const partnerLocationLabel = data.partner?.locationLabel || "";
     const distanceInfo =
-        Number.isFinite(data.distanceKm)
-            ? `Partner ist ca. ${data.distanceKm} km entfernt`
-            : (data.partner?.locationLabel ? `Ort: ${data.partner.locationLabel}` : "");
+        Number.isFinite(data.distanceKm) && partnerLocationLabel
+            ? `${partnerLocationLabel} · Partner ist ca. ${data.distanceKm} km entfernt`
+            : Number.isFinite(data.distanceKm)
+                ? `Partner ist ca. ${data.distanceKm} km entfernt`
+                : (partnerLocationLabel ? `Ort: ${partnerLocationLabel}` : "");
 
     if (data.type === "matched" && data.should_offer) {
         manualStopRequested = false;
