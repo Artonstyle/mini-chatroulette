@@ -1023,9 +1023,6 @@ ws.onmessage = async (event) => {
         createPeerConnection();
         setRemoteStatus("Partner gefunden", distanceInfo || "Verbindung wird aufgebaut...", true, true);
         setMatchMeta(distanceInfo);
-        if (distanceInfo) {
-            addMessage("System", distanceInfo, true);
-        }
 
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
@@ -1036,9 +1033,6 @@ ws.onmessage = async (event) => {
         manualNextRequested = false;
         setRemoteStatus("Partner gefunden", distanceInfo || "Warte auf Videoanruf...", true, true);
         setMatchMeta(distanceInfo);
-        if (distanceInfo) {
-            addMessage("System", distanceInfo, true);
-        }
 
     } else if (data.type === "offer") {
         if (!peerConnection) createPeerConnection();
