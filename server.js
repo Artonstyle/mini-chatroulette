@@ -23,6 +23,8 @@ const geoCache = new Map();
 const locationCache = new Map();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "miniadmin123";
 const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 12;
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://zwiasfpcqfvrzaoqpaky.supabase.co";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_wmBkxyoqQk8ySg6K2tQ7pw_3tkYS7Pw";
 let nextClientId = 1;
 let nextReportId = 1;
 let nextAdminMessageId = 1;
@@ -78,6 +80,46 @@ function httpsJson(url) {
                 }
             });
         }).on("error", reject);
+    });
+}
+
+function httpsRequestJson(url, options = {}, body = null) {
+    return new Promise((resolve, reject) => {
+        const req = https.request(url, options, (res) => {
+            let raw = "";
+            res.on("data", (chunk) => {
+                raw += chunk;
+            });
+            res.on("end", () => {
+                let parsed = null;
+                if (raw) {
+                    try {
+                        parsed = JSON.parse(raw);
+                    } catch (error) {
+                        return reject(error);
+                    }
+                }
+
+                if (res.statusCode >= 400) {
+                    const message =
+                        parsed?.message ||
+                        parsed?.error_description ||
+                        parsed?.error ||
+                        `Supabase request failed with status ${res.statusCode}`;
+                    return reject(new Error(message));
+                }
+
+                resolve(parsed);
+            });
+        });
+
+        req.on("error", reject);
+
+        if (body) {
+            req.write(body);
+        }
+
+        req.end();
     });
 }
 
@@ -205,6 +247,37 @@ function cleanupAdminSessions() {
             adminSessions.delete(token);
         }
     }
+}
+
+function getSupabaseAccessToken(req) {
+    const bearer = req.headers.authorization;
+    if (typeof bearer === "string" && bearer.startsWith("Bearer ")) {
+        return bearer.slice(7).trim();
+    }
+
+    const headerToken = req.headers["x-supabase-access-token"];
+    if (typeof headerToken === "string" && headerToken.trim()) {
+        return headerToken.trim();
+    }
+
+    return "";
+}
+
+async function callSupabaseRpc(functionName, accessToken, params = {}) {
+    if (!accessToken) {
+        throw new Error("Supabase Admin-Session fehlt");
+    }
+
+    const body = JSON.stringify(params);
+    return httpsRequestJson(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+        method: "POST",
+        headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body)
+        }
+    }, body);
 }
 
 function requireAdmin(req, res, next) {
@@ -554,6 +627,27 @@ app.post("/admin/message", requireAdmin, (req, res) => {
     });
 
     res.json({ ok: true, message: adminMessage });
+});
+
+app.get("/admin/supabase/overview", requireAdmin, async (req, res) => {
+    try {
+        const accessToken = getSupabaseAccessToken(req);
+        const [stats, profilesOverview] = await Promise.all([
+            callSupabaseRpc("admin_dashboard_stats", accessToken),
+            callSupabaseRpc("admin_profiles_overview", accessToken)
+        ]);
+
+        res.json({
+            ok: true,
+            stats,
+            profiles: Array.isArray(profilesOverview) ? profilesOverview : []
+        });
+    } catch (error) {
+        res.status(400).json({
+            ok: false,
+            error: error.message || "Supabase-Daten konnten nicht geladen werden"
+        });
+    }
 });
 
 wss.on("connection", (ws, req) => {

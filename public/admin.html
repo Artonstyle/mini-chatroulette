@@ -9,7 +9,6 @@
       color-scheme: dark;
       --bg: #0b1017;
       --panel: #121a25;
-      --panel-2: #182230;
       --line: rgba(255,255,255,0.08);
       --text: #eef5ff;
       --muted: #95a6bc;
@@ -20,6 +19,7 @@
     }
 
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: "Segoe UI", Arial, sans-serif;
@@ -28,7 +28,7 @@
     }
 
     .shell {
-      max-width: 1300px;
+      max-width: 1360px;
       margin: 0 auto;
       padding: 24px;
     }
@@ -57,7 +57,7 @@
     }
 
     .login {
-      max-width: 420px;
+      max-width: 460px;
       margin: 70px auto;
       padding: 24px;
     }
@@ -119,11 +119,19 @@
 
     .dashboard.show { display: grid; }
 
-    .stats {
+    .stats,
+    .substats {
       grid-column: 1 / -1;
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 14px;
+    }
+
+    .stats {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .substats {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
 
     .stat {
@@ -138,6 +146,7 @@
 
     .users-panel { grid-column: span 8; padding: 18px; }
     .reports-panel { grid-column: span 4; padding: 18px; }
+    .profiles-panel { grid-column: 1 / -1; padding: 18px; }
     .bans-panel { grid-column: 1 / -1; padding: 18px; }
 
     table {
@@ -199,27 +208,16 @@
       min-height: 1.2em;
     }
 
-    .message-box {
-      width: 100%;
-      min-height: 74px;
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: #0d141d;
-      color: #fff;
-      font: inherit;
-      resize: vertical;
-    }
-
-    @media (max-width: 980px) {
+    @media (max-width: 1100px) {
       .stats,
+      .substats,
       .dashboard {
         grid-template-columns: 1fr;
       }
 
       .users-panel,
       .reports-panel,
+      .profiles-panel,
       .bans-panel {
         grid-column: auto;
       }
@@ -230,7 +228,7 @@
   <div class="shell">
     <section class="login" id="loginBox">
       <h2>Admin Login</h2>
-      <div class="muted">Erste Version für Reports, Nutzer, Sperren und Übersicht.</div>
+      <div class="muted">Dashboard fuer Live-Nutzer, registrierte Accounts, Reports und Sperren.</div>
       <div class="field">
         <label for="password">Passwort</label>
         <input id="password" type="password" placeholder="Admin Passwort">
@@ -245,7 +243,7 @@
       <div class="topbar" style="grid-column:1 / -1;">
         <div>
           <h1>Mini Chatroulette Admin</h1>
-          <div class="muted">Nutzer, Reports, Sperren und aktuelle Verbindungen</div>
+          <div class="muted">Live-Nutzer vom Server plus registrierte Nutzer und Statistiken aus Supabase.</div>
         </div>
         <div class="actions">
           <button id="refreshBtn" class="btn-ghost" type="button">Aktualisieren</button>
@@ -261,8 +259,17 @@
         <div class="panel stat"><div class="muted">Sperren</div><strong id="statBans">0</strong></div>
       </div>
 
+      <div class="substats">
+        <div class="panel stat"><div class="muted">Registriert</div><strong id="statRegisteredTotal">0</strong></div>
+        <div class="panel stat"><div class="muted">Männer registriert</div><strong id="statRegisteredMale">0</strong></div>
+        <div class="panel stat"><div class="muted">Frauen registriert</div><strong id="statRegisteredFemale">0</strong></div>
+        <div class="panel stat"><div class="muted">Männer online</div><strong id="statOnlineMale">0</strong></div>
+        <div class="panel stat"><div class="muted">Frauen online</div><strong id="statOnlineFemale">0</strong></div>
+        <div class="panel stat"><div class="muted">Reports offen</div><strong id="statReportsOpen">0</strong></div>
+      </div>
+
       <section class="panel users-panel">
-        <h3>Nutzer</h3>
+        <h3>Live-Nutzer</h3>
         <table>
           <thead>
             <tr>
@@ -284,19 +291,46 @@
         <div id="reportsList" class="stack"></div>
       </section>
 
+      <section class="panel profiles-panel">
+        <h3>Registrierte Nutzer</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Geschlecht</th>
+              <th>Land / Ort</th>
+              <th>Status</th>
+              <th>Admin</th>
+              <th>Registriert</th>
+            </tr>
+          </thead>
+          <tbody id="profilesBody"></tbody>
+        </table>
+        <div id="supabaseStatus" class="notice">Supabase-Statistiken werden geladen.</div>
+      </section>
+
       <section class="panel bans-panel">
         <h3>Sperrliste</h3>
         <div id="bansList" class="stack"></div>
-        <div class="notice">Hinweis: In dieser ersten Version werden Sperren über die erkannte Verbindungs-Adresse gesetzt.</div>
+        <div class="notice">Hinweis: Aktive Sperren aus dem Node-Server werden hier direkt angezeigt.</div>
       </section>
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script>
     const API_BASE =
       window.location.protocol === "http:" || window.location.protocol === "https:"
         ? window.location.origin
         : "https://mini-chatroulette.onrender.com";
+    const supabaseClient =
+      window.supabase && window.MINI_CHATROULETTE_SUPABASE_URL && window.MINI_CHATROULETTE_SUPABASE_ANON_KEY
+        ? window.supabase.createClient(
+            window.MINI_CHATROULETTE_SUPABASE_URL,
+            window.MINI_CHATROULETTE_SUPABASE_ANON_KEY
+          )
+        : null;
     const tokenKey = "mini-chatroulette-admin-token";
     const loginBox = document.getElementById("loginBox");
     const dashboard = document.getElementById("dashboard");
@@ -306,8 +340,10 @@
     const refreshBtn = document.getElementById("refreshBtn");
     const loginError = document.getElementById("loginError");
     const usersBody = document.getElementById("usersBody");
+    const profilesBody = document.getElementById("profilesBody");
     const reportsList = document.getElementById("reportsList");
     const bansList = document.getElementById("bansList");
+    const supabaseStatus = document.getElementById("supabaseStatus");
 
     let refreshTimer = null;
 
@@ -350,27 +386,57 @@
       return data;
     }
 
+    async function getSupabaseAccessToken() {
+      if (!supabaseClient) return "";
+      const { data } = await supabaseClient.auth.getSession();
+      return data.session?.access_token || "";
+    }
+
+    async function apiSupabase(path) {
+      const accessToken = await getSupabaseAccessToken();
+
+      if (!accessToken) {
+        throw new Error("Keine aktive Supabase-Admin-Session gefunden. Bitte zuerst in der App als Admin einloggen.");
+      }
+
+      return api(path, {
+        headers: {
+          "x-supabase-access-token": accessToken
+        }
+      });
+    }
+
+    function toGermanGender(value) {
+      if (value === "male") return "Mann";
+      if (value === "female") return "Frau";
+      if (value === "diverse") return "Divers";
+      return value || "Unbekannt";
+    }
+
     function renderStats(stats) {
-      document.getElementById("statOnline").textContent = stats.online;
-      document.getElementById("statWaiting").textContent = stats.waiting;
-      document.getElementById("statPairs").textContent = stats.connectedPairs;
-      document.getElementById("statReports").textContent = stats.reports;
-      document.getElementById("statBans").textContent = stats.bans;
+      document.getElementById("statOnline").textContent = stats.online ?? 0;
+      document.getElementById("statWaiting").textContent = stats.waiting ?? 0;
+      document.getElementById("statPairs").textContent = stats.connectedPairs ?? 0;
+      document.getElementById("statReports").textContent = stats.reports ?? 0;
+      document.getElementById("statBans").textContent = stats.bans ?? 0;
+    }
+
+    function renderSupabaseStats(stats = {}) {
+      document.getElementById("statRegisteredTotal").textContent = stats.registered_total ?? 0;
+      document.getElementById("statRegisteredMale").textContent = stats.registered_male ?? 0;
+      document.getElementById("statRegisteredFemale").textContent = stats.registered_female ?? 0;
+      document.getElementById("statOnlineMale").textContent = stats.online_male ?? 0;
+      document.getElementById("statOnlineFemale").textContent = stats.online_female ?? 0;
+      document.getElementById("statReportsOpen").textContent = stats.reports_open ?? 0;
     }
 
     function renderUsers(users) {
-      function toGermanGender(value) {
-        if (value === "male") return "Mann";
-        if (value === "female") return "Frau";
-        return value || "Unbekannt";
-      }
-
       usersBody.innerHTML = users.map((user) => `
         <tr>
           <td>#${user.id}</td>
           <td><span class="pill state-${user.state}">${user.state}</span></td>
           <td>${toGermanGender(user.gender)} sucht ${toGermanGender(user.search)}</td>
-          <td>${user.geo.country}<br><span class="muted">${user.geo.region !== "-" ? user.geo.region : "Region unbekannt"}${user.geo.city !== "-" ? " · " + user.geo.city : " · Stadt unbekannt"}</span></td>
+          <td>${user.geo.country}<br><span class="muted">${user.geo.region !== "-" ? user.geo.region : "Region unbekannt"}${user.geo.city !== "-" ? " | " + user.geo.city : " | Stadt unbekannt"}</span></td>
           <td>${user.address}</td>
           <td>${user.partnerId ? `#${user.partnerId}` : "-"}</td>
           <td>
@@ -382,6 +448,22 @@
           </td>
         </tr>
       `).join("") || `<tr><td colspan="7" class="muted">Keine aktiven Nutzer</td></tr>`;
+    }
+
+    function renderProfiles(profiles) {
+      profilesBody.innerHTML = profiles.map((profile) => `
+        <tr>
+          <td>
+            <strong>${profile.display_name || profile.username || "Ohne Namen"}</strong><br>
+            <span class="muted">${profile.username || "-"}</span>
+          </td>
+          <td>${toGermanGender(profile.gender)}</td>
+          <td>${profile.country || "-"}<br><span class="muted">${profile.location_label || "-"}</span></td>
+          <td>${profile.is_online ? "Online" : "Offline"}</td>
+          <td>${profile.is_admin ? "Ja" : "Nein"}</td>
+          <td>${profile.created_at ? new Date(profile.created_at).toLocaleString("de-DE") : "-"}</td>
+        </tr>
+      `).join("") || `<tr><td colspan="6" class="muted">Keine registrierten Nutzer gefunden</td></tr>`;
     }
 
     function renderReports(reports) {
@@ -414,11 +496,25 @@
     }
 
     async function loadOverview() {
-      const data = await api("/admin/overview");
-      renderStats(data.stats);
-      renderUsers(data.users);
-      renderReports(data.reports);
-      renderBans(data.bans);
+      const [serverData, supabaseData] = await Promise.all([
+        api("/admin/overview"),
+        apiSupabase("/admin/supabase/overview").catch((error) => ({ error }))
+      ]);
+
+      renderStats(serverData.stats);
+      renderUsers(serverData.users);
+      renderReports(serverData.reports);
+      renderBans(serverData.bans);
+
+      if (supabaseData?.error) {
+        renderSupabaseStats({});
+        renderProfiles([]);
+        supabaseStatus.textContent = supabaseData.error.message || "Supabase-Daten konnten nicht geladen werden.";
+      } else {
+        renderSupabaseStats(supabaseData.stats || {});
+        renderProfiles(supabaseData.profiles || []);
+        supabaseStatus.textContent = "Supabase-Statistiken und registrierte Nutzer erfolgreich geladen.";
+      }
     }
 
     async function login() {
