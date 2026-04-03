@@ -30,6 +30,7 @@
 
   const profileUsername = document.getElementById("profileUsername");
   const profileDisplayName = document.getElementById("profileDisplayName");
+  const profilePhoneNumber = document.getElementById("profilePhoneNumber");
   const profileSave = document.getElementById("profileSave");
   const logoutSubmit = document.getElementById("logoutSubmit");
   const authProfileSummary = document.getElementById("authProfileSummary");
@@ -125,6 +126,7 @@
 
     if (profileUsername) profileUsername.value = currentProfile.username || "";
     if (profileDisplayName) profileDisplayName.value = currentProfile.display_name || "";
+    if (profilePhoneNumber) profilePhoneNumber.value = currentProfile.phone_number || "";
 
     if (genderInput && currentProfile.gender && genderInput.value !== currentProfile.gender) {
       genderInput.value = currentProfile.gender;
@@ -157,6 +159,7 @@
       id: currentSession.user.id,
       username: profileUsername?.value?.trim() || fallbackUsername,
       display_name: profileDisplayName?.value?.trim() || fallbackDisplayName,
+      phone_number: profilePhoneNumber?.value?.trim() || currentProfile?.phone_number || null,
       gender: genderInput?.value || currentProfile?.gender || "unknown",
       seeking_gender: searchInput?.value || currentProfile?.seeking_gender || "unknown",
       location_label: locationInput?.value?.trim() || currentProfile?.location_label || null,
@@ -395,6 +398,7 @@
 
   profileUsername?.addEventListener("input", queueProfileSave);
   profileDisplayName?.addEventListener("input", queueProfileSave);
+  profilePhoneNumber?.addEventListener("input", queueProfileSave);
 
   client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
