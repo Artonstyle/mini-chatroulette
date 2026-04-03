@@ -221,16 +221,7 @@
             </div>
           </section>
 
-          <form id="statusComposer" class="mobile-status-composer" hidden>
-            <input id="statusMediaFile" type="file" accept="image/*,video/*" hidden>
-            <button id="statusMediaPick" class="mobile-status-media-btn" type="button">Bild oder Video auswählen</button>
-            <div id="statusComposerSelection" class="mobile-status-selection" hidden></div>
-            <label class="mobile-field">
-              <span>Text zum Status</span>
-              <textarea id="statusTextInput" rows="3" placeholder="Was gibt es Neues?"></textarea>
-            </label>
-            <button id="statusPublishBtn" class="mobile-primary-btn" type="submit">Status posten</button>
-          </form>
+          <input id="statusMediaFile" type="file" accept="image/*,video/*" hidden>
 
           <section class="mobile-status-section">
             <div class="mobile-status-section-head">
@@ -260,6 +251,28 @@
           <div class="mobile-status-viewer-bottom">
             <input id="statusViewerReply" type="text" placeholder="Antworten">
             <button class="mobile-status-viewer-heart" type="button" aria-label="Gefällt mir">♡</button>
+          </div>
+        </div>
+
+        <div id="statusEditor" class="mobile-status-editor" hidden>
+          <div class="mobile-status-editor-top">
+            <button id="statusEditorClose" class="mobile-status-editor-close" type="button" aria-label="Schließen">×</button>
+            <div class="mobile-status-editor-tools">
+              <button class="mobile-status-editor-tool" type="button" data-status-tool="music" aria-label="Musik">♪</button>
+              <button class="mobile-status-editor-tool" type="button" data-status-tool="crop" aria-label="Zuschneiden">◱</button>
+              <button class="mobile-status-editor-tool" type="button" data-status-tool="stickers" aria-label="Sticker">☺</button>
+              <button class="mobile-status-editor-tool" type="button" data-status-tool="text" aria-label="Text">Aa</button>
+              <button class="mobile-status-editor-tool" type="button" data-status-tool="draw" aria-label="Zeichnen">✎</button>
+            </div>
+          </div>
+          <div class="mobile-status-editor-media-wrap">
+            <img id="statusEditorImage" class="mobile-status-editor-media" alt="Status-Vorschau" hidden>
+            <video id="statusEditorVideo" class="mobile-status-editor-media" playsinline controls hidden></video>
+          </div>
+          <div class="mobile-status-editor-filter">Filter</div>
+          <div class="mobile-status-editor-bottom">
+            <input id="statusEditorCaption" type="text" placeholder="Bildunterschrift hinzufügen ...">
+            <button id="statusPublishBtn" class="mobile-status-editor-send" type="button" aria-label="Status senden">➜</button>
           </div>
         </div>
       </div>
