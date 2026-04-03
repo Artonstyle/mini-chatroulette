@@ -3516,6 +3516,7 @@ body.bg-4 .btn-send {
   }
 
   .mobile-status-viewer-back,
+  .mobile-status-viewer-delete,
   .mobile-status-viewer-more {
     width: 40px;
     height: 40px;
@@ -3524,6 +3525,10 @@ body.bg-4 .btn-send {
     background: transparent;
     color: #fff;
     font-size: 1.2rem;
+  }
+
+  .mobile-status-viewer-delete[hidden] {
+    display: none !important;
   }
 
   .mobile-status-viewer-head {
@@ -3801,6 +3806,9 @@ body.bg-4 .btn-send {
     gap: 10px;
     padding: 8px 12px 18px;
     background: rgba(0,0,0,0.86);
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
   }
 
   .mobile-status-editor-bottom input {
@@ -3814,6 +3822,9 @@ body.bg-4 .btn-send {
   }
 
   .mobile-status-editor-send {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 54px;
     height: 54px;
     border: none;
@@ -3822,6 +3833,7 @@ body.bg-4 .btn-send {
     color: #07110a;
     font-size: 1.45rem;
     font-weight: 900;
+    flex: 0 0 54px;
   }
 
   .mobile-card {

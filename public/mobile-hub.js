@@ -18,6 +18,7 @@
   const statusViewerClose = document.getElementById("statusViewerClose");
   const statusViewerName = document.getElementById("statusViewerName");
   const statusViewerMeta = document.getElementById("statusViewerMeta");
+  const statusViewerDelete = document.getElementById("statusViewerDelete");
   const statusViewerImage = document.getElementById("statusViewerImage");
   const statusViewerVideo = document.getElementById("statusViewerVideo");
   const statusViewerText = document.getElementById("statusViewerText");
@@ -60,6 +61,7 @@
   let statusItems = [];
   let chatPreviewMap = new Map();
   let activeContactId = null;
+  let activeStatusId = null;
   let selectedStatusFile = null;
   let selectedStatusPreviewUrl = null;
   let drawEnabled = false;
@@ -306,7 +308,9 @@
 
   function closeStatusViewer() {
     if (!statusViewer) return;
+    activeStatusId = null;
     statusViewer.hidden = true;
+    if (statusViewerDelete) statusViewerDelete.hidden = true;
     if (statusViewerVideo) {
       statusViewerVideo.pause();
       statusViewerVideo.removeAttribute("src");
@@ -317,10 +321,14 @@
   function openStatusViewer(statusId) {
     const item = statusItems.find((entry) => entry.id === statusId);
     if (!item || !statusViewer) return;
+    activeStatusId = statusId;
 
     const owner = profileMap.get(item.user_id);
     if (statusViewerName) statusViewerName.textContent = getDisplayName(owner);
     if (statusViewerMeta) statusViewerMeta.textContent = formatStatusAge(item.created_at);
+    if (statusViewerDelete) {
+      statusViewerDelete.hidden = item.user_id !== currentSession?.user?.id;
+    }
 
     if (statusViewerImage) {
       statusViewerImage.hidden = true;
@@ -351,6 +359,14 @@
     }
 
     statusViewer.hidden = false;
+  }
+
+  function getStoragePathFromUrl(url) {
+    if (!url || !url.includes(`/storage/v1/object/public/${STATUS_MEDIA_BUCKET}/`)) return null;
+    const marker = `/storage/v1/object/public/${STATUS_MEDIA_BUCKET}/`;
+    const index = url.indexOf(marker);
+    if (index === -1) return null;
+    return decodeURIComponent(url.slice(index + marker.length));
   }
 
   async function uploadStatusMedia(file) {
@@ -781,6 +797,31 @@
     await loadStatuses();
   }
 
+  async function deleteActiveStatus() {
+    if (!currentSession?.user || !activeStatusId) return;
+    const item = statusItems.find((entry) => entry.id === activeStatusId);
+    if (!item || item.user_id !== currentSession.user.id) return;
+
+    const { error } = await client
+      .from("status_posts")
+      .delete()
+      .eq("id", activeStatusId)
+      .eq("user_id", currentSession.user.id);
+
+    if (error) {
+      statusList.innerHTML = requireLoginMessage("Status konnte nicht gelöscht werden.");
+      return;
+    }
+
+    const storagePath = getStoragePathFromUrl(item.media_url);
+    if (storagePath) {
+      await client.storage.from(STATUS_MEDIA_BUCKET).remove([storagePath]);
+    }
+
+    closeStatusViewer();
+    await loadStatuses();
+  }
+
   async function loadCalls() {
     if (!callLogList) return;
 
@@ -923,6 +964,7 @@
   window.addEventListener("pointerup", stopTextDrag);
   window.addEventListener("resize", resizeDrawCanvas);
   statusViewerClose?.addEventListener("click", closeStatusViewer);
+  statusViewerDelete?.addEventListener("click", deleteActiveStatus);
   directChatBack?.addEventListener("click", async () => {
     activeContactId = null;
     updateChatView();
