@@ -15,14 +15,17 @@ const waitingClients = [];
 const pairs = new Map();
 const profiles = new Map();
 const reports = [];
+const adminMessages = [];
 const bannedAddresses = new Set();
 const blockedAddresses = new Map();
 const adminSessions = new Map();
 const geoCache = new Map();
 const locationCache = new Map();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "miniadmin123";
+const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 let nextClientId = 1;
 let nextReportId = 1;
+let nextAdminMessageId = 1;
 
 function getClientAddress(req) {
     const forwarded = req.headers["x-forwarded-for"];
@@ -176,7 +179,36 @@ function createAdminToken() {
     return crypto.randomBytes(24).toString("hex");
 }
 
+function isOpen(ws) {
+    return ws && ws.readyState === WebSocket.OPEN;
+}
+
+function sendJson(ws, payload) {
+    if (!isOpen(ws)) return false;
+    ws.send(JSON.stringify(payload));
+    return true;
+}
+
+function parseIncomingMessage(rawMessage) {
+    try {
+        return JSON.parse(rawMessage);
+    } catch (_) {
+        return null;
+    }
+}
+
+function cleanupAdminSessions() {
+    const now = Date.now();
+
+    for (const [token, createdAt] of adminSessions.entries()) {
+        if (now - createdAt > ADMIN_SESSION_TTL_MS) {
+            adminSessions.delete(token);
+        }
+    }
+}
+
 function requireAdmin(req, res, next) {
+    cleanupAdminSessions();
     const token = req.headers["x-admin-token"];
 
     if (!token || !adminSessions.has(token)) {
@@ -270,7 +302,8 @@ function collectAdminOverview() {
         users,
         pairs: uniquePairs,
         reports: reports.slice().reverse(),
-        bans: Array.from(bannedAddresses)
+        bans: Array.from(bannedAddresses),
+        adminMessages: adminMessages.slice(-50).reverse()
     };
 }
 
@@ -286,11 +319,18 @@ function broadcastUserCount() {
 }
 
 function normalizeProfile(data = {}) {
+    const safeGender = data.gender === "female" ? "female" : "male";
+    const safeSearch = data.search === "male" || data.search === "female" ? data.search : "female";
+    const safeCountry = typeof data.country === "string" && data.country.trim()
+        ? data.country.trim()
+        : "all";
+    const safeLocationText = String(data.locationText || "").trim().slice(0, 120);
+
     return {
-        gender: data.gender || "male",
-        search: data.search || "female",
-        country: data.country || "all",
-        locationText: String(data.locationText || "").trim(),
+        gender: safeGender,
+        search: safeSearch,
+        country: safeCountry,
+        locationText: safeLocationText,
         location: null
     };
 }
@@ -342,31 +382,19 @@ function strictlyMatches(firstWs, secondWs) {
 }
 
 function canFallbackMatch(firstWs, secondWs) {
-    const firstProfile = profiles.get(firstWs);
-    const secondProfile = profiles.get(secondWs);
-
-    if (!firstProfile || !secondProfile) return false;
-    if (isBlocked(firstWs, secondWs)) return false;
-
-    return countriesCompatible(firstProfile, secondProfile);
+    return false;
 }
 
 function findWaitingMatch(ws) {
-    let fallback = null;
-
     for (const candidate of waitingClients) {
         if (candidate === ws || candidate.readyState !== WebSocket.OPEN) continue;
 
         if (strictlyMatches(ws, candidate)) {
             return candidate;
         }
-
-        if (!fallback && canFallbackMatch(ws, candidate)) {
-            fallback = candidate;
-        }
     }
 
-    return fallback;
+    return null;
 }
 
 function matchClients(firstWs, secondWs) {
@@ -403,8 +431,8 @@ function releaseClient(ws, notifyPartner = true) {
     pairs.delete(ws);
     pairs.delete(partner);
 
-    if (notifyPartner && partner.readyState === WebSocket.OPEN) {
-        partner.send(JSON.stringify({ type: "partner-left" }));
+    if (notifyPartner && isOpen(partner)) {
+        sendJson(partner, { type: "partner-left" });
     }
 }
 
@@ -421,7 +449,7 @@ function banClientByAddress(address) {
         profiles.delete(client);
 
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: "banned" }));
+            sendJson(client, { type: "banned" });
             client.close();
         }
     });
@@ -437,6 +465,12 @@ app.post("/admin/login", (req, res) => {
     const token = createAdminToken();
     adminSessions.set(token, Date.now());
     res.json({ ok: true, token });
+});
+
+app.post("/admin/logout", requireAdmin, (req, res) => {
+    const token = req.headers["x-admin-token"];
+    adminSessions.delete(token);
+    res.json({ ok: true });
 });
 
 app.get("/admin/overview", requireAdmin, (req, res) => {
@@ -494,21 +528,32 @@ app.post("/admin/disconnect", requireAdmin, (req, res) => {
 app.post("/admin/message", requireAdmin, (req, res) => {
     const { clientId, text } = req.body || {};
     const targetClient = Array.from(wss.clients).find((client) => client.clientId === Number(clientId));
+    const messageText = String(text || "").trim();
 
-    if (!targetClient || targetClient.readyState !== WebSocket.OPEN) {
+    if (!targetClient || !isOpen(targetClient)) {
         return res.status(404).json({ ok: false, error: "Nutzer nicht gefunden" });
     }
 
-    if (!text || !String(text).trim()) {
+    if (!messageText) {
         return res.status(400).json({ ok: false, error: "Keine Nachricht angegeben" });
     }
 
-    targetClient.send(JSON.stringify({
-        type: "admin-message",
-        text: String(text).trim()
-    }));
+    const adminMessage = {
+        id: nextAdminMessageId++,
+        createdAt: new Date().toISOString(),
+        clientId: targetClient.clientId,
+        address: targetClient.clientAddress,
+        text: messageText
+    };
 
-    res.json({ ok: true });
+    adminMessages.push(adminMessage);
+
+    sendJson(targetClient, {
+        type: "admin-message",
+        text: messageText
+    });
+
+    res.json({ ok: true, message: adminMessage });
 });
 
 wss.on("connection", (ws, req) => {
@@ -529,6 +574,7 @@ wss.on("connection", (ws, req) => {
         .catch(() => {});
 
     if (bannedAddresses.has(ws.clientAddress)) {
+        sendJson(ws, { type: "banned" });
         ws.close();
         return;
     }
@@ -537,7 +583,12 @@ wss.on("connection", (ws, req) => {
     broadcastUserCount();
 
     ws.on("message", async (msg) => {
-        const data = JSON.parse(msg);
+        const data = parseIncomingMessage(msg);
+
+        if (!data || typeof data.type !== "string") {
+            sendJson(ws, { type: "error", message: "Ungültige Nachricht." });
+            return;
+        }
 
         if (data.type === "start") {
             const profile = normalizeProfile(data);
@@ -555,7 +606,7 @@ wss.on("connection", (ws, req) => {
                 matchClients(ws, partner);
             } else {
                 waitingClients.push(ws);
-                ws.send(JSON.stringify({ type: "no-match" }));
+                sendJson(ws, { type: "no-match" });
             }
         } else if (data.type === "next" || data.type === "stop") {
             releaseClient(ws, true);
@@ -565,6 +616,8 @@ wss.on("connection", (ws, req) => {
             }
         } else if (data.type === "report") {
             const partner = pairs.get(ws);
+            const reason = String(data.reason || "Unangemessenes Verhalten").trim().slice(0, 120);
+            const details = String(data.details || "").trim().slice(0, 1000);
             const report = {
                 id: nextReportId++,
                 createdAt: new Date().toISOString(),
@@ -573,15 +626,13 @@ wss.on("connection", (ws, req) => {
                 targetId: partner?.clientId || null,
                 targetAddress: partner?.clientAddress || null,
                 partner: getPublicProfile(profiles.get(partner)),
-                reason: data.reason || "Unangemessenes Verhalten",
-                details: data.details || ""
+                reason,
+                details
             };
 
             reports.push(report);
 
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: "report-saved" }));
-            }
+            sendJson(ws, { type: "report-saved" });
         } else if (data.type === "block") {
             const partner = pairs.get(ws);
 
@@ -589,15 +640,15 @@ wss.on("connection", (ws, req) => {
                 addMutualBlock(ws.clientAddress, partner.clientAddress);
                 releaseClient(ws, true);
 
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: "blocked" }));
-                }
+                sendJson(ws, { type: "blocked" });
             }
         } else if (["offer", "answer", "candidate"].includes(data.type)) {
             const partner = pairs.get(ws);
-            if (partner && partner.readyState === WebSocket.OPEN) {
-                partner.send(JSON.stringify(data));
+            if (isOpen(partner)) {
+                sendJson(partner, data);
             }
+        } else {
+            sendJson(ws, { type: "error", message: `Unbekannter Nachrichtentyp: ${data.type}` });
         }
     });
 

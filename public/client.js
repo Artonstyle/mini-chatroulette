@@ -261,6 +261,26 @@ function updateMsnVideoLaunchers() {
     }
 }
 
+async function ensureLocalVideoPreview() {
+    if (!localVideo || !localStream) return;
+
+    if (localVideo.srcObject !== localStream) {
+        localVideo.srcObject = localStream;
+    }
+
+    localVideo.muted = true;
+    localVideo.autoplay = true;
+    localVideo.playsInline = true;
+
+    try {
+        await localVideo.play();
+    } catch (_) {}
+
+    if (localVideoWrap) {
+        localVideoWrap.classList.add("has-live-video", "has-media");
+    }
+}
+
 function updatePartnerMeta(partner) {
 }
 
@@ -754,6 +774,7 @@ async function setLocalStream(newStream, stopOld = true) {
 
     localStream = newStream;
     localVideo.srcObject = newStream;
+    await ensureLocalVideoPreview();
     applyMuteToStream(newStream);
     applyVideoStateToStream(newStream);
     currentVideoDeviceId = videoTrack?.getSettings?.().deviceId || currentVideoDeviceId;
@@ -916,6 +937,7 @@ function createPeerConnection() {
     peerConnection.ontrack = (event) => {
         document.body.classList.add("connected");
         remoteVideo.srcObject = event.streams[0];
+        void ensureLocalVideoPreview();
         syncRemoteVideoAspectRatio();
         setRemoteStatus("", "", false, false);
         updateMsnVideoLaunchers();

@@ -165,51 +165,59 @@
     <div class="auth-backdrop"></div>
     <div class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
       <button id="authClose" class="auth-close-btn" type="button" aria-label="Schließen">×</button>
+      <div class="auth-headline">
+        <div class="auth-kicker">Konto</div>
+        <div class="auth-head-copy">Anmelden, registrieren oder später dein Konto verwalten.</div>
+      </div>
       <div class="auth-tabs">
         <button class="auth-tab active" type="button" data-auth-tab="login">Login</button>
         <button class="auth-tab" type="button" data-auth-tab="register">Registrieren</button>
-        <button class="auth-tab" type="button" data-auth-tab="profile">Profil</button>
+        <button class="auth-tab" type="button" data-auth-tab="profile" hidden>Konto</button>
       </div>
 
       <section class="auth-panel auth-panel-login active" data-auth-panel="login">
-        <h2 id="authTitle">Freiwillig anmelden</h2>
-        <p class="auth-hint">Du kannst die App weiter ohne Login nutzen. Mit Login bekommst du Profil, Session und spaeter gespeicherte Nachrichten.</p>
-        <label>E-Mail
+        <h2 id="authTitle">Anmelden</h2>
+        <p class="auth-hint">Du kannst Mini Chatroulette ohne Konto nutzen. Mit Login werden Profil und Nachrichten später einfacher.</p>
+        <label class="auth-field">E-Mail-Adresse
           <input id="loginEmail" type="email" autocomplete="email" placeholder="deine@email.de">
         </label>
-        <label>Passwort
+        <label class="auth-field">Passwort
           <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort">
         </label>
-        <button id="loginSubmit" class="auth-primary-btn" type="button">Einloggen</button>
+        <button id="loginSubmit" class="auth-primary-btn" type="button">Anmelden</button>
+        <button class="auth-text-link" type="button" data-auth-switch="register">Noch kein Konto? Jetzt registrieren</button>
       </section>
 
       <section class="auth-panel auth-panel-register" data-auth-panel="register">
         <h2>Konto erstellen</h2>
-        <label>Benutzername
+        <p class="auth-hint">Lege dir ein Konto an, damit dein Anzeigename und dein Profil später wieder da sind.</p>
+        <label class="auth-field">Benutzername
           <input id="registerUsername" type="text" autocomplete="username" placeholder="z. B. Artonstyle">
         </label>
-        <label>Anzeigename
+        <label class="auth-field">Anzeigename
           <input id="registerDisplayName" type="text" placeholder="z. B. Arton">
         </label>
-        <label>E-Mail
+        <label class="auth-field">E-Mail-Adresse
           <input id="registerEmail" type="email" autocomplete="email" placeholder="deine@email.de">
         </label>
-        <label>Passwort
+        <label class="auth-field">Passwort
           <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Passwort">
         </label>
         <button id="registerSubmit" class="auth-primary-btn" type="button">Registrieren</button>
+        <button class="auth-text-link" type="button" data-auth-switch="login">Du hast schon ein Konto? Jetzt anmelden</button>
       </section>
 
       <section class="auth-panel auth-panel-profile" data-auth-panel="profile">
-        <h2>Dein Profil</h2>
+        <h2>Dein Konto</h2>
+        <p class="auth-hint">Hier kannst du deinen Benutzernamen, Anzeigenamen und Admin-Nachrichten verwalten.</p>
         <div id="authProfileSummary" class="auth-profile-summary">
           <strong>Nicht eingeloggt</strong>
           <span>Melde dich freiwillig an, um dein Profil zu speichern.</span>
         </div>
-        <label>Benutzername
+        <label class="auth-field">Benutzername
           <input id="profileUsername" type="text" placeholder="Benutzername">
         </label>
-        <label>Anzeigename
+        <label class="auth-field">Anzeigename
           <input id="profileDisplayName" type="text" placeholder="Anzeigename">
         </label>
         <div class="auth-profile-actions">

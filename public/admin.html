@@ -320,6 +320,18 @@
       dashboard.classList.toggle("show", loggedIn);
     }
 
+    function stopRefreshTimer() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+    }
+
+    function startRefreshTimer() {
+      stopRefreshTimer();
+      refreshTimer = setInterval(loadOverview, 5000);
+    }
+
     async function api(path, options = {}) {
       const token = getToken();
       const response = await fetch(`${API_BASE}${path}`, {
@@ -422,9 +434,31 @@
         localStorage.setItem(tokenKey, data.token);
         setLoggedIn(true);
         await loadOverview();
-        refreshTimer = setInterval(loadOverview, 5000);
+        startRefreshTimer();
       } catch (error) {
         loginError.textContent = error.message;
+      }
+    }
+
+    async function logout() {
+      const token = getToken();
+
+      try {
+        if (token) {
+          await fetch(`${API_BASE}/admin/logout`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-token": token
+            }
+          });
+        }
+      } catch (_) {
+      } finally {
+        localStorage.removeItem(tokenKey);
+        stopRefreshTimer();
+        setLoggedIn(false);
+        loginError.textContent = "";
       }
     }
 
@@ -469,18 +503,15 @@
 
     loginBtn.addEventListener("click", login);
     refreshBtn.addEventListener("click", loadOverview);
-    logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem(tokenKey);
-      if (refreshTimer) clearInterval(refreshTimer);
-      setLoggedIn(false);
-    });
+    logoutBtn.addEventListener("click", logout);
 
     if (getToken()) {
       setLoggedIn(true);
       loadOverview().then(() => {
-        refreshTimer = setInterval(loadOverview, 5000);
+        startRefreshTimer();
       }).catch(() => {
         localStorage.removeItem(tokenKey);
+        stopRefreshTimer();
         setLoggedIn(false);
       });
     }

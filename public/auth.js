@@ -15,6 +15,8 @@
   const authToggleMobile = document.getElementById("authToggleMobile");
   const authTabs = Array.from(document.querySelectorAll(".auth-tab"));
   const authPanels = Array.from(document.querySelectorAll("[data-auth-panel]"));
+  const profileTabButton = authTabs.find((button) => button.dataset.authTab === "profile");
+  const authSwitchButtons = Array.from(document.querySelectorAll("[data-auth-switch]"));
 
   const loginEmail = document.getElementById("loginEmail");
   const loginPassword = document.getElementById("loginPassword");
@@ -60,9 +62,14 @@
   }
 
   function switchTab(tab) {
+    if (tab === "profile" && !currentSession?.user) {
+      tab = "login";
+    }
+
     activeTab = tab;
     authTabs.forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
     authPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.authPanel === tab));
+    setStatus("");
   }
 
   function openModal(tab = activeTab) {
@@ -81,19 +88,25 @@
   function updateAuthButtons() {
     const loggedIn = Boolean(currentSession?.user);
     const label = loggedIn
-      ? (currentProfile?.display_name || currentProfile?.username || "Profil")
+      ? (currentProfile?.display_name || currentProfile?.username || "Konto")
       : "Anmelden";
 
     if (authToggleDesktop) authToggleDesktop.textContent = label;
     if (authToggleMobile) authToggleMobile.classList.toggle("logged-in", loggedIn);
     body.classList.toggle("auth-logged-in", loggedIn);
+
+    if (profileTabButton) profileTabButton.hidden = !loggedIn;
+
+    if (!loggedIn && activeTab === "profile") {
+      activeTab = "login";
+    }
   }
 
   function updateProfileSummary() {
     if (!authProfileSummary) return;
 
     if (!currentSession?.user) {
-      authProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich freiwillig an, um dein Profil zu speichern.</span>";
+      authProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>";
       if (authAdminLink) authAdminLink.hidden = true;
       return;
     }
@@ -276,7 +289,7 @@
       return;
     }
 
-    setStatus("Login läuft...");
+    setStatus("Anmeldung läuft...");
     const { data, error } = await client.auth.signInWithPassword({ email, password });
 
     if (error) {
@@ -285,7 +298,7 @@
     }
 
     currentSession = data.session;
-    setStatus("Eingeloggt.", "success");
+    setStatus("Erfolgreich angemeldet.", "success");
     switchTab("profile");
     await ensureProfile();
     await loadProfile();
@@ -352,7 +365,7 @@
     if (currentSession?.user) {
       try {
         await ensureProfile();
-      } catch {}
+      } catch (_) {}
     }
 
     await loadProfile();
@@ -360,6 +373,10 @@
 
   authTabs.forEach((button) => {
     button.addEventListener("click", () => switchTab(button.dataset.authTab));
+  });
+
+  authSwitchButtons.forEach((button) => {
+    button.addEventListener("click", () => switchTab(button.dataset.authSwitch));
   });
 
   authToggleDesktop?.addEventListener("click", () => openModal(currentSession?.user ? "profile" : "login"));
