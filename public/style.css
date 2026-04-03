@@ -3902,3 +3902,50 @@ body.bg-4 .btn-send {
     grid-template-columns: 1fr;
   }
 }
+
+/* Final desktop safety overrides for local preview */
+body.desktop-layout-1 .local-video-wrap,
+body.desktop-layout-3 .local-video-wrap {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+body.desktop-layout-1 .local-video-wrap::before,
+body.desktop-layout-3 .local-video-wrap::before {
+  display: none !important;
+}
+
+body.desktop-layout-1 .local-video-wrap.has-media #localVideo,
+body.desktop-layout-3 .local-video-wrap.has-media #localVideo {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  z-index: 1 !important;
+}
+
+body.desktop-layout-1 .local-video-controls,
+body.desktop-layout-3 .local-video-controls {
+  z-index: 6 !important;
+}
+
+body.desktop-layout-1.chatting .local-video-wrap .action-row,
+body.desktop-layout-3.chatting .local-video-wrap .action-row {
+  display: none !important;
+}
+
+body.desktop-layout-1.chatting.filter-open .local-video-wrap .action-row,
+body.desktop-layout-3.chatting.filter-open .local-video-wrap .action-row {
+  display: block !important;
+  position: fixed !important;
+  top: 72px !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 292px !important;
+  z-index: 75 !important;
+}
