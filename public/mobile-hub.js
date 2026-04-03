@@ -2,6 +2,7 @@
   const supabaseGlobal = window.supabase;
   const supabaseUrl = window.MINI_CHATROULETTE_SUPABASE_URL;
   const supabaseAnonKey = window.MINI_CHATROULETTE_SUPABASE_ANON_KEY;
+  const STATUS_MEDIA_BUCKET = "status-media";
 
   if (!supabaseGlobal || !supabaseUrl || !supabaseAnonKey) return;
 
@@ -13,6 +14,9 @@
 
   const statusComposer = document.getElementById("statusComposer");
   const statusComposerToggle = document.getElementById("statusComposerToggle");
+  const statusMediaFile = document.getElementById("statusMediaFile");
+  const statusMediaPick = document.getElementById("statusMediaPick");
+  const statusComposerSelection = document.getElementById("statusComposerSelection");
   const statusTextInput = document.getElementById("statusTextInput");
   const statusRail = document.getElementById("statusRail");
   const statusList = document.getElementById("statusList");
@@ -45,6 +49,7 @@
   let statusItems = [];
   let chatPreviewMap = new Map();
   let activeContactId = null;
+  let selectedStatusFile = null;
 
   function escapeHtml(text) {
     return String(text || "")
@@ -75,6 +80,31 @@
     const threadOpen = Boolean(activeContactId);
     if (directChatListView) directChatListView.hidden = threadOpen;
     if (directChatThreadView) directChatThreadView.hidden = !threadOpen;
+  }
+
+  function resetStatusSelection() {
+    selectedStatusFile = null;
+    if (statusMediaFile) statusMediaFile.value = "";
+    if (statusComposerSelection) {
+      statusComposerSelection.hidden = true;
+      statusComposerSelection.textContent = "";
+    }
+  }
+
+  function updateStatusSelection(file) {
+    selectedStatusFile = file || null;
+    if (!statusComposerSelection) return;
+
+    if (!file) {
+      statusComposerSelection.hidden = true;
+      statusComposerSelection.textContent = "";
+      return;
+    }
+
+    const typeLabel = file.type.startsWith("video/") ? "Video" : "Bild";
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    statusComposerSelection.hidden = false;
+    statusComposerSelection.textContent = `${typeLabel} ausgewählt: ${file.name} (${sizeMb} MB)`;
   }
 
   function formatDate(value) {
@@ -170,6 +200,30 @@
     }
 
     statusViewer.hidden = false;
+  }
+
+  async function uploadStatusMedia(file) {
+    const extension = (file.name.split(".").pop() || "bin").toLowerCase();
+    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
+    const objectPath = `${currentSession.user.id}/${safeName}`;
+
+    const { error: uploadError } = await client.storage
+      .from(STATUS_MEDIA_BUCKET)
+      .upload(objectPath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || undefined
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = client.storage.from(STATUS_MEDIA_BUCKET).getPublicUrl(objectPath);
+    return {
+      url: data.publicUrl,
+      type: file.type.startsWith("video/") ? "video" : "image"
+    };
   }
 
   async function loadProfiles() {
@@ -334,7 +388,7 @@
     }
 
     directMessageList.innerHTML = data.map((message) => `
-      <article class="mobile-direct-message ${message.sender_id === userId ? "me" : ""}">
+      <article class="mobile-direct-message ${message.sender_id === currentSession.user.id ? "me" : ""}">
         <div>${escapeHtml(message.message)}</div>
         <span class="meta">${formatDate(message.created_at)}</span>
       </article>
@@ -400,7 +454,7 @@
         : "";
       return `
         <button class="mobile-status-card" type="button" data-status-id="${item.id}">
-          <span class="mobile-status-thumb has-media" ${thumb}>${item.media_url ? "" : escapeHtml(getInitials(owner))}</span>
+          <span class="mobile-status-thumb ${item.media_url ? "has-media" : ""}" ${thumb}>${item.media_url ? "" : escapeHtml(getInitials(owner))}</span>
           <span class="mobile-status-name">${escapeHtml(getDisplayName(owner))}</span>
         </button>
       `;
@@ -408,7 +462,15 @@
 
     statusRail.innerHTML = ownCard + cards;
     document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
-      if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
+      if (!currentSession?.user) {
+        statusList.innerHTML = requireLoginMessage("Melde dich an, um einen Status hochzuladen.");
+        return;
+      }
+      if (statusMediaFile) {
+        statusMediaFile.click();
+      } else if (statusComposer) {
+        statusComposer.hidden = !statusComposer.hidden;
+      }
     });
     statusRail.querySelectorAll("[data-status-id]").forEach((button) => {
       button.addEventListener("click", () => openStatusViewer(button.dataset.statusId));
@@ -468,15 +530,7 @@
 
     if (error) {
       statusItems = [];
-      statusRail.innerHTML = `
-        <button id="statusComposerToggle" class="mobile-status-card mobile-status-card-own" type="button">
-          <span class="mobile-status-thumb">+</span>
-          <span class="mobile-status-name">Status hinzufügen</span>
-        </button>
-      `;
-      document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
-        if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
-      });
+      renderStatusRail();
       statusList.innerHTML = requireLoginMessage("Status konnte noch nicht geladen werden. Führe zuerst die neue SQL-Datei in Supabase aus.");
       return;
     }
@@ -490,15 +544,29 @@
     event.preventDefault();
 
     if (!currentSession?.user) return;
-    const text = statusTextInput?.value?.trim() || null;
 
-    if (!text) return;
+    const text = statusTextInput?.value?.trim() || null;
+    let mediaUrl = null;
+    let mediaType = null;
+
+    if (!text && !selectedStatusFile) return;
+
+    if (selectedStatusFile) {
+      try {
+        const upload = await uploadStatusMedia(selectedStatusFile);
+        mediaUrl = upload.url;
+        mediaType = upload.type;
+      } catch (_) {
+        statusList.innerHTML = requireLoginMessage("Medien konnten nicht hochgeladen werden. Prüfe den Bucket 'status-media' in Supabase.");
+        return;
+      }
+    }
 
     const { error } = await client.from("status_posts").insert({
       user_id: currentSession.user.id,
       text_content: text,
-      media_url: null,
-      media_type: null
+      media_url: mediaUrl,
+      media_type: mediaType
     });
 
     if (error) {
@@ -508,6 +576,7 @@
 
     if (statusTextInput) statusTextInput.value = "";
     if (statusComposer) statusComposer.hidden = true;
+    resetStatusSelection();
     await loadStatuses();
   }
 
@@ -578,10 +647,9 @@
       activeContactId = null;
       updateChatView();
     }
-    if (tab !== "status") {
-      closeStatusViewer();
-      if (statusComposer) statusComposer.hidden = true;
-    }
+    closeStatusViewer();
+    if (statusComposer) statusComposer.hidden = true;
+    resetStatusSelection();
     if (tab === "status" || tab === "calls" || tab === "chat") {
       void refreshAll();
     }
@@ -591,7 +659,15 @@
   directMessageForm?.addEventListener("submit", sendDirectMessage);
   statusComposer?.addEventListener("submit", publishStatus);
   statusComposerToggle?.addEventListener("click", () => {
-    if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
+    if (statusMediaFile) {
+      statusMediaFile.click();
+    }
+  });
+  statusMediaPick?.addEventListener("click", () => statusMediaFile?.click());
+  statusMediaFile?.addEventListener("change", () => {
+    const file = statusMediaFile.files?.[0] || null;
+    updateStatusSelection(file);
+    if (statusComposer) statusComposer.hidden = false;
   });
   statusViewerClose?.addEventListener("click", closeStatusViewer);
   directChatBack?.addEventListener("click", async () => {
@@ -606,6 +682,7 @@
     activeContactId = null;
     updateChatView();
     closeStatusViewer();
+    resetStatusSelection();
     await refreshAll();
   });
 

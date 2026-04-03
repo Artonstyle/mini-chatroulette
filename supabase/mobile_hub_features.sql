@@ -131,3 +131,58 @@ with check (caller_id = auth.uid() or recipient_id = auth.uid() or public.is_adm
 comment on table public.direct_messages is 'Direktnachrichten zwischen registrierten Nutzern';
 comment on table public.status_posts is '24h Status-Posts fuer Mobile Hub';
 comment on table public.call_logs is 'Anrufhistorie fuer Sprach- und Videoanrufe';
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'status-media',
+  'status-media',
+  true,
+  52428800,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/ogg']
+)
+on conflict (id) do update
+set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "status_media_public_read" on storage.objects;
+create policy "status_media_public_read"
+on storage.objects
+for select
+to public
+using (bucket_id = 'status-media');
+
+drop policy if exists "status_media_auth_upload_own" on storage.objects;
+create policy "status_media_auth_upload_own"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'status-media'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "status_media_auth_update_own" on storage.objects;
+create policy "status_media_auth_update_own"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'status-media'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+)
+with check (
+  bucket_id = 'status-media'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+);
+
+drop policy if exists "status_media_auth_delete_own" on storage.objects;
+create policy "status_media_auth_delete_own"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'status-media'
+  and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+);

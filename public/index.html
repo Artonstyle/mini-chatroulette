@@ -222,8 +222,11 @@
           </section>
 
           <form id="statusComposer" class="mobile-status-composer" hidden>
+            <input id="statusMediaFile" type="file" accept="image/*,video/*" hidden>
+            <button id="statusMediaPick" class="mobile-status-media-btn" type="button">Bild oder Video auswählen</button>
+            <div id="statusComposerSelection" class="mobile-status-selection" hidden></div>
             <label class="mobile-field">
-              <span>Status Text</span>
+              <span>Text zum Status</span>
               <textarea id="statusTextInput" rows="3" placeholder="Was gibt es Neues?"></textarea>
             </label>
             <button id="statusPublishBtn" class="mobile-primary-btn" type="submit">Status posten</button>
