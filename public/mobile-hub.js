@@ -10,11 +10,22 @@
   const body = document.body;
   const mobileHub = document.getElementById("mobileHub");
   const panes = Array.from(document.querySelectorAll("[data-mobile-pane]"));
+
   const statusComposer = document.getElementById("statusComposer");
+  const statusComposerToggle = document.getElementById("statusComposerToggle");
   const statusTextInput = document.getElementById("statusTextInput");
-  const statusMediaUrlInput = document.getElementById("statusMediaUrlInput");
+  const statusRail = document.getElementById("statusRail");
   const statusList = document.getElementById("statusList");
+  const statusViewer = document.getElementById("statusViewer");
+  const statusViewerClose = document.getElementById("statusViewerClose");
+  const statusViewerName = document.getElementById("statusViewerName");
+  const statusViewerMeta = document.getElementById("statusViewerMeta");
+  const statusViewerImage = document.getElementById("statusViewerImage");
+  const statusViewerVideo = document.getElementById("statusViewerVideo");
+  const statusViewerText = document.getElementById("statusViewerText");
+
   const callLogList = document.getElementById("callLogList");
+
   const directChatSearch = document.getElementById("directChatSearch");
   const directChatList = document.getElementById("directChatList");
   const directChatListView = document.getElementById("directChatListView");
@@ -31,6 +42,7 @@
   let currentSession = null;
   let profileMap = new Map();
   let profiles = [];
+  let statusItems = [];
   let chatPreviewMap = new Map();
   let activeContactId = null;
 
@@ -52,6 +64,7 @@
   function setActivePane(tabName) {
     const openPane = tabName === "status" || tabName === "calls" || tabName === "chat";
     setHubOpen(openPane);
+    body.classList.toggle("mobile-status-mode", tabName === "status");
 
     panes.forEach((pane) => {
       pane.classList.toggle("active", pane.dataset.mobilePane === tabName && openPane);
@@ -78,6 +91,14 @@
       : date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
   }
 
+  function formatStatusAge(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    const diffMs = Date.now() - date.getTime();
+    const diffHours = Math.max(1, Math.floor(diffMs / 3600000));
+    return `vor ${diffHours} Std.`;
+  }
+
   function getDisplayName(profile) {
     if (!profile) return "Unbekannt";
     return profile.display_name || profile.username || profile.phone_number || "Unbekannt";
@@ -100,6 +121,55 @@
 
   function requireLoginMessage(text) {
     return `<div class="mobile-empty-state">${escapeHtml(text)}</div>`;
+  }
+
+  function closeStatusViewer() {
+    if (!statusViewer) return;
+    statusViewer.hidden = true;
+    if (statusViewerVideo) {
+      statusViewerVideo.pause();
+      statusViewerVideo.removeAttribute("src");
+      statusViewerVideo.load();
+    }
+  }
+
+  function openStatusViewer(statusId) {
+    const item = statusItems.find((entry) => entry.id === statusId);
+    if (!item || !statusViewer) return;
+
+    const owner = profileMap.get(item.user_id);
+    if (statusViewerName) statusViewerName.textContent = getDisplayName(owner);
+    if (statusViewerMeta) statusViewerMeta.textContent = formatStatusAge(item.created_at);
+
+    if (statusViewerImage) {
+      statusViewerImage.hidden = true;
+      statusViewerImage.removeAttribute("src");
+    }
+    if (statusViewerVideo) {
+      statusViewerVideo.hidden = true;
+      statusViewerVideo.pause();
+      statusViewerVideo.removeAttribute("src");
+      statusViewerVideo.load();
+    }
+    if (statusViewerText) {
+      statusViewerText.hidden = true;
+      statusViewerText.textContent = "";
+    }
+
+    if (item.media_url) {
+      if (item.media_type === "video" && statusViewerVideo) {
+        statusViewerVideo.src = item.media_url;
+        statusViewerVideo.hidden = false;
+      } else if (statusViewerImage) {
+        statusViewerImage.src = item.media_url;
+        statusViewerImage.hidden = false;
+      }
+    } else if (statusViewerText) {
+      statusViewerText.textContent = item.text_content || "Kein Inhalt";
+      statusViewerText.hidden = false;
+    }
+
+    statusViewer.hidden = false;
   }
 
   async function loadProfiles() {
@@ -298,11 +368,94 @@
     await loadDirectMessages();
   }
 
-  async function loadStatuses() {
+  function renderStatusRail() {
+    if (!statusRail) return;
+
+    const ownCard = `
+      <button id="statusComposerToggle" class="mobile-status-card mobile-status-card-own" type="button">
+        <span class="mobile-status-thumb">+</span>
+        <span class="mobile-status-name">Status hinzufügen</span>
+      </button>
+    `;
+
+    if (!currentSession?.user) {
+      statusRail.innerHTML = ownCard;
+      document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
+        if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
+      });
+      return;
+    }
+
+    const seenUsers = new Set();
+    const items = statusItems.filter((item) => {
+      if (seenUsers.has(item.user_id)) return false;
+      seenUsers.add(item.user_id);
+      return true;
+    });
+
+    const cards = items.map((item) => {
+      const owner = profileMap.get(item.user_id);
+      const thumb = item.media_url
+        ? `style="background-image:url('${escapeHtml(item.media_url)}')"`
+        : "";
+      return `
+        <button class="mobile-status-card" type="button" data-status-id="${item.id}">
+          <span class="mobile-status-thumb has-media" ${thumb}>${item.media_url ? "" : escapeHtml(getInitials(owner))}</span>
+          <span class="mobile-status-name">${escapeHtml(getDisplayName(owner))}</span>
+        </button>
+      `;
+    }).join("");
+
+    statusRail.innerHTML = ownCard + cards;
+    document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
+      if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
+    });
+    statusRail.querySelectorAll("[data-status-id]").forEach((button) => {
+      button.addEventListener("click", () => openStatusViewer(button.dataset.statusId));
+    });
+  }
+
+  function renderStatusFeed() {
     if (!statusList) return;
 
     if (!currentSession?.user) {
       statusList.innerHTML = requireLoginMessage("Melde dich an, um Statusmeldungen zu sehen.");
+      return;
+    }
+
+    if (!statusItems.length) {
+      statusList.innerHTML = '<div class="mobile-empty-state">Noch keine Statusmeldungen.</div>';
+      return;
+    }
+
+    statusList.innerHTML = statusItems.map((item) => {
+      const owner = profileMap.get(item.user_id);
+      return `
+        <button class="mobile-status-feed-item" type="button" data-status-id="${item.id}">
+          <span class="mobile-status-feed-avatar">${escapeHtml(getInitials(owner))}</span>
+          <span class="mobile-status-feed-copy">
+            <span class="mobile-status-feed-top">
+              <strong>${escapeHtml(getDisplayName(owner))}</strong>
+              <time>${escapeHtml(formatStatusAge(item.created_at))}</time>
+            </span>
+            <span class="mobile-status-feed-bottom">${escapeHtml(item.text_content || (item.media_type === "video" ? "Video" : "Foto"))}</span>
+          </span>
+        </button>
+      `;
+    }).join("");
+
+    statusList.querySelectorAll("[data-status-id]").forEach((button) => {
+      button.addEventListener("click", () => openStatusViewer(button.dataset.statusId));
+    });
+  }
+
+  async function loadStatuses() {
+    if (!statusList || !statusRail) return;
+
+    if (!currentSession?.user) {
+      statusItems = [];
+      renderStatusRail();
+      renderStatusFeed();
       return;
     }
 
@@ -314,34 +467,23 @@
       .limit(50);
 
     if (error) {
+      statusItems = [];
+      statusRail.innerHTML = `
+        <button id="statusComposerToggle" class="mobile-status-card mobile-status-card-own" type="button">
+          <span class="mobile-status-thumb">+</span>
+          <span class="mobile-status-name">Status hinzufügen</span>
+        </button>
+      `;
+      document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
+        if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
+      });
       statusList.innerHTML = requireLoginMessage("Status konnte noch nicht geladen werden. Führe zuerst die neue SQL-Datei in Supabase aus.");
       return;
     }
 
-    if (!data?.length) {
-      statusList.innerHTML = '<div class="mobile-empty-state">Noch keine Statusmeldungen.</div>';
-      return;
-    }
-
-    statusList.innerHTML = data.map((item) => {
-      const owner = profileMap.get(item.user_id);
-      const media = item.media_url
-        ? `<div class="mobile-status-media">${item.media_type === "video"
-            ? `<video src="${escapeHtml(item.media_url)}" controls playsinline></video>`
-            : `<img src="${escapeHtml(item.media_url)}" alt="Status von ${escapeHtml(getDisplayName(owner))}">`
-          }</div>`
-        : "";
-
-      return `
-        <article class="mobile-status-item">
-          <strong>${escapeHtml(getDisplayName(owner))}</strong>
-          <span>${escapeHtml(getProfileMeta(owner))}</span>
-          ${item.text_content ? `<span>${escapeHtml(item.text_content)}</span>` : ""}
-          ${media}
-          <span>Ablauf: ${formatDate(item.expires_at)}</span>
-        </article>
-      `;
-    }).join("");
+    statusItems = data || [];
+    renderStatusRail();
+    renderStatusFeed();
   }
 
   async function publishStatus(event) {
@@ -349,18 +491,14 @@
 
     if (!currentSession?.user) return;
     const text = statusTextInput?.value?.trim() || null;
-    const mediaUrl = statusMediaUrlInput?.value?.trim() || null;
-    const mediaType = mediaUrl
-      ? (/\.(mp4|webm|ogg)(\?|$)/i.test(mediaUrl) ? "video" : "image")
-      : null;
 
-    if (!text && !mediaUrl) return;
+    if (!text) return;
 
     const { error } = await client.from("status_posts").insert({
       user_id: currentSession.user.id,
       text_content: text,
-      media_url: mediaUrl,
-      media_type: mediaType
+      media_url: null,
+      media_type: null
     });
 
     if (error) {
@@ -369,7 +507,7 @@
     }
 
     if (statusTextInput) statusTextInput.value = "";
-    if (statusMediaUrlInput) statusMediaUrlInput.value = "";
+    if (statusComposer) statusComposer.hidden = true;
     await loadStatuses();
   }
 
@@ -440,6 +578,10 @@
       activeContactId = null;
       updateChatView();
     }
+    if (tab !== "status") {
+      closeStatusViewer();
+      if (statusComposer) statusComposer.hidden = true;
+    }
     if (tab === "status" || tab === "calls" || tab === "chat") {
       void refreshAll();
     }
@@ -448,6 +590,10 @@
   directChatSearch?.addEventListener("input", renderChatContacts);
   directMessageForm?.addEventListener("submit", sendDirectMessage);
   statusComposer?.addEventListener("submit", publishStatus);
+  statusComposerToggle?.addEventListener("click", () => {
+    if (statusComposer) statusComposer.hidden = !statusComposer.hidden;
+  });
+  statusViewerClose?.addEventListener("click", closeStatusViewer);
   directChatBack?.addEventListener("click", async () => {
     activeContactId = null;
     updateChatView();
@@ -459,6 +605,7 @@
     currentSession = session;
     activeContactId = null;
     updateChatView();
+    closeStatusViewer();
     await refreshAll();
   });
 

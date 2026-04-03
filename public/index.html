@@ -198,26 +198,66 @@
 
   <section id="mobileHub" class="mobile-hub" hidden>
     <section class="mobile-pane" data-mobile-pane="status">
-      <div class="mobile-pane-head">
-        <div>
-          <strong>Status</strong>
-          <span>24-Stunden-Status fuer deine Kontakte</span>
+      <div class="mobile-status-shell">
+        <div class="mobile-status-topbar">
+          <strong>Aktuelles</strong>
+          <div class="mobile-status-top-actions">
+            <button class="mobile-status-icon-btn" type="button" aria-label="Suchen">⌕</button>
+            <button class="mobile-status-icon-btn" type="button" aria-label="Mehr">⋮</button>
+          </div>
         </div>
-      </div>
-      <div class="mobile-pane-scroll">
-        <form id="statusComposer" class="mobile-card mobile-form-card">
-          <label class="mobile-field">
-            <span>Status Text</span>
-            <textarea id="statusTextInput" rows="3" placeholder="Was gibt es Neues?"></textarea>
-          </label>
-          <label class="mobile-field">
-            <span>Bild- oder Video-URL</span>
-            <input id="statusMediaUrlInput" type="url" placeholder="https://...">
-          </label>
-          <button id="statusPublishBtn" class="mobile-primary-btn" type="submit">Status posten</button>
-        </form>
-        <div id="statusList" class="mobile-list">
-          <div class="mobile-empty-state">Noch keine Statusmeldungen.</div>
+
+        <div class="mobile-status-content">
+          <section class="mobile-status-section">
+            <div class="mobile-status-section-head">
+              <strong>Status</strong>
+              <span>Stories von Leuten aus deinem Chat</span>
+            </div>
+            <div id="statusRail" class="mobile-status-rail">
+              <button id="statusComposerToggle" class="mobile-status-card mobile-status-card-own" type="button">
+                <span class="mobile-status-thumb">+</span>
+                <span class="mobile-status-name">Status hinzufügen</span>
+              </button>
+            </div>
+          </section>
+
+          <form id="statusComposer" class="mobile-status-composer" hidden>
+            <label class="mobile-field">
+              <span>Status Text</span>
+              <textarea id="statusTextInput" rows="3" placeholder="Was gibt es Neues?"></textarea>
+            </label>
+            <button id="statusPublishBtn" class="mobile-primary-btn" type="submit">Status posten</button>
+          </form>
+
+          <section class="mobile-status-section">
+            <div class="mobile-status-section-head">
+              <strong>Neueste Updates</strong>
+              <span>Alle aktiven Status für 24 Stunden</span>
+            </div>
+            <div id="statusList" class="mobile-status-feed">
+              <div class="mobile-empty-state">Noch keine Statusmeldungen.</div>
+            </div>
+          </section>
+        </div>
+
+        <div id="statusViewer" class="mobile-status-viewer" hidden>
+          <div class="mobile-status-viewer-top">
+            <button id="statusViewerClose" class="mobile-status-viewer-back" type="button" aria-label="Schließen">←</button>
+            <div class="mobile-status-viewer-head">
+              <strong id="statusViewerName">Status</strong>
+              <span id="statusViewerMeta">Gerade eben</span>
+            </div>
+            <button class="mobile-status-viewer-more" type="button" aria-label="Mehr">⋮</button>
+          </div>
+          <div class="mobile-status-viewer-media-wrap">
+            <img id="statusViewerImage" class="mobile-status-viewer-media" alt="Status" hidden>
+            <video id="statusViewerVideo" class="mobile-status-viewer-media" playsinline controls hidden></video>
+            <div id="statusViewerText" class="mobile-status-viewer-text" hidden></div>
+          </div>
+          <div class="mobile-status-viewer-bottom">
+            <input id="statusViewerReply" type="text" placeholder="Antworten">
+            <button class="mobile-status-viewer-heart" type="button" aria-label="Gefällt mir">♡</button>
+          </div>
         </div>
       </div>
     </section>
@@ -399,6 +439,7 @@
       function syncMobileHub(tabName) {
         const shouldOpenHub = tabName === "status" || tabName === "calls" || tabName === "chat";
         body.classList.toggle("mobile-pane-open", shouldOpenHub);
+        body.classList.toggle("mobile-status-mode", tabName === "status");
 
         if (mobileHub) {
           mobileHub.hidden = !shouldOpenHub;
