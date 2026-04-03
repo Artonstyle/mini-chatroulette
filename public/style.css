@@ -3667,6 +3667,7 @@ body.bg-4 .btn-send {
   }
 
   .mobile-status-editor-media-wrap {
+    position: relative;
     flex: 1;
     display: flex;
     align-items: center;
@@ -3685,6 +3686,106 @@ body.bg-4 .btn-send {
 
   .mobile-status-editor-media[hidden] {
     display: none !important;
+  }
+
+  .mobile-status-draw-canvas {
+    position: absolute;
+    inset: 10px 12px 0;
+    width: calc(100% - 24px);
+    height: calc(100% - 10px);
+    border-radius: 22px;
+    touch-action: none;
+  }
+
+  .mobile-status-draw-canvas[hidden] {
+    display: none !important;
+  }
+
+  .mobile-status-text-overlay {
+    position: absolute;
+    left: 50%;
+    top: 28%;
+    transform: translate(-50%, -50%);
+    max-width: 78%;
+    padding: 8px 14px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-align: center;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .mobile-status-text-overlay[hidden] {
+    display: none !important;
+  }
+
+  .mobile-status-tool-panel {
+    padding: 8px 12px 0;
+    background: rgba(0,0,0,0.92);
+  }
+
+  .mobile-status-tool-panel[hidden],
+  .mobile-status-tool-group[hidden] {
+    display: none !important;
+  }
+
+  .mobile-status-tool-group {
+    display: grid;
+    gap: 10px;
+  }
+
+  .mobile-status-tool-group input {
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    background: #1f262a;
+    color: #fff;
+    padding: 12px 14px;
+    font: inherit;
+    box-sizing: border-box;
+  }
+
+  .mobile-status-tool-group button {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .mobile-status-color-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .mobile-status-color {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    background: var(--draw-color);
+    padding: 0;
+  }
+
+  .mobile-status-color.active {
+    transform: scale(1.14);
+    border-color: #fff;
+  }
+
+  .mobile-status-draw-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .mobile-status-draw-actions button {
+    flex: 1;
   }
 
   .mobile-status-editor-filter {

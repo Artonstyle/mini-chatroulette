@@ -266,6 +266,27 @@
           <div class="mobile-status-editor-media-wrap">
             <img id="statusEditorImage" class="mobile-status-editor-media" alt="Status-Vorschau" hidden>
             <video id="statusEditorVideo" class="mobile-status-editor-media" playsinline controls hidden></video>
+            <canvas id="statusDrawCanvas" class="mobile-status-draw-canvas" hidden></canvas>
+            <div id="statusTextOverlay" class="mobile-status-text-overlay" hidden></div>
+          </div>
+          <div id="statusEditorToolPanel" class="mobile-status-tool-panel" hidden>
+            <div id="statusTextTool" class="mobile-status-tool-group" hidden>
+              <input id="statusTextToolInput" type="text" placeholder="Text auf dem Bild">
+              <button id="statusTextToolApply" type="button">Text setzen</button>
+            </div>
+            <div id="statusDrawTool" class="mobile-status-tool-group" hidden>
+              <div class="mobile-status-color-row">
+                <button class="mobile-status-color active" type="button" data-draw-color="#ffffff" style="--draw-color:#ffffff"></button>
+                <button class="mobile-status-color" type="button" data-draw-color="#31dd76" style="--draw-color:#31dd76"></button>
+                <button class="mobile-status-color" type="button" data-draw-color="#4aa8ff" style="--draw-color:#4aa8ff"></button>
+                <button class="mobile-status-color" type="button" data-draw-color="#ffb020" style="--draw-color:#ffb020"></button>
+                <button class="mobile-status-color" type="button" data-draw-color="#ff5e7a" style="--draw-color:#ff5e7a"></button>
+              </div>
+              <div class="mobile-status-draw-actions">
+                <button id="statusDrawClear" type="button">Löschen</button>
+                <button id="statusDrawDone" type="button">Fertig</button>
+              </div>
+            </div>
           </div>
           <div class="mobile-status-editor-filter">Filter</div>
           <div class="mobile-status-editor-bottom">

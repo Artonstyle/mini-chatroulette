@@ -25,6 +25,16 @@
   const statusEditorClose = document.getElementById("statusEditorClose");
   const statusEditorImage = document.getElementById("statusEditorImage");
   const statusEditorVideo = document.getElementById("statusEditorVideo");
+  const statusDrawCanvas = document.getElementById("statusDrawCanvas");
+  const statusTextOverlay = document.getElementById("statusTextOverlay");
+  const statusEditorToolPanel = document.getElementById("statusEditorToolPanel");
+  const statusTextTool = document.getElementById("statusTextTool");
+  const statusTextToolInput = document.getElementById("statusTextToolInput");
+  const statusTextToolApply = document.getElementById("statusTextToolApply");
+  const statusDrawTool = document.getElementById("statusDrawTool");
+  const statusDrawClear = document.getElementById("statusDrawClear");
+  const statusDrawDone = document.getElementById("statusDrawDone");
+  const statusDrawColors = Array.from(document.querySelectorAll(".mobile-status-color"));
   const statusEditorCaption = document.getElementById("statusEditorCaption");
   const statusPublishBtn = document.getElementById("statusPublishBtn");
   const statusEditorTools = Array.from(document.querySelectorAll(".mobile-status-editor-tool"));
@@ -52,6 +62,12 @@
   let activeContactId = null;
   let selectedStatusFile = null;
   let selectedStatusPreviewUrl = null;
+  let drawEnabled = false;
+  let drawColor = "#ffffff";
+  let isDrawing = false;
+  let textOverlayState = { text: "", x: 50, y: 28 };
+  let textDragging = false;
+  let textDragOffset = { x: 0, y: 0 };
 
   function getStatusMediaInput() {
     return document.getElementById("statusMediaFileInline");
@@ -88,7 +104,99 @@
     if (directChatThreadView) directChatThreadView.hidden = !threadOpen;
   }
 
+  function syncTextOverlay() {
+    if (!statusTextOverlay) return;
+    if (!textOverlayState.text) {
+      statusTextOverlay.hidden = true;
+      statusTextOverlay.textContent = "";
+      return;
+    }
+    statusTextOverlay.hidden = false;
+    statusTextOverlay.textContent = textOverlayState.text;
+    statusTextOverlay.style.left = `${textOverlayState.x}%`;
+    statusTextOverlay.style.top = `${textOverlayState.y}%`;
+  }
+
+  function hideEditorTools() {
+    if (statusEditorToolPanel) statusEditorToolPanel.hidden = true;
+    if (statusTextTool) statusTextTool.hidden = true;
+    if (statusDrawTool) statusDrawTool.hidden = true;
+    drawEnabled = false;
+    if (statusDrawCanvas) statusDrawCanvas.style.pointerEvents = "none";
+  }
+
+  function resizeDrawCanvas() {
+    if (!statusDrawCanvas || !statusEditorImage || statusEditorImage.hidden) return;
+    const rect = statusEditorImage.getBoundingClientRect();
+    statusDrawCanvas.width = Math.max(1, Math.round(rect.width));
+    statusDrawCanvas.height = Math.max(1, Math.round(rect.height));
+  }
+
+  function clearDrawCanvas() {
+    if (!statusDrawCanvas) return;
+    const ctx = statusDrawCanvas.getContext("2d");
+    ctx.clearRect(0, 0, statusDrawCanvas.width, statusDrawCanvas.height);
+  }
+
+  function getCanvasPoint(event) {
+    const rect = statusDrawCanvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * (statusDrawCanvas.width / rect.width),
+      y: (event.clientY - rect.top) * (statusDrawCanvas.height / rect.height)
+    };
+  }
+
+  function startDraw(event) {
+    if (!drawEnabled || !statusDrawCanvas) return;
+    isDrawing = true;
+    const point = getCanvasPoint(event);
+    const ctx = statusDrawCanvas.getContext("2d");
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+  }
+
+  function moveDraw(event) {
+    if (!drawEnabled || !isDrawing || !statusDrawCanvas) return;
+    const point = getCanvasPoint(event);
+    const ctx = statusDrawCanvas.getContext("2d");
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  }
+
+  function stopDraw() {
+    isDrawing = false;
+  }
+
+  function startTextDrag(event) {
+    if (!statusTextOverlay || statusTextOverlay.hidden) return;
+    textDragging = true;
+    const rect = statusTextOverlay.getBoundingClientRect();
+    textDragOffset.x = event.clientX - rect.left;
+    textDragOffset.y = event.clientY - rect.top;
+    statusTextOverlay.style.cursor = "grabbing";
+  }
+
+  function moveTextDrag(event) {
+    if (!textDragging || !statusEditorImage || !statusTextOverlay) return;
+    const rect = statusEditorImage.getBoundingClientRect();
+    const x = ((event.clientX - rect.left - textDragOffset.x + statusTextOverlay.offsetWidth / 2) / rect.width) * 100;
+    const y = ((event.clientY - rect.top - textDragOffset.y + statusTextOverlay.offsetHeight / 2) / rect.height) * 100;
+    textOverlayState.x = Math.max(10, Math.min(90, x));
+    textOverlayState.y = Math.max(10, Math.min(90, y));
+    syncTextOverlay();
+  }
+
+  function stopTextDrag() {
+    textDragging = false;
+    if (statusTextOverlay) statusTextOverlay.style.cursor = "grab";
+  }
+
   function closeStatusEditor() {
+    hideEditorTools();
     if (statusEditor) statusEditor.hidden = true;
     if (statusEditorImage) {
       statusEditorImage.hidden = true;
@@ -105,6 +213,9 @@
       selectedStatusPreviewUrl = null;
     }
     if (statusEditorCaption) statusEditorCaption.value = "";
+    textOverlayState = { text: "", x: 50, y: 28 };
+    syncTextOverlay();
+    clearDrawCanvas();
   }
 
   function resetStatusSelection() {
@@ -130,9 +241,14 @@
     } else if (statusEditorImage) {
       statusEditorImage.src = selectedStatusPreviewUrl;
       statusEditorImage.hidden = false;
+      statusEditorImage.onload = () => {
+        resizeDrawCanvas();
+        clearDrawCanvas();
+      };
     }
 
     statusEditor.hidden = false;
+    resizeDrawCanvas();
   }
 
   function pressStatusAddCard() {
@@ -257,6 +373,46 @@
       url: data.publicUrl,
       type: file.type.startsWith("video/") ? "video" : "image"
     };
+  }
+
+  async function buildEditedStatusFile() {
+    if (!selectedStatusFile || selectedStatusFile.type.startsWith("video/")) {
+      return selectedStatusFile;
+    }
+
+    const imageUrl = selectedStatusPreviewUrl || URL.createObjectURL(selectedStatusFile);
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = imageUrl;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth || image.width;
+    canvas.height = image.naturalHeight || image.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    if (statusDrawCanvas && statusDrawCanvas.width && statusDrawCanvas.height) {
+      ctx.drawImage(statusDrawCanvas, 0, 0, canvas.width, canvas.height);
+    }
+
+    if (textOverlayState.text) {
+      ctx.font = "800 64px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.lineWidth = 10;
+      const x = (textOverlayState.x / 100) * canvas.width;
+      const y = (textOverlayState.y / 100) * canvas.height;
+      ctx.strokeText(textOverlayState.text, x, y);
+      ctx.fillText(textOverlayState.text, x, y);
+    }
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.95));
+    return new File([blob], `status-${Date.now()}.png`, { type: "image/png" });
   }
 
   async function loadProfiles() {
@@ -593,10 +749,12 @@
     const text = statusEditorCaption?.value?.trim() || null;
     let mediaUrl = null;
     let mediaType = null;
+    let fileToUpload = selectedStatusFile;
 
     statusPublishBtn.disabled = true;
     try {
-      const upload = await uploadStatusMedia(selectedStatusFile);
+      fileToUpload = await buildEditedStatusFile();
+      const upload = await uploadStatusMedia(fileToUpload);
       mediaUrl = upload.url;
       mediaType = upload.type;
     } catch (_) {
@@ -704,18 +862,66 @@
   statusEditorTools.forEach((button) => {
     button.addEventListener("click", () => {
       const label = button.dataset.statusTool;
+      hideEditorTools();
+
+      if (label === "text") {
+        if (statusEditorToolPanel) statusEditorToolPanel.hidden = false;
+        if (statusTextTool) statusTextTool.hidden = false;
+        if (statusTextToolInput) {
+          statusTextToolInput.value = textOverlayState.text;
+          statusTextToolInput.focus();
+        }
+        return;
+      }
+
+      if (label === "draw" && !statusEditorVideo?.hidden) {
+        if (statusEditorCaption) statusEditorCaption.value = "Zeichnen funktioniert zuerst für Bilder.";
+        return;
+      }
+
+      if (label === "draw") {
+        if (statusEditorToolPanel) statusEditorToolPanel.hidden = false;
+        if (statusDrawTool) statusDrawTool.hidden = false;
+        drawEnabled = true;
+        if (statusDrawCanvas) {
+          statusDrawCanvas.hidden = false;
+          statusDrawCanvas.style.pointerEvents = "auto";
+        }
+        return;
+      }
+
       const messages = {
         music: "Musik kommt als nächster Schritt.",
         crop: "Zuschneiden und Drehen kommt als nächster Schritt.",
-        stickers: "Sticker, Standort und Uhrzeit kommen als nächster Schritt.",
-        text: "Freier Text mit Stiloptionen kommt als nächster Schritt.",
-        draw: "Zeichnen mit Farben kommt als nächster Schritt."
+        stickers: "Sticker, Standort und Uhrzeit kommen als nächster Schritt."
       };
       if (statusEditorCaption) {
         statusEditorCaption.value = messages[label] || "";
       }
     });
   });
+  statusTextToolApply?.addEventListener("click", () => {
+    textOverlayState.text = statusTextToolInput?.value?.trim() || "";
+    syncTextOverlay();
+    hideEditorTools();
+  });
+  statusDrawClear?.addEventListener("click", clearDrawCanvas);
+  statusDrawDone?.addEventListener("click", hideEditorTools);
+  statusDrawColors.forEach((button) => {
+    button.addEventListener("click", () => {
+      drawColor = button.dataset.drawColor || "#ffffff";
+      statusDrawColors.forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+    });
+  });
+  statusDrawCanvas?.addEventListener("pointerdown", startDraw);
+  statusDrawCanvas?.addEventListener("pointermove", moveDraw);
+  statusDrawCanvas?.addEventListener("pointerup", stopDraw);
+  statusDrawCanvas?.addEventListener("pointerleave", stopDraw);
+  statusTextOverlay?.addEventListener("pointerdown", startTextDrag);
+  window.addEventListener("pointermove", moveTextDrag);
+  window.addEventListener("pointerup", stopTextDrag);
+  window.addEventListener("resize", resizeDrawCanvas);
   statusViewerClose?.addEventListener("click", closeStatusViewer);
   directChatBack?.addEventListener("click", async () => {
     activeContactId = null;
