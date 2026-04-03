@@ -13,11 +13,15 @@
   const statusComposer = document.getElementById("statusComposer");
   const statusTextInput = document.getElementById("statusTextInput");
   const statusMediaUrlInput = document.getElementById("statusMediaUrlInput");
-  const statusPublishBtn = document.getElementById("statusPublishBtn");
   const statusList = document.getElementById("statusList");
   const callLogList = document.getElementById("callLogList");
   const directChatSearch = document.getElementById("directChatSearch");
   const directChatList = document.getElementById("directChatList");
+  const directChatListView = document.getElementById("directChatListView");
+  const directChatThreadView = document.getElementById("directChatThreadView");
+  const directChatBack = document.getElementById("directChatBack");
+  const directChatTitle = document.getElementById("directChatTitle");
+  const directChatMeta = document.getElementById("directChatMeta");
   const directChatHeader = document.getElementById("directChatHeader");
   const directMessageList = document.getElementById("directMessageList");
   const directMessageForm = document.getElementById("directMessageForm");
@@ -27,11 +31,8 @@
   let currentSession = null;
   let profileMap = new Map();
   let profiles = [];
+  let chatPreviewMap = new Map();
   let activeContactId = null;
-
-  function isMobile() {
-    return window.innerWidth <= 800;
-  }
 
   function escapeHtml(text) {
     return String(text || "")
@@ -57,9 +58,24 @@
     });
   }
 
+  function updateChatView() {
+    const threadOpen = Boolean(activeContactId);
+    if (directChatListView) directChatListView.hidden = threadOpen;
+    if (directChatThreadView) directChatThreadView.hidden = !threadOpen;
+  }
+
   function formatDate(value) {
     if (!value) return "";
     return new Date(value).toLocaleString("de-DE");
+  }
+
+  function formatChatTime(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    const now = new Date();
+    return date.toDateString() === now.toDateString()
+      ? date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+      : date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
   }
 
   function getDisplayName(profile) {
@@ -70,6 +86,16 @@
   function getProfileMeta(profile) {
     if (!profile) return "Kein Profil";
     return profile.phone_number || profile.username || "Kein Telefon hinterlegt";
+  }
+
+  function getInitials(profile) {
+    const name = getDisplayName(profile).trim();
+    if (!name) return "?";
+    return name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("");
   }
 
   function requireLoginMessage(text) {
@@ -100,6 +126,34 @@
     profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
   }
 
+  async function loadChatPreviews() {
+    if (!currentSession?.user) {
+      chatPreviewMap = new Map();
+      return;
+    }
+
+    const userId = currentSession.user.id;
+    const { data, error } = await client
+      .from("direct_messages")
+      .select("sender_id,recipient_id,message,created_at")
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      chatPreviewMap = new Map();
+      return;
+    }
+
+    const nextMap = new Map();
+    for (const item of data || []) {
+      const partnerId = item.sender_id === userId ? item.recipient_id : item.sender_id;
+      if (!partnerId || nextMap.has(partnerId)) continue;
+      nextMap.set(partnerId, item);
+    }
+    chatPreviewMap = nextMap;
+  }
+
   function renderChatContacts() {
     if (!directChatList) return;
 
@@ -114,21 +168,39 @@
       return haystack.includes(query);
     });
 
+    filtered.sort((a, b) => {
+      const previewA = chatPreviewMap.get(a.id);
+      const previewB = chatPreviewMap.get(b.id);
+      const timeA = previewA?.created_at ? new Date(previewA.created_at).getTime() : 0;
+      const timeB = previewB?.created_at ? new Date(previewB.created_at).getTime() : 0;
+      return timeB - timeA || getDisplayName(a).localeCompare(getDisplayName(b), "de");
+    });
+
     if (!filtered.length) {
       directChatList.innerHTML = '<div class="mobile-empty-state">Keine Kontakte gefunden.</div>';
       return;
     }
 
-    directChatList.innerHTML = filtered.map((profile) => `
-      <button class="mobile-chat-contact ${profile.id === activeContactId ? "active" : ""}" type="button" data-contact-id="${profile.id}">
-        <strong>${escapeHtml(getDisplayName(profile))}</strong>
-        <span>${escapeHtml(getProfileMeta(profile))}</span>
-      </button>
-    `).join("");
+    directChatList.innerHTML = filtered.map((profile) => {
+      const preview = chatPreviewMap.get(profile.id);
+      return `
+        <button class="mobile-chat-contact ${profile.id === activeContactId ? "active" : ""}" type="button" data-contact-id="${profile.id}">
+          <span class="mobile-chat-avatar">${escapeHtml(getInitials(profile))}</span>
+          <span class="mobile-chat-contact-copy">
+            <span class="mobile-chat-contact-top">
+              <strong>${escapeHtml(getDisplayName(profile))}</strong>
+              <time>${escapeHtml(formatChatTime(preview?.created_at))}</time>
+            </span>
+            <span class="mobile-chat-contact-bottom">${escapeHtml(preview?.message || getProfileMeta(profile))}</span>
+          </span>
+        </button>
+      `;
+    }).join("");
 
     directChatList.querySelectorAll("[data-contact-id]").forEach((button) => {
       button.addEventListener("click", () => {
         activeContactId = button.dataset.contactId;
+        updateChatView();
         renderChatContacts();
         void loadDirectMessages();
       });
@@ -139,22 +211,30 @@
     if (!directMessageList || !directChatHeader) return;
 
     if (!currentSession?.user) {
+      if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
+      if (directChatMeta) directChatMeta.textContent = "Melde dich an, um Nachrichten zu sehen.";
       directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Melde dich an, um Nachrichten zu sehen.</span>";
       directMessageList.innerHTML = requireLoginMessage("Noch keine Nachrichten.");
       directMessageInput.disabled = true;
       directMessageSend.disabled = true;
+      updateChatView();
       return;
     }
 
     if (!activeContactId) {
-      directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Wähle links einen registrierten Nutzer aus.</span>";
+      if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
+      if (directChatMeta) directChatMeta.textContent = "Wähle einen registrierten Nutzer aus.";
+      directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Wähle einen registrierten Nutzer aus.</span>";
       directMessageList.innerHTML = '<div class="mobile-empty-state">Noch keine Nachrichten.</div>';
       directMessageInput.disabled = true;
       directMessageSend.disabled = true;
+      updateChatView();
       return;
     }
 
     const activeProfile = profileMap.get(activeContactId);
+    if (directChatTitle) directChatTitle.textContent = getDisplayName(activeProfile);
+    if (directChatMeta) directChatMeta.textContent = getProfileMeta(activeProfile);
     directChatHeader.innerHTML = `
       <strong>${escapeHtml(getDisplayName(activeProfile))}</strong>
       <span>${escapeHtml(getProfileMeta(activeProfile))}</span>
@@ -173,11 +253,13 @@
 
     if (error) {
       directMessageList.innerHTML = requireLoginMessage("Direktnachrichten konnten noch nicht geladen werden. Führe zuerst die neue SQL-Datei in Supabase aus.");
+      updateChatView();
       return;
     }
 
     if (!data?.length) {
       directMessageList.innerHTML = '<div class="mobile-empty-state">Noch keine Nachrichten in diesem Chat.</div>';
+      updateChatView();
       return;
     }
 
@@ -189,6 +271,7 @@
     `).join("");
 
     directMessageList.scrollTop = directMessageList.scrollHeight;
+    updateChatView();
   }
 
   async function sendDirectMessage(event) {
@@ -210,6 +293,8 @@
     }
 
     directMessageInput.value = "";
+    await loadChatPreviews();
+    renderChatContacts();
     await loadDirectMessages();
   }
 
@@ -331,6 +416,7 @@
   async function refreshAll() {
     try {
       await loadProfiles();
+      await loadChatPreviews();
       renderChatContacts();
       await Promise.all([
         loadStatuses(),
@@ -350,6 +436,10 @@
   window.addEventListener("mini-chatroulette:mobile-tab", (event) => {
     const tab = event.detail?.tab || "chats";
     setActivePane(tab);
+    if (tab !== "chat") {
+      activeContactId = null;
+      updateChatView();
+    }
     if (tab === "status" || tab === "calls" || tab === "chat") {
       void refreshAll();
     }
@@ -358,15 +448,23 @@
   directChatSearch?.addEventListener("input", renderChatContacts);
   directMessageForm?.addEventListener("submit", sendDirectMessage);
   statusComposer?.addEventListener("submit", publishStatus);
+  directChatBack?.addEventListener("click", async () => {
+    activeContactId = null;
+    updateChatView();
+    renderChatContacts();
+    await loadDirectMessages();
+  });
 
   client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
     activeContactId = null;
+    updateChatView();
     await refreshAll();
   });
 
   client.auth.getSession().then(async ({ data }) => {
     currentSession = data.session;
+    updateChatView();
     await refreshAll();
   });
 })();
