@@ -3526,6 +3526,10 @@ body.bg-4 .btn-send {
     background: #000;
   }
 
+  .mobile-status-viewer[hidden] {
+    display: none !important;
+  }
+
   .mobile-status-viewer-top {
     display: flex;
     align-items: center;
@@ -3583,6 +3587,11 @@ body.bg-4 .btn-send {
     border-radius: 20px;
     object-fit: contain;
     background: #000;
+  }
+
+  .mobile-status-viewer-media[hidden],
+  .mobile-status-viewer-text[hidden] {
+    display: none !important;
   }
 
   .mobile-status-viewer-text {
