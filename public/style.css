@@ -3907,7 +3907,10 @@ body.bg-4 .btn-send {
 body.desktop-layout-1 .local-video-wrap,
 body.desktop-layout-3 .local-video-wrap {
   position: relative !important;
+  display: block !important;
+  grid-template-rows: none !important;
   overflow: hidden !important;
+  padding: 0 !important;
 }
 
 body.desktop-layout-1 .local-video-wrap::before,
@@ -3931,6 +3934,12 @@ body.desktop-layout-3 .local-video-wrap.has-media #localVideo {
 body.desktop-layout-3.chatting .local-video-wrap {
   display: block !important;
   padding: 0 !important;
+}
+
+body.desktop-layout-3 .local-video-wrap.has-media {
+  min-height: 360px !important;
+  height: 360px !important;
+  max-height: 360px !important;
 }
 
 body.desktop-layout-1 .local-video-controls,
