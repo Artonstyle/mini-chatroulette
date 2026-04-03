@@ -3904,22 +3904,16 @@ body.bg-4 .btn-send {
 }
 
 /* Final desktop safety overrides for local preview */
-body.desktop-layout-1 .local-video-wrap,
-body.desktop-layout-3 .local-video-wrap {
+body.desktop-layout-1 .local-video-wrap {
   position: relative !important;
-  display: block !important;
-  grid-template-rows: none !important;
   overflow: hidden !important;
-  padding: 0 !important;
 }
 
-body.desktop-layout-1 .local-video-wrap::before,
-body.desktop-layout-3 .local-video-wrap::before {
+body.desktop-layout-1 .local-video-wrap::before {
   display: none !important;
 }
 
-body.desktop-layout-1 .local-video-wrap.has-media #localVideo,
-body.desktop-layout-3 .local-video-wrap.has-media #localVideo {
+body.desktop-layout-1 .local-video-wrap.has-media #localVideo {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -3931,29 +3925,15 @@ body.desktop-layout-3 .local-video-wrap.has-media #localVideo {
   z-index: 1 !important;
 }
 
-body.desktop-layout-3.chatting .local-video-wrap {
-  display: block !important;
-  padding: 0 !important;
-}
-
-body.desktop-layout-3 .local-video-wrap.has-media {
-  min-height: 360px !important;
-  height: 360px !important;
-  max-height: 360px !important;
-}
-
-body.desktop-layout-1 .local-video-controls,
-body.desktop-layout-3 .local-video-controls {
+body.desktop-layout-1 .local-video-controls {
   z-index: 6 !important;
 }
 
-body.desktop-layout-1.chatting .local-video-wrap .action-row,
-body.desktop-layout-3.chatting .local-video-wrap .action-row {
+body.desktop-layout-1.chatting .local-video-wrap .action-row {
   display: none !important;
 }
 
-body.desktop-layout-1.chatting.filter-open .local-video-wrap .action-row,
-body.desktop-layout-3.chatting.filter-open .local-video-wrap .action-row {
+body.desktop-layout-1.chatting.filter-open .local-video-wrap .action-row {
   display: block !important;
   position: fixed !important;
   top: 72px !important;
