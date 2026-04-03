@@ -12,8 +12,6 @@
   const mobileHub = document.getElementById("mobileHub");
   const panes = Array.from(document.querySelectorAll("[data-mobile-pane]"));
 
-  const statusComposerToggle = document.getElementById("statusComposerToggle");
-  const statusMediaFile = document.getElementById("statusMediaFile");
   const statusRail = document.getElementById("statusRail");
   const statusList = document.getElementById("statusList");
   const statusViewer = document.getElementById("statusViewer");
@@ -54,6 +52,10 @@
   let activeContactId = null;
   let selectedStatusFile = null;
   let selectedStatusPreviewUrl = null;
+
+  function getStatusMediaInput() {
+    return document.getElementById("statusMediaFileInline");
+  }
 
   function escapeHtml(text) {
     return String(text || "")
@@ -107,7 +109,8 @@
 
   function resetStatusSelection() {
     selectedStatusFile = null;
-    if (statusMediaFile) statusMediaFile.value = "";
+    const statusMediaInput = getStatusMediaInput();
+    if (statusMediaInput) statusMediaInput.value = "";
     closeStatusEditor();
   }
 
@@ -133,6 +136,7 @@
   }
 
   function pressStatusAddCard() {
+    const statusComposerToggle = document.getElementById("statusComposerToggle");
     if (!statusComposerToggle) return;
     statusComposerToggle.classList.add("is-pressed");
     window.setTimeout(() => statusComposerToggle.classList.remove("is-pressed"), 140);
@@ -451,21 +455,45 @@
     await loadDirectMessages();
   }
 
+  function attachOwnStatusCardBehavior(isLoggedIn) {
+    const statusComposerToggle = document.getElementById("statusComposerToggle");
+    const statusMediaInput = getStatusMediaInput();
+
+    if (!statusComposerToggle) return;
+
+    statusComposerToggle.addEventListener("pointerdown", () => {
+      pressStatusAddCard();
+    });
+
+    if (!isLoggedIn) {
+      statusComposerToggle.addEventListener("click", (event) => {
+        event.preventDefault();
+        statusList.innerHTML = requireLoginMessage("Melde dich an, um einen Status hochzuladen.");
+      });
+      return;
+    }
+
+    statusMediaInput?.addEventListener("change", () => {
+      const file = statusMediaInput.files?.[0] || null;
+      if (!file) return;
+      openStatusEditorForFile(file);
+    });
+  }
+
   function renderStatusRail() {
     if (!statusRail) return;
 
     const ownCard = `
-      <button id="statusComposerToggle" class="mobile-status-card mobile-status-card-own" type="button">
+      <label id="statusComposerToggle" class="mobile-status-card mobile-status-card-own">
         <span class="mobile-status-thumb">+</span>
         <span class="mobile-status-name">Status hinzufügen</span>
-      </button>
+        <input id="statusMediaFileInline" class="mobile-status-file-overlay" type="file" accept="image/*,video/*">
+      </label>
     `;
 
     if (!currentSession?.user) {
       statusRail.innerHTML = ownCard;
-      document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
-        statusList.innerHTML = requireLoginMessage("Melde dich an, um einen Status hochzuladen.");
-      });
+      attachOwnStatusCardBehavior(false);
       return;
     }
 
@@ -490,14 +518,7 @@
     }).join("");
 
     statusRail.innerHTML = ownCard + cards;
-    document.getElementById("statusComposerToggle")?.addEventListener("click", () => {
-      if (!currentSession?.user) {
-        statusList.innerHTML = requireLoginMessage("Melde dich an, um einen Status hochzuladen.");
-        return;
-      }
-      pressStatusAddCard();
-      window.setTimeout(() => statusMediaFile?.click(), 90);
-    });
+    attachOwnStatusCardBehavior(true);
     statusRail.querySelectorAll("[data-status-id]").forEach((button) => {
       button.addEventListener("click", () => openStatusViewer(button.dataset.statusId));
     });
@@ -678,11 +699,6 @@
 
   directChatSearch?.addEventListener("input", renderChatContacts);
   directMessageForm?.addEventListener("submit", sendDirectMessage);
-  statusMediaFile?.addEventListener("change", () => {
-    const file = statusMediaFile.files?.[0] || null;
-    if (!file) return;
-    openStatusEditorForFile(file);
-  });
   statusEditorClose?.addEventListener("click", resetStatusSelection);
   statusPublishBtn?.addEventListener("click", publishStatus);
   statusEditorTools.forEach((button) => {

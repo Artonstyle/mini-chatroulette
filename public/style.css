@@ -3379,7 +3379,16 @@ body.bg-4 .btn-send {
   }
 
   .mobile-status-card-own {
+    position: relative;
+    overflow: hidden;
     background: #10161a;
+  }
+
+  .mobile-status-file-overlay {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
   }
 
   .mobile-status-thumb {
