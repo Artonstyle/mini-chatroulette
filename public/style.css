@@ -3943,3 +3943,51 @@ body.desktop-layout-1.chatting.filter-open .local-video-wrap .action-row {
   width: 292px !important;
   z-index: 75 !important;
 }
+
+/* Final layout 3 live-video override */
+body.desktop-layout-3 .local-video-wrap {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  order: 0 !important;
+  margin-top: 0 !important;
+  align-self: start !important;
+  position: relative !important;
+  width: 100% !important;
+  min-height: 360px !important;
+  max-height: 360px !important;
+  height: 360px !important;
+  aspect-ratio: auto !important;
+}
+
+body.desktop-layout-3 .local-video-wrap.has-live-video,
+body.desktop-layout-3 .local-video-wrap.has-media {
+  aspect-ratio: auto !important;
+}
+
+body.desktop-layout-3 .local-video-wrap.has-media #localVideo {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: absolute !important;
+  inset: 12px !important;
+  width: calc(100% - 24px) !important;
+  height: calc(100% - 24px) !important;
+  object-fit: cover !important;
+  border-radius: 16px !important;
+  z-index: 1 !important;
+}
+
+body.desktop-layout-3.chatting .local-video-wrap .action-row {
+  display: none !important;
+}
+
+body.desktop-layout-3.chatting.filter-open .local-video-wrap .action-row {
+  display: block !important;
+  position: fixed !important;
+  top: 72px !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 292px !important;
+  z-index: 75 !important;
+}
