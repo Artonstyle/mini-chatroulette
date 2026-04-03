@@ -517,6 +517,27 @@
       }
     }
 
+    async function handleRefresh() {
+      refreshBtn.disabled = true;
+      loginError.textContent = "";
+
+      try {
+        await loadOverview();
+      } catch (error) {
+        const message = error.message || "Aktualisieren fehlgeschlagen";
+        loginError.textContent = message;
+        supabaseStatus.textContent = message;
+
+        if (/nicht autorisiert/i.test(message)) {
+          localStorage.removeItem(tokenKey);
+          stopRefreshTimer();
+          setLoggedIn(false);
+        }
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
     async function login() {
       loginError.textContent = "";
       try {
@@ -529,7 +550,7 @@
         if (!response.ok) throw new Error(data.error || "Login fehlgeschlagen");
         localStorage.setItem(tokenKey, data.token);
         setLoggedIn(true);
-        await loadOverview();
+        await handleRefresh();
         startRefreshTimer();
       } catch (error) {
         loginError.textContent = error.message;
@@ -563,7 +584,7 @@
         method: "POST",
         body: JSON.stringify({ address })
       });
-      await loadOverview();
+      await handleRefresh();
     }
 
     async function unbanUser(address) {
@@ -571,7 +592,7 @@
         method: "POST",
         body: JSON.stringify({ address })
       });
-      await loadOverview();
+      await handleRefresh();
     }
 
     async function disconnectUser(clientId) {
@@ -579,7 +600,7 @@
         method: "POST",
         body: JSON.stringify({ clientId })
       });
-      await loadOverview();
+      await handleRefresh();
     }
 
     async function messageUser(clientId) {
@@ -589,7 +610,7 @@
         method: "POST",
         body: JSON.stringify({ clientId, text })
       });
-      await loadOverview();
+      await handleRefresh();
     }
 
     window.banUser = banUser;
@@ -598,12 +619,12 @@
     window.messageUser = messageUser;
 
     loginBtn.addEventListener("click", login);
-    refreshBtn.addEventListener("click", loadOverview);
+    refreshBtn.addEventListener("click", handleRefresh);
     logoutBtn.addEventListener("click", logout);
 
     if (getToken()) {
       setLoggedIn(true);
-      loadOverview().then(() => {
+      handleRefresh().then(() => {
         startRefreshTimer();
       }).catch(() => {
         localStorage.removeItem(tokenKey);
