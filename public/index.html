@@ -97,6 +97,15 @@
       </span>
       <span class="mobile-bottom-label">Chats</span>
     </button>
+    <button class="mobile-bottom-tab" type="button" data-mobile-tab="settings" aria-pressed="false">
+      <span class="mobile-bottom-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 8.2a3.8 3.8 0 1 1 0 7.6 3.8 3.8 0 0 1 0-7.6Z" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M19.1 13.1a7.6 7.6 0 0 0 .06-1.1 7.6 7.6 0 0 0-.06-1.1l1.92-1.49-1.82-3.15-2.33.94a8.2 8.2 0 0 0-1.9-1.1l-.35-2.48H9.37l-.35 2.48a8.2 8.2 0 0 0-1.9 1.1l-2.33-.94L2.97 9.4l1.92 1.49a7.6 7.6 0 0 0-.06 1.1 7.6 7.6 0 0 0 .06 1.1l-1.92 1.49 1.82 3.15 2.33-.94a8.2 8.2 0 0 0 1.9 1.1l.35 2.48h5.26l.35-2.48a8.2 8.2 0 0 0 1.9-1.1l2.33.94 1.82-3.15-1.92-1.49Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-label">Einstellung</span>
+    </button>
   </nav>
 
   <header>Mini Chatroulette</header>
@@ -354,6 +363,52 @@
         </section>
       </div>
     </section>
+
+    <section class="mobile-pane" data-mobile-pane="settings">
+      <div class="mobile-pane-head">
+        <div>
+          <strong>Einstellung</strong>
+          <span>Konto, Profil und weitere Optionen</span>
+        </div>
+      </div>
+      <div class="mobile-pane-scroll">
+        <div class="mobile-settings-stack">
+          <section id="mobileSettingsGuestCard" class="mobile-card mobile-settings-card">
+            <div id="mobileSettingsSummary" class="mobile-settings-summary">
+              <strong>Anmeldung</strong>
+              <span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>
+            </div>
+            <div class="mobile-settings-actions">
+              <button id="mobileSettingsLoginBtn" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Anmelden</button>
+            </div>
+          </section>
+
+          <section id="mobileSettingsAccountCard" class="mobile-card mobile-settings-card" hidden>
+            <div class="mobile-settings-summary">
+              <strong>Dein Konto</strong>
+              <span>Hier kannst du Benutzernamen, Anzeigenamen und Telefonnummer verwalten.</span>
+            </div>
+            <div id="mobileAuthProfileSummary" class="auth-profile-summary">
+              <strong>Nicht eingeloggt</strong>
+              <span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>
+            </div>
+            <label class="auth-field">Benutzername
+              <input id="mobileProfileUsername" type="text" placeholder="Benutzername">
+            </label>
+            <label class="auth-field">Anzeigename
+              <input id="mobileProfileDisplayName" type="text" placeholder="Anzeigename">
+            </label>
+            <label class="auth-field">Telefonnummer
+              <input id="mobileProfilePhoneNumber" type="tel" placeholder="z. B. +49 151 23456789">
+            </label>
+            <div class="mobile-settings-actions">
+              <button id="mobileProfileSave" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Profil speichern</button>
+              <button id="mobileSettingsLogoutBtn" class="mobile-settings-btn" type="button" onclick="window.miniChatrouletteLogout && window.miniChatrouletteLogout()">Logout</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
   </section>
 
   <div id="authModal" class="auth-modal" hidden>
@@ -434,7 +489,6 @@
         <div class="auth-profile-actions">
           <button id="profileSave" class="auth-primary-btn" type="button">Profil speichern</button>
           <button id="logoutSubmit" class="auth-secondary-btn" type="button">Logout</button>
-          <a id="authAdminLink" class="auth-admin-link" href="/admin.html" target="_blank" rel="noreferrer" hidden>Admin öffnen</a>
         </div>
         <div class="auth-inbox">
           <div class="auth-inbox-title">Admin-Nachrichten</div>
@@ -486,7 +540,7 @@
       }
 
       function syncMobileHub(tabName) {
-        const shouldOpenHub = tabName === "status" || tabName === "calls" || tabName === "chat";
+        const shouldOpenHub = tabName === "status" || tabName === "calls" || tabName === "chat" || tabName === "settings";
         body.classList.toggle("mobile-pane-open", shouldOpenHub);
         body.classList.toggle("mobile-status-mode", tabName === "status");
 

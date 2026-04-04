@@ -37,7 +37,16 @@
   const logoutSubmit = document.getElementById("logoutSubmit");
   const authProfileSummary = document.getElementById("authProfileSummary");
   const authInboxList = document.getElementById("authInboxList");
-  const authAdminLink = document.getElementById("authAdminLink");
+  const mobileSettingsGuestCard = document.getElementById("mobileSettingsGuestCard");
+  const mobileSettingsAccountCard = document.getElementById("mobileSettingsAccountCard");
+  const mobileSettingsSummary = document.getElementById("mobileSettingsSummary");
+  const mobileSettingsLoginBtn = document.getElementById("mobileSettingsLoginBtn");
+  const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
+  const mobileProfileUsername = document.getElementById("mobileProfileUsername");
+  const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
+  const mobileProfilePhoneNumber = document.getElementById("mobileProfilePhoneNumber");
+  const mobileProfileSave = document.getElementById("mobileProfileSave");
+  const mobileSettingsLogoutBtn = document.getElementById("mobileSettingsLogoutBtn");
 
   const genderInput = document.getElementById("gender");
   const searchInput = document.getElementById("search");
@@ -89,9 +98,7 @@
 
   function updateAuthButtons() {
     const loggedIn = Boolean(currentSession?.user);
-    const label = loggedIn
-      ? (currentProfile?.display_name || currentProfile?.username || "Konto")
-      : "Anmelden";
+    const label = "Anmelden";
 
     if (authToggleDesktop) authToggleDesktop.textContent = label;
     if (authToggleMobile) authToggleMobile.classList.toggle("logged-in", loggedIn);
@@ -103,21 +110,37 @@
   }
 
   function updateProfileSummary() {
-    if (!authProfileSummary) return;
-
     if (!currentSession?.user) {
-      authProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>";
-      if (authAdminLink) authAdminLink.hidden = true;
+      if (authProfileSummary) {
+        authProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>";
+      }
+      if (mobileAuthProfileSummary) {
+        mobileAuthProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>";
+      }
+      if (mobileSettingsSummary) {
+        mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
+      }
+      if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = false;
+      if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = true;
       return;
     }
 
     const email = currentSession.user.email || "ohne E-Mail";
-    const name = currentProfile?.display_name || currentProfile?.username || email;
-    authProfileSummary.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>`;
-
-    if (authAdminLink) {
-      authAdminLink.hidden = !currentProfile?.is_admin;
+    const rawName = currentProfile?.display_name || currentProfile?.username || "";
+    const normalizedName = rawName.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    const name = rawName && normalizedName !== normalizedEmail ? rawName : "Dein Konto";
+    if (authProfileSummary) {
+      authProfileSummary.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>`;
     }
+    if (mobileAuthProfileSummary) {
+      mobileAuthProfileSummary.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>`;
+    }
+    if (mobileSettingsSummary) {
+      mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
+    }
+    if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = true;
+    if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = false;
   }
 
   function fillProfileFields() {
@@ -126,6 +149,9 @@
     if (profileUsername) profileUsername.value = currentProfile.username || "";
     if (profileDisplayName) profileDisplayName.value = currentProfile.display_name || "";
     if (profilePhoneNumber) profilePhoneNumber.value = currentProfile.phone_number || "";
+    if (mobileProfileUsername) mobileProfileUsername.value = currentProfile.username || "";
+    if (mobileProfileDisplayName) mobileProfileDisplayName.value = currentProfile.display_name || "";
+    if (mobileProfilePhoneNumber) mobileProfilePhoneNumber.value = currentProfile.phone_number || "";
 
     if (genderInput && currentProfile.gender && genderInput.value !== currentProfile.gender) {
       genderInput.value = currentProfile.gender;
@@ -156,9 +182,9 @@
 
     return {
       id: currentSession.user.id,
-      username: profileUsername?.value?.trim() || fallbackUsername,
-      display_name: profileDisplayName?.value?.trim() || fallbackDisplayName,
-      phone_number: profilePhoneNumber?.value?.trim() || currentProfile?.phone_number || null,
+      username: profileUsername?.value?.trim() || mobileProfileUsername?.value?.trim() || fallbackUsername,
+      display_name: profileDisplayName?.value?.trim() || mobileProfileDisplayName?.value?.trim() || fallbackDisplayName,
+      phone_number: profilePhoneNumber?.value?.trim() || mobileProfilePhoneNumber?.value?.trim() || currentProfile?.phone_number || null,
       gender: genderInput?.value || currentProfile?.gender || "unknown",
       seeking_gender: searchInput?.value || currentProfile?.seeking_gender || "unknown",
       location_label: locationInput?.value?.trim() || currentProfile?.location_label || null,
@@ -175,10 +201,10 @@
   }
 
   async function loadInbox() {
-    if (!authInboxList) return;
-
     if (!currentSession?.user) {
-      authInboxList.innerHTML = '<div class="auth-empty">Melde dich an, um Nachrichten zu sehen.</div>';
+      if (authInboxList) {
+        authInboxList.innerHTML = '<div class="auth-empty">Melde dich an, um Nachrichten zu sehen.</div>';
+      }
       return;
     }
 
@@ -190,21 +216,27 @@
       .limit(20);
 
     if (error) {
-      authInboxList.innerHTML = '<div class="auth-empty">Nachrichten konnten gerade nicht geladen werden.</div>';
+      if (authInboxList) {
+        authInboxList.innerHTML = '<div class="auth-empty">Nachrichten konnten gerade nicht geladen werden.</div>';
+      }
       return;
     }
 
     if (!data?.length) {
-      authInboxList.innerHTML = '<div class="auth-empty">Noch keine Nachrichten.</div>';
+      if (authInboxList) {
+        authInboxList.innerHTML = '<div class="auth-empty">Noch keine Nachrichten.</div>';
+      }
       return;
     }
 
-    authInboxList.innerHTML = data.map((item) => `
+    const inboxHtml = data.map((item) => `
       <article class="auth-message ${item.is_read ? "read" : "unread"}">
         <div class="auth-message-text">${escapeHtml(item.message)}</div>
         <div class="auth-message-date">${new Date(item.created_at).toLocaleString("de-DE")}</div>
       </article>
     `).join("");
+
+    if (authInboxList) authInboxList.innerHTML = inboxHtml;
 
     await client
       .from("admin_messages")
@@ -282,6 +314,25 @@
     }, 600);
   }
 
+  function clearSupabaseSessionStorage() {
+    const stores = [window.localStorage, window.sessionStorage];
+
+    stores.forEach((store) => {
+      if (!store) return;
+      const keysToRemove = [];
+
+      for (let i = 0; i < store.length; i += 1) {
+        const key = store.key(i);
+        if (!key) continue;
+        if (key.startsWith("sb-") || key.includes("supabase")) {
+          keysToRemove.push(key);
+        }
+      }
+
+      keysToRemove.forEach((key) => store.removeItem(key));
+    });
+  }
+
   async function handleLogin() {
     const email = loginEmail?.value?.trim();
     const password = loginPassword?.value || "";
@@ -301,9 +352,9 @@
 
     currentSession = data.session;
     setStatus("Erfolgreich angemeldet.", "success");
-    switchTab("profile");
     await ensureProfile();
     await loadProfile();
+    closeModal();
   }
 
   async function handleForgotPassword() {
@@ -382,9 +433,9 @@
 
     currentSession = data.session;
     setStatus("Konto erstellt und eingeloggt.", "success");
-    switchTab("profile");
     await ensureProfile();
     await loadProfile();
+    closeModal();
   }
 
   async function handleResetPassword() {
@@ -422,15 +473,32 @@
   }
 
   async function handleLogout() {
-    await client.auth.signOut();
+    const { error } = await client.auth.signOut({ scope: "local" });
+
+    if (error) {
+      setStatus(error.message || "Logout fehlgeschlagen. Lokale Sitzung wird trotzdem beendet.", "error");
+    }
+
+    clearSupabaseSessionStorage();
+
     currentSession = null;
     currentProfile = null;
+    if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = false;
+    if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = true;
     updateAuthButtons();
     updateProfileSummary();
     await loadInbox();
     setStatus("Ausgeloggt.", "success");
     switchTab("login");
+    closeModal();
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 120);
   }
+
+  window.miniChatrouletteLogout = () => {
+    void handleLogout();
+  };
 
   async function initAuth() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -459,10 +527,13 @@
     button.addEventListener("click", () => switchTab(button.dataset.authSwitch));
   });
 
-  authToggleDesktop?.addEventListener("click", () => openModal(currentSession?.user ? "profile" : "login"));
-  authToggleMobile?.addEventListener("click", () => openModal(currentSession?.user ? "profile" : "login"));
+  authToggleDesktop?.addEventListener("click", () => openModal("login"));
+  authToggleMobile?.addEventListener("click", () => openModal("login"));
   authClose?.addEventListener("click", closeModal);
   authModal?.querySelector(".auth-backdrop")?.addEventListener("click", closeModal);
+  window.addEventListener("mini-chatroulette:open-account", () => {
+    openModal(currentSession?.user ? "profile" : "login");
+  });
 
   loginSubmit?.addEventListener("click", handleLogin);
   forgotSubmit?.addEventListener("click", handleForgotPassword);
@@ -470,6 +541,17 @@
   resetSubmit?.addEventListener("click", handleResetPassword);
   logoutSubmit?.addEventListener("click", handleLogout);
   profileSave?.addEventListener("click", () => saveProfile());
+  mobileSettingsLoginBtn?.addEventListener("click", () => openModal("login"));
+  mobileSettingsLogoutBtn?.addEventListener("click", handleLogout);
+  mobileProfileSave?.addEventListener("click", () => saveProfile());
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.closest("#mobileSettingsLogoutBtn")) {
+      handleLogout();
+    }
+  });
 
   [genderInput, searchInput, locationInput].forEach((input) => {
     input?.addEventListener("change", queueProfileSave);
@@ -478,6 +560,9 @@
   profileUsername?.addEventListener("input", queueProfileSave);
   profileDisplayName?.addEventListener("input", queueProfileSave);
   profilePhoneNumber?.addEventListener("input", queueProfileSave);
+  mobileProfileUsername?.addEventListener("input", queueProfileSave);
+  mobileProfileDisplayName?.addEventListener("input", queueProfileSave);
+  mobileProfilePhoneNumber?.addEventListener("input", queueProfileSave);
 
   client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;

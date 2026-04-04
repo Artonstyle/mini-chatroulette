@@ -3168,8 +3168,8 @@ body.bg-4 .btn-send {
 
   .mobile-bottom-nav {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
     position: fixed;
     left: 10px;
     right: 10px;
@@ -3195,7 +3195,7 @@ body.bg-4 .btn-send {
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 8px 10px;
+    padding: 8px 6px;
   }
 
   .mobile-bottom-tab.active {
@@ -3264,6 +3264,10 @@ body.bg-4 .btn-send {
 
   .mobile-pane.active {
     display: flex;
+  }
+
+  .mobile-pane [hidden] {
+    display: none !important;
   }
 
   .mobile-pane[data-mobile-pane="status"] {
@@ -3893,6 +3897,61 @@ body.bg-4 .btn-send {
   .mobile-list {
     display: grid;
     gap: 10px;
+  }
+
+  .mobile-settings-stack {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mobile-settings-card {
+    padding: 18px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .mobile-settings-summary {
+    display: grid;
+    gap: 6px;
+  }
+
+  .mobile-settings-summary strong {
+    font-size: 1.12rem;
+    color: #f3f8ff;
+  }
+
+  .mobile-settings-summary span {
+    color: #9db0c7;
+    line-height: 1.5;
+  }
+
+  .mobile-settings-actions {
+    display: grid;
+    gap: 10px;
+  }
+
+  .mobile-settings-btn {
+    min-height: 52px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+    color: #eef4ff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 0 16px;
+    touch-action: manipulation;
+    pointer-events: auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  .mobile-settings-btn-primary {
+    background: linear-gradient(180deg, #39dc75 0%, #27be62 100%);
+    color: #06120a;
+    border-color: transparent;
   }
 
   .mobile-empty-state {

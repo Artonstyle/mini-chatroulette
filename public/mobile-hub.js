@@ -91,7 +91,7 @@
   }
 
   function setActivePane(tabName) {
-    const openPane = tabName === "status" || tabName === "calls" || tabName === "chat";
+    const openPane = tabName === "status" || tabName === "calls" || tabName === "chat" || tabName === "settings";
     setHubOpen(openPane);
     body.classList.toggle("mobile-status-mode", tabName === "status");
 
@@ -891,7 +891,7 @@
     }
     closeStatusViewer();
     closeStatusEditor();
-    if (tab === "status" || tab === "calls" || tab === "chat") {
+    if (tab === "status" || tab === "calls" || tab === "chat" || tab === "settings") {
       void refreshAll();
     }
   });
@@ -971,7 +971,6 @@
     renderChatContacts();
     await loadDirectMessages();
   });
-
   client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
     activeContactId = null;
