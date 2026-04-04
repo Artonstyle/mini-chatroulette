@@ -361,45 +361,58 @@
     <div class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
       <button id="authClose" class="auth-close-btn" type="button" aria-label="Schließen">×</button>
       <div class="auth-headline">
-        <div class="auth-kicker">Konto</div>
-        <div class="auth-head-copy">Anmelden, registrieren oder später dein Konto verwalten.</div>
-      </div>
-      <div class="auth-tabs">
-        <button class="auth-tab active" type="button" data-auth-tab="login">Login</button>
-        <button class="auth-tab" type="button" data-auth-tab="register">Registrieren</button>
-        <button class="auth-tab" type="button" data-auth-tab="profile" hidden>Konto</button>
+        <div class="auth-kicker">Anmelden</div>
       </div>
 
       <section class="auth-panel auth-panel-login active" data-auth-panel="login">
         <h2 id="authTitle">Anmelden</h2>
-        <p class="auth-hint">Du kannst Mini Chatroulette ohne Konto nutzen. Mit Login werden Profil und Nachrichten später einfacher.</p>
         <label class="auth-field">E-Mail-Adresse
           <input id="loginEmail" type="email" autocomplete="email" placeholder="deine@email.de">
         </label>
         <label class="auth-field">Passwort
           <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort">
         </label>
+        <button class="auth-text-link auth-text-link-inline" type="button" data-auth-switch="forgot">Passwort vergessen?</button>
         <button id="loginSubmit" class="auth-primary-btn" type="button">Anmelden</button>
         <button class="auth-text-link" type="button" data-auth-switch="register">Noch kein Konto? Jetzt registrieren</button>
       </section>
 
       <section class="auth-panel auth-panel-register" data-auth-panel="register">
         <h2>Konto erstellen</h2>
-        <p class="auth-hint">Lege dir ein Konto an, damit dein Anzeigename und dein Profil später wieder da sind.</p>
-        <label class="auth-field">Benutzername
-          <input id="registerUsername" type="text" autocomplete="username" placeholder="z. B. Artonstyle">
-        </label>
-        <label class="auth-field">Anzeigename
-          <input id="registerDisplayName" type="text" placeholder="z. B. Arton">
-        </label>
         <label class="auth-field">E-Mail-Adresse
           <input id="registerEmail" type="email" autocomplete="email" placeholder="deine@email.de">
         </label>
         <label class="auth-field">Passwort
           <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Passwort">
         </label>
+        <label class="auth-field">Passwort wiederholen
+          <input id="registerPasswordRepeat" type="password" autocomplete="new-password" placeholder="Passwort wiederholen">
+        </label>
         <button id="registerSubmit" class="auth-primary-btn" type="button">Registrieren</button>
         <button class="auth-text-link" type="button" data-auth-switch="login">Du hast schon ein Konto? Jetzt anmelden</button>
+      </section>
+
+      <section class="auth-panel auth-panel-forgot" data-auth-panel="forgot">
+        <h2>Passwort vergessen</h2>
+        <p class="auth-hint">Gib deine E-Mail-Adresse ein. Du bekommst einen Link, um ein neues Passwort zu setzen.</p>
+        <label class="auth-field">E-Mail-Adresse
+          <input id="forgotEmail" type="email" autocomplete="email" placeholder="deine@email.de">
+        </label>
+        <button id="forgotSubmit" class="auth-primary-btn" type="button">Link senden</button>
+        <button class="auth-text-link" type="button" data-auth-switch="login">Zurück zur Anmeldung</button>
+      </section>
+
+      <section class="auth-panel auth-panel-reset" data-auth-panel="reset">
+        <h2>Neues Passwort</h2>
+        <p class="auth-hint">Vergib ein neues Passwort und wiederhole es zur Sicherheit.</p>
+        <label class="auth-field">Neues Passwort
+          <input id="resetPassword" type="password" autocomplete="new-password" placeholder="Neues Passwort">
+        </label>
+        <label class="auth-field">Passwort wiederholen
+          <input id="resetPasswordRepeat" type="password" autocomplete="new-password" placeholder="Passwort wiederholen">
+        </label>
+        <button id="resetSubmit" class="auth-primary-btn" type="button">Passwort speichern</button>
+        <button class="auth-text-link" type="button" data-auth-switch="login">Zurück zur Anmeldung</button>
       </section>
 
       <section class="auth-panel auth-panel-profile" data-auth-panel="profile">

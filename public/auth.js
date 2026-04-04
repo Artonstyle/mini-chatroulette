@@ -13,20 +13,22 @@
   const authStatus = document.getElementById("authStatus");
   const authToggleDesktop = document.getElementById("authToggleDesktop");
   const authToggleMobile = document.getElementById("authToggleMobile");
-  const authTabs = Array.from(document.querySelectorAll(".auth-tab"));
   const authPanels = Array.from(document.querySelectorAll("[data-auth-panel]"));
-  const profileTabButton = authTabs.find((button) => button.dataset.authTab === "profile");
   const authSwitchButtons = Array.from(document.querySelectorAll("[data-auth-switch]"));
 
   const loginEmail = document.getElementById("loginEmail");
   const loginPassword = document.getElementById("loginPassword");
   const loginSubmit = document.getElementById("loginSubmit");
 
-  const registerUsername = document.getElementById("registerUsername");
-  const registerDisplayName = document.getElementById("registerDisplayName");
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
+  const registerPasswordRepeat = document.getElementById("registerPasswordRepeat");
   const registerSubmit = document.getElementById("registerSubmit");
+  const forgotEmail = document.getElementById("forgotEmail");
+  const forgotSubmit = document.getElementById("forgotSubmit");
+  const resetPassword = document.getElementById("resetPassword");
+  const resetPasswordRepeat = document.getElementById("resetPasswordRepeat");
+  const resetSubmit = document.getElementById("resetSubmit");
 
   const profileUsername = document.getElementById("profileUsername");
   const profileDisplayName = document.getElementById("profileDisplayName");
@@ -68,7 +70,6 @@
     }
 
     activeTab = tab;
-    authTabs.forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
     authPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.authPanel === tab));
     setStatus("");
   }
@@ -95,8 +96,6 @@
     if (authToggleDesktop) authToggleDesktop.textContent = label;
     if (authToggleMobile) authToggleMobile.classList.toggle("logged-in", loggedIn);
     body.classList.toggle("auth-logged-in", loggedIn);
-
-    if (profileTabButton) profileTabButton.hidden = !loggedIn;
 
     if (!loggedIn && activeTab === "profile") {
       activeTab = "login";
@@ -288,7 +287,7 @@
     const password = loginPassword?.value || "";
 
     if (!email || !password) {
-      setStatus("Bitte E-Mail und Passwort eingeben.", "error");
+      setStatus("Bitte E-Mail-Adresse und Passwort eingeben.", "error");
       return;
     }
 
@@ -307,16 +306,56 @@
     await loadProfile();
   }
 
-  async function handleRegister() {
-    const username = registerUsername?.value?.trim();
-    const displayName = registerDisplayName?.value?.trim();
-    const email = registerEmail?.value?.trim();
-    const password = registerPassword?.value || "";
+  async function handleForgotPassword() {
+    const email = forgotEmail?.value?.trim() || loginEmail?.value?.trim();
 
-    if (!username || !email || !password) {
-      setStatus("Bitte Benutzername, E-Mail und Passwort ausfüllen.", "error");
+    if (!email) {
+      setStatus("Bitte gib deine E-Mail-Adresse ein.", "error");
       return;
     }
+
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    setStatus("Link wird gesendet...");
+
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+
+    if (error) {
+      setStatus(error.message || "Reset-Link konnte nicht gesendet werden.", "error");
+      return;
+    }
+
+    if (forgotEmail) forgotEmail.value = email;
+    setStatus("Wenn die E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.", "success");
+  }
+
+  async function handleRegister() {
+    const email = registerEmail?.value?.trim();
+    const password = registerPassword?.value || "";
+    const passwordRepeat = registerPasswordRepeat?.value || "";
+
+    if (!email || !password || !passwordRepeat) {
+      setStatus("Bitte E-Mail-Adresse und beide Passwort-Felder ausfüllen.", "error");
+      return;
+    }
+
+    if (password !== passwordRepeat) {
+      setStatus("Die Passwörter stimmen nicht überein.", "error");
+      return;
+    }
+
+    if (password.length < 6) {
+      setStatus("Das Passwort muss mindestens 6 Zeichen haben.", "error");
+      return;
+    }
+
+    const usernameBase = email.split("@")[0]?.trim() || "user";
+    const username = (
+      usernameBase
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]+/g, "")
+        .replace(/^[._-]+|[._-]+$/g, "")
+        .slice(0, 24)
+    ) || `user${Date.now().toString().slice(-6)}`;
 
     setStatus("Registrierung läuft...");
     const { data, error } = await client.auth.signUp({
@@ -325,7 +364,7 @@
       options: {
         data: {
           username,
-          display_name: displayName || username
+          display_name: username
         }
       }
     });
@@ -348,6 +387,40 @@
     await loadProfile();
   }
 
+  async function handleResetPassword() {
+    const password = resetPassword?.value || "";
+    const passwordRepeat = resetPasswordRepeat?.value || "";
+
+    if (!password || !passwordRepeat) {
+      setStatus("Bitte beide Passwort-Felder ausfüllen.", "error");
+      return;
+    }
+
+    if (password !== passwordRepeat) {
+      setStatus("Die Passwörter stimmen nicht überein.", "error");
+      return;
+    }
+
+    if (password.length < 6) {
+      setStatus("Das Passwort muss mindestens 6 Zeichen haben.", "error");
+      return;
+    }
+
+    setStatus("Passwort wird gespeichert...");
+    const { error } = await client.auth.updateUser({ password });
+
+    if (error) {
+      setStatus(error.message || "Passwort konnte nicht aktualisiert werden.", "error");
+      return;
+    }
+
+    if (resetPassword) resetPassword.value = "";
+    if (resetPasswordRepeat) resetPasswordRepeat.value = "";
+
+    setStatus("Passwort erfolgreich geändert. Du kannst dich jetzt anmelden.", "success");
+    switchTab("login");
+  }
+
   async function handleLogout() {
     await client.auth.signOut();
     currentSession = null;
@@ -360,6 +433,9 @@
   }
 
   async function initAuth() {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const recoveryType = hashParams.get("type");
+
     const { data } = await client.auth.getSession();
     currentSession = data.session;
     updateAuthButtons();
@@ -372,11 +448,12 @@
     }
 
     await loadProfile();
-  }
 
-  authTabs.forEach((button) => {
-    button.addEventListener("click", () => switchTab(button.dataset.authTab));
-  });
+    if (recoveryType === "recovery") {
+      openModal("reset");
+      setStatus("Bitte gib jetzt dein neues Passwort ein.");
+    }
+  }
 
   authSwitchButtons.forEach((button) => {
     button.addEventListener("click", () => switchTab(button.dataset.authSwitch));
@@ -388,7 +465,9 @@
   authModal?.querySelector(".auth-backdrop")?.addEventListener("click", closeModal);
 
   loginSubmit?.addEventListener("click", handleLogin);
+  forgotSubmit?.addEventListener("click", handleForgotPassword);
   registerSubmit?.addEventListener("click", handleRegister);
+  resetSubmit?.addEventListener("click", handleResetPassword);
   logoutSubmit?.addEventListener("click", handleLogout);
   profileSave?.addEventListener("click", () => saveProfile());
 
@@ -404,6 +483,12 @@
     currentSession = session;
     updateAuthButtons();
     updateProfileSummary();
+
+    if (_event === "PASSWORD_RECOVERY") {
+      openModal("reset");
+      setStatus("Bitte gib jetzt dein neues Passwort ein.");
+    }
+
     await loadProfile();
   });
 

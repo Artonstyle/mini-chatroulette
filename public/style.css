@@ -4717,7 +4717,7 @@ body.bg-4 .btn-send {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(92vw, 520px);
+  width: min(92vw, 430px);
   transform: translate(-50%, -50%);
   border-radius: 30px;
   border: 1px solid rgba(120, 156, 255, 0.16);
@@ -4727,7 +4727,7 @@ body.bg-4 .btn-send {
   box-shadow:
     0 34px 90px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255,255,255,0.05);
-  padding: 24px 24px 20px;
+  padding: 22px 22px 18px;
   color: #eef4ff;
 }
 
@@ -4745,7 +4745,7 @@ body.bg-4 .btn-send {
 }
 
 .auth-headline {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   padding-right: 54px;
 }
 
@@ -4764,30 +4764,6 @@ body.bg-4 .btn-send {
   max-width: 38ch;
 }
 
-.auth-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.auth-tab {
-  flex: 1 1 0;
-  min-height: 48px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.035);
-  color: #c8d2e4;
-  font-weight: 800;
-  font-size: 1rem;
-}
-
-.auth-tab.active {
-  background: linear-gradient(180deg, rgba(65, 124, 255, 0.32), rgba(31, 67, 146, 0.48));
-  color: #f6f9ff;
-  border-color: rgba(132, 167, 255, 0.34);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
 .auth-panel {
   display: none;
 }
@@ -4797,33 +4773,33 @@ body.bg-4 .btn-send {
 }
 
 .auth-panel h2 {
-  margin: 0 0 10px;
-  font-size: 2rem;
+  margin: 0 0 8px;
+  font-size: 1.8rem;
   line-height: 1.05;
 }
 
 .auth-hint {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   color: #9aa8c0;
-  line-height: 1.55;
-  font-size: 1rem;
+  line-height: 1.45;
+  font-size: 0.96rem;
 }
 
 .auth-field,
 .auth-panel label {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   color: #ecf2ff;
   font-weight: 700;
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   line-height: 1.3;
 }
 
 .auth-panel input {
   width: 100%;
   margin-top: 8px;
-  height: 58px;
-  border-radius: 18px;
+  height: 54px;
+  border-radius: 16px;
   border: 1px solid rgba(147, 163, 193, 0.16);
   background: rgba(35, 46, 61, 0.92);
   color: #f3f7ff;
@@ -4847,8 +4823,8 @@ body.bg-4 .btn-send {
 .auth-primary-btn,
 .auth-secondary-btn,
 .auth-admin-link {
-  min-height: 56px;
-  border-radius: 18px;
+  min-height: 54px;
+  border-radius: 16px;
   border: none;
   padding: 0 20px;
   font-weight: 800;
@@ -4872,7 +4848,7 @@ body.bg-4 .btn-send {
 }
 
 .auth-text-link {
-  margin-top: 4px;
+  margin-top: 2px;
   padding: 0;
   border: none;
   background: transparent;
@@ -4881,6 +4857,12 @@ body.bg-4 .btn-send {
   font-weight: 700;
   cursor: pointer;
   text-align: left;
+}
+
+.auth-text-link-inline {
+  display: inline-flex;
+  align-self: flex-start;
+  margin: -2px 0 12px;
 }
 
 .auth-profile-summary {
@@ -4982,26 +4964,17 @@ body.bg-4 .btn-send {
   }
 
   .auth-dialog {
-    width: min(94vw, 400px);
+    width: min(94vw, 380px);
     padding: 18px 16px 16px;
     border-radius: 24px;
   }
 
   .auth-headline {
-    margin-bottom: 14px;
-  }
-
-  .auth-tabs {
-    gap: 6px;
-  }
-
-  .auth-tab {
-    min-height: 42px;
-    font-size: 0.9rem;
+    margin-bottom: 12px;
   }
 
   .auth-panel h2 {
-    font-size: 1.7rem;
+    font-size: 1.55rem;
   }
 
   .auth-panel input {
