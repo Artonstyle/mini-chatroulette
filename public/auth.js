@@ -47,6 +47,7 @@
   const mobileProfilePhoneNumber = document.getElementById("mobileProfilePhoneNumber");
   const mobileProfileSave = document.getElementById("mobileProfileSave");
   const mobileSettingsLogoutBtn = document.getElementById("mobileSettingsLogoutBtn");
+  const mobileSettingsStatus = document.getElementById("mobileSettingsStatus");
 
   const genderInput = document.getElementById("gender");
   const searchInput = document.getElementById("search");
@@ -62,6 +63,11 @@
     authStatus.textContent = message;
     authStatus.className = "auth-status";
     if (type) authStatus.classList.add(type);
+    if (mobileSettingsStatus) {
+      mobileSettingsStatus.textContent = message;
+      mobileSettingsStatus.className = "auth-status mobile-settings-status";
+      if (type) mobileSettingsStatus.classList.add(type);
+    }
   }
 
   function escapeHtml(text) {
@@ -283,7 +289,10 @@
   }
 
   async function saveProfile(extra = {}) {
-    if (!currentSession?.user) return;
+    if (!currentSession?.user) {
+      setStatus("Bitte melde dich zuerst an.", "error");
+      return;
+    }
 
     const payload = buildProfilePayload(extra);
     const { error } = await client.from("profiles").upsert(payload);
@@ -498,6 +507,9 @@
 
   window.miniChatrouletteLogout = () => {
     void handleLogout();
+  };
+  window.miniChatrouletteSaveProfile = () => {
+    void saveProfile();
   };
 
   async function initAuth() {

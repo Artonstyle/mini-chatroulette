@@ -401,8 +401,9 @@
             <label class="auth-field">Telefonnummer
               <input id="mobileProfilePhoneNumber" type="tel" placeholder="z. B. +49 151 23456789">
             </label>
+            <div id="mobileSettingsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
             <div class="mobile-settings-actions">
-              <button id="mobileProfileSave" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Profil speichern</button>
+              <button id="mobileProfileSave" class="mobile-settings-btn mobile-settings-btn-primary" type="button" onclick="window.miniChatrouletteSaveProfile && window.miniChatrouletteSaveProfile()">Profil speichern</button>
               <button id="mobileSettingsLogoutBtn" class="mobile-settings-btn" type="button" onclick="window.miniChatrouletteLogout && window.miniChatrouletteLogout()">Logout</button>
             </div>
           </section>

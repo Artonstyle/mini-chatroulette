@@ -5001,6 +5001,11 @@ body.bg-4 .btn-send {
   font-weight: 700;
 }
 
+.mobile-settings-status {
+  min-height: 20px;
+  margin: 4px 0 2px;
+}
+
 .auth-status.success {
   color: #68e38f;
 }
