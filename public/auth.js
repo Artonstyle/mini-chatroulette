@@ -69,8 +69,7 @@
   let activeTab = "login";
   let currentSession = null;
   let currentProfile = null;
-  let profileSaveTimer = null;
-  let profileSaveInFlight = null;
+  let profileSaveInFlight = false;
   let pendingAvatarUrl = null;
   let resetReturnTab = "login";
 
@@ -417,14 +416,7 @@
   }
 
   function queueProfileSave() {
-    if (!currentSession?.user) return;
-    if (profileSaveTimer) clearTimeout(profileSaveTimer);
-    if (profileSaveInFlight) return;
-
-    profileSaveTimer = setTimeout(() => {
-      saveProfile();
-      profileSaveTimer = null;
-    }, 600);
+    return;
   }
 
   async function saveProfile(extra = {}, options = {}) {
@@ -433,21 +425,14 @@
       return;
     }
 
-    const manual = Boolean(options.manual);
-
-    if (manual && profileSaveTimer) {
-      clearTimeout(profileSaveTimer);
-      profileSaveTimer = null;
-    }
-
     if (profileSaveInFlight) {
-      if (manual) {
-        setStatus("Profil wird gerade gespeichert. Bitte kurz warten.", "error");
-      }
-      return profileSaveInFlight;
+      setStatus("Ein Speicherversuch läuft noch. Bitte gleich nochmal tippen.", "error");
+      return;
     }
 
-    const run = async () => {
+    profileSaveInFlight = true;
+
+    try {
       const payload = buildProfilePayload(extra);
 
       let profileError = null;
@@ -482,13 +467,9 @@
 
       setStatus("Profil gespeichert.", "success");
       await loadProfile();
-    };
-
-    profileSaveInFlight = run().finally(() => {
-      profileSaveInFlight = null;
-    });
-
-    return profileSaveInFlight;
+    } finally {
+      profileSaveInFlight = false;
+    }
   }
 
   async function handleAvatarSelection(event) {
