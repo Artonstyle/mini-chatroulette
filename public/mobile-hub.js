@@ -1,12 +1,9 @@
 (function () {
-  const supabaseGlobal = window.supabase;
-  const supabaseUrl = window.MINI_CHATROULETTE_SUPABASE_URL;
-  const supabaseAnonKey = window.MINI_CHATROULETTE_SUPABASE_ANON_KEY;
   const STATUS_MEDIA_BUCKET = "status-media";
 
-  if (!supabaseGlobal || !supabaseUrl || !supabaseAnonKey) return;
+  const client = window.getMiniChatrouletteSupabaseClient?.();
 
-  const client = supabaseGlobal.createClient(supabaseUrl, supabaseAnonKey);
+  if (!client) return;
 
   const body = document.body;
   const mobileHub = document.getElementById("mobileHub");

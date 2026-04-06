@@ -1,18 +1,7 @@
 (function () {
-  const supabaseGlobal = window.supabase;
-  const supabaseUrl = window.MINI_CHATROULETTE_SUPABASE_URL;
-  const supabaseAnonKey = window.MINI_CHATROULETTE_SUPABASE_ANON_KEY;
+  const client = window.getMiniChatrouletteSupabaseClient?.();
 
-  if (!supabaseGlobal || !supabaseUrl || !supabaseAnonKey) return;
-
-  const client = supabaseGlobal.createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: window.localStorage
-    }
-  });
+  if (!client) return;
 
   const body = document.body;
   const authModal = document.getElementById("authModal");
