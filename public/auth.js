@@ -61,6 +61,7 @@
   let profileSaveInFlight = false;
   let pendingAvatarUrl = null;
   let resetReturnTab = "login";
+  let passwordChangeInFlight = false;
 
   function setStatus(message = "", type = "") {
     if (authStatus) {
@@ -676,6 +677,62 @@
     void saveProfile({}, { manual: true });
   };
 
+  async function handleResetPasswordFixed() {
+    if (passwordChangeInFlight) {
+      setStatus("Passwortänderung läuft bereits. Bitte kurz warten.", "error");
+      return;
+    }
+
+    const password = resetPassword?.value || "";
+    const passwordRepeat = resetPasswordRepeat?.value || "";
+
+    if (!password || !passwordRepeat) {
+      setStatus("Bitte beide Passwort-Felder ausfüllen.", "error");
+      return;
+    }
+
+    if (password !== passwordRepeat) {
+      setStatus("Die Passwörter stimmen nicht überein.", "error");
+      return;
+    }
+
+    if (password.length < 6) {
+      setStatus("Das Passwort muss mindestens 6 Zeichen haben.", "error");
+      return;
+    }
+
+    passwordChangeInFlight = true;
+
+    try {
+      setStatus("Passwort wird gespeichert...");
+
+      const result = await Promise.race([
+        client.auth.updateUser({ password }),
+        new Promise((resolve) =>
+          window.setTimeout(
+            () => resolve({ error: { message: "Die Passwortänderung hat zu lange gedauert. Bitte versuche es erneut oder nutze Passwort vergessen." } }),
+            15000
+          )
+        )
+      ]);
+
+      const error = result?.error || null;
+
+      if (error) {
+        setStatus(error.message || "Passwort konnte nicht aktualisiert werden.", "error");
+        return;
+      }
+
+      if (resetPassword) resetPassword.value = "";
+      if (resetPasswordRepeat) resetPasswordRepeat.value = "";
+
+      setStatus("Passwort erfolgreich geändert.", "success");
+      switchTab(resetReturnTab === "profile" && currentSession?.user ? "profile" : "login");
+    } finally {
+      passwordChangeInFlight = false;
+    }
+  }
+
   async function initAuth() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const recoveryType = hashParams.get("type");
@@ -714,7 +771,7 @@
   loginSubmit?.addEventListener("click", handleLogin);
   forgotSubmit?.addEventListener("click", handleForgotPassword);
   registerSubmit?.addEventListener("click", handleRegister);
-  resetSubmit?.addEventListener("click", handleResetPassword);
+  resetSubmit?.addEventListener("click", handleResetPasswordFixed);
   logoutSubmit?.addEventListener("click", handleLogout);
   profileAvatarPick?.addEventListener("click", () => profileAvatarInput?.click());
   profileAvatarInput?.addEventListener("change", handleAvatarSelection);
