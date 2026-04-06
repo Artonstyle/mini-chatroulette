@@ -62,6 +62,7 @@
   let pendingAvatarUrl = null;
   let resetReturnTab = "login";
   let passwordChangeInFlight = false;
+  let authHistoryOpen = false;
 
   function setStatus(message = "", type = "") {
     if (authStatus) {
@@ -125,17 +126,33 @@
     setStatus("");
   }
 
+  function hideModal() {
+    if (!authModal) return;
+    authModal.hidden = true;
+    body.classList.remove("auth-open");
+  }
+
   function openModal(tab = activeTab) {
     if (!authModal) return;
+    hideModal();
     authModal.hidden = false;
     body.classList.add("auth-open");
+    if (!authHistoryOpen) {
+      window.history.pushState({ miniChatrouletteModal: true }, "");
+      authHistoryOpen = true;
+    }
     switchTab(tab);
   }
 
   function closeModal() {
-    if (!authModal) return;
-    authModal.hidden = true;
-    body.classList.remove("auth-open");
+    if (!authModal || authModal.hidden) return;
+    hideModal();
+    if (authHistoryOpen) {
+      authHistoryOpen = false;
+      if (window.history.state?.miniChatrouletteModal) {
+        window.history.back();
+      }
+    }
   }
 
   function updateAuthButtons() {
@@ -478,9 +495,31 @@
 
     const reader = new FileReader();
     reader.onload = () => {
-      pendingAvatarUrl = typeof reader.result === "string" ? reader.result : null;
-      updateAvatarPreview(pendingAvatarUrl || "");
-      setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 512;
+        const ratio = Math.min(maxSize / image.width, maxSize / image.height, 1);
+        const width = Math.max(1, Math.round(image.width * ratio));
+        const height = Math.max(1, Math.round(image.height * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          setStatus("Profilbild konnte nicht verarbeitet werden.", "error");
+          return;
+        }
+
+        ctx.drawImage(image, 0, 0, width, height);
+        pendingAvatarUrl = canvas.toDataURL("image/jpeg", 0.82);
+        updateAvatarPreview(pendingAvatarUrl || "");
+        setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
+      };
+      image.onerror = () => {
+        setStatus("Profilbild konnte nicht gelesen werden.", "error");
+      };
+      image.src = typeof reader.result === "string" ? reader.result : "";
     };
     reader.onerror = () => {
       setStatus("Profilbild konnte nicht gelesen werden.", "error");
@@ -764,6 +803,12 @@
   authToggleMobile?.addEventListener("click", () => openModal("login"));
   authClose?.addEventListener("click", closeModal);
   authModal?.querySelector(".auth-backdrop")?.addEventListener("click", closeModal);
+  window.addEventListener("popstate", () => {
+    if (authModal && !authModal.hidden) {
+      authHistoryOpen = false;
+      hideModal();
+    }
+  });
   window.addEventListener("mini-chatroulette:open-account", () => {
     openModal(currentSession?.user ? "profile" : "login");
   });
