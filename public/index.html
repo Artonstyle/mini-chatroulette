@@ -383,6 +383,51 @@
             </div>
           </section>
 
+          <section id="mobileSettingsGuestCard" class="mobile-card mobile-settings-card">
+            <div class="mobile-settings-summary">
+              <strong>Anmeldung</strong>
+              <span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>
+            </div>
+            <div class="mobile-settings-actions">
+              <button id="mobileSettingsLoginBtn" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Anmelden</button>
+            </div>
+          </section>
+
+          <section id="mobileSettingsAccountCard" class="mobile-card mobile-settings-card mobile-settings-account-card" hidden>
+            <div id="mobileAuthProfileSummary" class="auth-profile-summary">
+              <strong>Dein Konto</strong>
+              <span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>
+            </div>
+
+            <div class="mobile-account-avatar-row">
+              <div id="mobileProfileAvatarPreview" class="auth-avatar-preview" aria-hidden="true">+</div>
+              <div class="auth-avatar-copy">
+                <strong>Profilbild</strong>
+                <span>Wähle ein Bild für dein Konto.</span>
+              </div>
+              <button id="mobileProfileAvatarPick" class="auth-secondary-btn auth-avatar-btn" type="button">Bild wählen</button>
+              <input id="mobileProfileAvatarInput" type="file" accept="image/*" hidden>
+            </div>
+
+            <label class="auth-field">Benutzername
+              <input id="mobileProfileUsername" type="text" placeholder="Benutzername">
+            </label>
+            <label class="auth-field">Anzeigename
+              <input id="mobileProfileDisplayName" type="text" placeholder="Anzeigename">
+            </label>
+            <label class="auth-field">Telefonnummer
+              <input id="mobileProfilePhoneNumber" type="tel" placeholder="z. B. +49 151 23456789">
+            </label>
+
+            <div id="mobileSettingsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
+
+            <div class="mobile-settings-actions">
+              <button id="mobileProfileSave" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Profil speichern</button>
+              <button id="mobileProfileChangePassword" class="mobile-settings-btn" type="button">Passwort ändern</button>
+              <button id="mobileSettingsLogoutBtn" class="mobile-settings-btn" type="button">Logout</button>
+            </div>
+          </section>
+
           <section class="mobile-card mobile-settings-card">
             <div class="mobile-settings-list">
               <button class="mobile-settings-item" type="button" data-settings-item="privacy">

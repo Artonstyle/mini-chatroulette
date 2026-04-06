@@ -3975,6 +3975,32 @@ body.bg-4 .btn-send {
   white-space: nowrap;
 }
 
+.mobile-settings-account-card {
+  gap: 12px;
+}
+
+.mobile-account-avatar-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.mobile-settings-account-card .auth-field {
+  margin-bottom: 8px;
+  font-size: 0.94rem;
+}
+
+.mobile-settings-account-card .auth-field input {
+  height: 48px;
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
   .mobile-settings-btn {
     min-height: 52px;
     border-radius: 16px;

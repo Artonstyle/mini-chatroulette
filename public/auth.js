@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const client = window.getMiniChatrouletteSupabaseClient?.();
 
   if (!client) return;
@@ -42,12 +42,17 @@
   const mobileSettingsAccountCard = document.getElementById("mobileSettingsAccountCard");
   const mobileSettingsSummary = document.getElementById("mobileSettingsSummary");
   const mobileSettingsAccountBtn = document.getElementById("mobileSettingsAccountBtn");
+  const mobileSettingsLoginBtn = document.getElementById("mobileSettingsLoginBtn");
   const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
+  const mobileProfileAvatarPreview = document.getElementById("mobileProfileAvatarPreview");
+  const mobileProfileAvatarInput = document.getElementById("mobileProfileAvatarInput");
+  const mobileProfileAvatarPick = document.getElementById("mobileProfileAvatarPick");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
   const mobileProfilePhoneNumber = document.getElementById("mobileProfilePhoneNumber");
   const mobileProfileSave = document.getElementById("mobileProfileSave");
+  const mobileProfileChangePassword = document.getElementById("mobileProfileChangePassword");
   const mobileSettingsLogoutBtn = document.getElementById("mobileSettingsLogoutBtn");
   const mobileSettingsStatus = document.getElementById("mobileSettingsStatus");
 
@@ -101,19 +106,21 @@
   }
 
   function updateAvatarPreview(url) {
-    if (!profileAvatarPreview) return;
-
     const safeUrl = String(url || "").trim();
-    if (!safeUrl) {
-      profileAvatarPreview.style.backgroundImage = "";
-      profileAvatarPreview.textContent = "+";
-      profileAvatarPreview.classList.remove("has-image");
-      return;
-    }
+    [profileAvatarPreview, mobileProfileAvatarPreview].forEach((preview) => {
+      if (!preview) return;
 
-    profileAvatarPreview.style.backgroundImage = `url("${safeUrl.replaceAll('"', '\\"')}")`;
-    profileAvatarPreview.textContent = "";
-    profileAvatarPreview.classList.add("has-image");
+      if (!safeUrl) {
+        preview.style.backgroundImage = "";
+        preview.textContent = "+";
+        preview.classList.remove("has-image");
+        return;
+      }
+
+      preview.style.backgroundImage = `url("${safeUrl.replaceAll('"', '\\"')}")`;
+      preview.textContent = "";
+      preview.classList.add("has-image");
+    });
   }
 
   function switchTab(tab) {
@@ -177,8 +184,11 @@
         mobileAuthProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>";
       }
       if (mobileSettingsSummary) {
-        mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
+        mobileSettingsSummary.innerHTML = "<strong>Einstellung</strong><span>Melde dich an, um dein Konto in der App zu verwalten.</span>";
       }
+      if (mobileSettingsAccountBtn) mobileSettingsAccountBtn.textContent = "Anmelden";
+      if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = false;
+      if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = true;
       return;
     }
 
@@ -194,8 +204,9 @@
       mobileAuthProfileSummary.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>`;
     }
     if (mobileSettingsSummary) {
-      mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
+      mobileSettingsSummary.innerHTML = "<strong>Einstellung</strong><span>Dein Konto ist angemeldet und kann hier direkt bearbeitet werden.</span>";
     }
+    if (mobileSettingsAccountBtn) mobileSettingsAccountBtn.textContent = "Konto";
     if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = true;
     if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = false;
   }
@@ -228,17 +239,22 @@
   }
 
   function buildProfilePayload(extra = {}) {
-    const activeUsername = activeTab === "profile"
-      ? profileUsername?.value?.trim()
-      : mobileProfileUsername?.value?.trim();
+    const useMobileAccount =
+      Boolean(mobileSettingsAccountCard) &&
+      !mobileSettingsAccountCard.hidden &&
+      body.classList.contains("mobile-hub-active");
 
-    const activeDisplayName = activeTab === "profile"
-      ? profileDisplayName?.value?.trim()
-      : mobileProfileDisplayName?.value?.trim();
+    const activeUsername = useMobileAccount
+      ? mobileProfileUsername?.value?.trim()
+      : profileUsername?.value?.trim();
 
-    const activePhoneNumber = activeTab === "profile"
-      ? profilePhoneNumber?.value?.trim()
-      : mobileProfilePhoneNumber?.value?.trim();
+    const activeDisplayName = useMobileAccount
+      ? mobileProfileDisplayName?.value?.trim()
+      : profileDisplayName?.value?.trim();
+
+    const activePhoneNumber = useMobileAccount
+      ? mobileProfilePhoneNumber?.value?.trim()
+      : profilePhoneNumber?.value?.trim();
 
     const fallbackUsername =
       currentProfile?.username ||
@@ -401,7 +417,7 @@
     if (updateError) {
       const authLockMessage = String(updateError.message || "").toLowerCase();
       if (authLockMessage.includes("lock") || authLockMessage.includes("stole it")) {
-        setStatus("Profil gespeichert. Schließe andere offene App-Tabs, damit die Anmeldung nicht konkurriert.", "success");
+        setStatus("Profil gespeichert. SchlieÃŸe andere offene App-Tabs, damit die Anmeldung nicht konkurriert.", "success");
         await loadProfile();
         return;
       }
@@ -433,7 +449,7 @@
     }
 
     if (profileSaveInFlight) {
-      setStatus("Ein Speicherversuch läuft noch. Bitte gleich nochmal tippen.", "error");
+      setStatus("Ein Speicherversuch lÃ¤uft noch. Bitte gleich nochmal tippen.", "error");
       return;
     }
 
@@ -484,12 +500,12 @@
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setStatus("Bitte wähle ein Bild aus.", "error");
+      setStatus("Bitte wÃ¤hle ein Bild aus.", "error");
       return;
     }
 
     if (file.size > 1024 * 1024 * 10) {
-      setStatus("Das Bild ist zu groß. Bitte nimm maximal 10 MB.", "error");
+      setStatus("Das Bild ist zu groÃŸ. Bitte nimm maximal 10 MB.", "error");
       return;
     }
 
@@ -514,7 +530,7 @@
         ctx.drawImage(image, 0, 0, width, height);
         pendingAvatarUrl = canvas.toDataURL("image/jpeg", 0.82);
         updateAvatarPreview(pendingAvatarUrl || "");
-        setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
+        setStatus("Profilbild ausgewÃ¤hlt. Jetzt Profil speichern.", "success");
       };
       image.onerror = () => {
         setStatus("Profilbild konnte nicht gelesen werden.", "error");
@@ -555,7 +571,7 @@
       return;
     }
 
-    setStatus("Anmeldung läuft...");
+    setStatus("Anmeldung lÃ¤uft...");
     const { data, error } = await client.auth.signInWithPassword({ email, password });
 
     if (error) {
@@ -589,7 +605,7 @@
     }
 
     if (forgotEmail) forgotEmail.value = email;
-    setStatus("Wenn die E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.", "success");
+    setStatus("Wenn die E-Mail existiert, wurde ein Link zum ZurÃ¼cksetzen gesendet.", "success");
   }
 
   async function handleRegister() {
@@ -598,12 +614,12 @@
     const passwordRepeat = registerPasswordRepeat?.value || "";
 
     if (!email || !password || !passwordRepeat) {
-      setStatus("Bitte E-Mail-Adresse und beide Passwort-Felder ausfüllen.", "error");
+      setStatus("Bitte E-Mail-Adresse und beide Passwort-Felder ausfÃ¼llen.", "error");
       return;
     }
 
     if (password !== passwordRepeat) {
-      setStatus("Die Passwörter stimmen nicht überein.", "error");
+      setStatus("Die PasswÃ¶rter stimmen nicht Ã¼berein.", "error");
       return;
     }
 
@@ -621,7 +637,7 @@
         .slice(0, 24)
     ) || `user${Date.now().toString().slice(-6)}`;
 
-    setStatus("Registrierung läuft...");
+    setStatus("Registrierung lÃ¤uft...");
     const { data, error } = await client.auth.signUp({
       email,
       password,
@@ -639,7 +655,7 @@
     }
 
     if (!data.session) {
-      setStatus("Konto erstellt. Bitte bestätige deine E-Mail, falls Supabase das verlangt.", "success");
+      setStatus("Konto erstellt. Bitte bestÃ¤tige deine E-Mail, falls Supabase das verlangt.", "success");
       switchTab("login");
       return;
     }
@@ -656,12 +672,12 @@
     const passwordRepeat = resetPasswordRepeat?.value || "";
 
     if (!password || !passwordRepeat) {
-      setStatus("Bitte beide Passwort-Felder ausfüllen.", "error");
+      setStatus("Bitte beide Passwort-Felder ausfÃ¼llen.", "error");
       return;
     }
 
     if (password !== passwordRepeat) {
-      setStatus("Die Passwörter stimmen nicht überein.", "error");
+      setStatus("Die PasswÃ¶rter stimmen nicht Ã¼berein.", "error");
       return;
     }
 
@@ -681,7 +697,7 @@
     if (resetPassword) resetPassword.value = "";
     if (resetPasswordRepeat) resetPasswordRepeat.value = "";
 
-    setStatus("Passwort erfolgreich geändert. Du kannst dich jetzt anmelden.", "success");
+    setStatus("Passwort erfolgreich geÃ¤ndert. Du kannst dich jetzt anmelden.", "success");
     switchTab("login");
   }
 
@@ -718,7 +734,7 @@
 
   async function handleResetPasswordFixed() {
     if (passwordChangeInFlight) {
-      setStatus("Passwortänderung läuft bereits. Bitte kurz warten.", "error");
+      setStatus("PasswortÃ¤nderung lÃ¤uft bereits. Bitte kurz warten.", "error");
       return;
     }
 
@@ -726,12 +742,12 @@
     const passwordRepeat = resetPasswordRepeat?.value || "";
 
     if (!password || !passwordRepeat) {
-      setStatus("Bitte beide Passwort-Felder ausfüllen.", "error");
+      setStatus("Bitte beide Passwort-Felder ausfÃ¼llen.", "error");
       return;
     }
 
     if (password !== passwordRepeat) {
-      setStatus("Die Passwörter stimmen nicht überein.", "error");
+      setStatus("Die PasswÃ¶rter stimmen nicht Ã¼berein.", "error");
       return;
     }
 
@@ -749,7 +765,7 @@
         client.auth.updateUser({ password }),
         new Promise((resolve) =>
           window.setTimeout(
-            () => resolve({ error: { message: "Die Passwortänderung hat zu lange gedauert. Bitte versuche es erneut oder nutze Passwort vergessen." } }),
+            () => resolve({ error: { message: "Die PasswortÃ¤nderung hat zu lange gedauert. Bitte versuche es erneut oder nutze Passwort vergessen." } }),
             15000
           )
         )
@@ -765,7 +781,7 @@
       if (resetPassword) resetPassword.value = "";
       if (resetPasswordRepeat) resetPasswordRepeat.value = "";
 
-      setStatus("Passwort erfolgreich geändert.", "success");
+      setStatus("Passwort erfolgreich geÃ¤ndert.", "success");
       switchTab(resetReturnTab === "profile" && currentSession?.user ? "profile" : "login");
     } finally {
       passwordChangeInFlight = false;
@@ -825,14 +841,31 @@
     switchTab("reset");
     setStatus("Gib dein neues Passwort ein.", "success");
   });
-  mobileSettingsAccountBtn?.addEventListener("click", () => openModal(currentSession?.user ? "profile" : "login"));
+  mobileSettingsAccountBtn?.addEventListener("click", () => {
+    if (!currentSession?.user) {
+      openModal("login");
+      return;
+    }
+    if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = true;
+    if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = false;
+    updateProfileSummary();
+    fillProfileFields();
+  });
   mobileSettingsItems.forEach((button) => {
     button.addEventListener("click", () => {
-      setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
+      setStatus("Dieser Bereich kommt als nÃ¤chster Schritt.", "success");
     });
   });
   mobileSettingsLogoutBtn?.addEventListener("click", handleLogout);
   mobileProfileSave?.addEventListener("click", () => saveProfile({}, { manual: true }));
+  mobileSettingsLoginBtn?.addEventListener("click", () => openModal("login"));
+  mobileProfileAvatarPick?.addEventListener("click", () => mobileProfileAvatarInput?.click());
+  mobileProfileAvatarInput?.addEventListener("change", handleAvatarSelection);
+  mobileProfileChangePassword?.addEventListener("click", () => {
+    resetReturnTab = "profile";
+    openModal("reset");
+    setStatus("Gib dein neues Passwort ein.", "success");
+  });
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -857,3 +890,6 @@
 
   initAuth();
 })();
+
+
+
