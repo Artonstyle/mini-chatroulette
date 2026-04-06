@@ -113,6 +113,21 @@
     await new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  async function withTimeout(promise, ms, label) {
+    let timeoutId = null;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error(`${label} hat zu lange gedauert (${ms}ms)`));
+      }, ms);
+    });
+
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    }
+  }
+
   function updateAvatarPreview(url) {
     if (!profileAvatarPreview) return;
 
@@ -457,7 +472,7 @@
     }
 
     profileSaveInFlight = true;
-    setStatus("Profil wird gespeichert...");
+    setStatus("Profil wird gespeichert... Klick erkannt.");
 
     try {
       const payload = buildProfilePayload(extra);
@@ -469,22 +484,34 @@
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const { data, error } = await client
-            .from("profiles")
-            .update(payloadForUpdate)
-            .eq("id", currentSession.user.id)
-            .select("*")
-            .single();
+          setStatus(`Profil wird gespeichert... Update ${attempt + 1}/2 läuft.`);
+
+          const { data, error } = await withTimeout(
+            client
+              .from("profiles")
+              .update(payloadForUpdate)
+              .eq("id", currentSession.user.id)
+              .select("*")
+              .single(),
+            12000,
+            "Profil-Update"
+          );
 
           profileError = error || null;
           savedProfile = data || null;
 
           if (error && error.code === "PGRST116") {
-            const insertResult = await client
-              .from("profiles")
-              .insert(payload)
-              .select("*")
-              .single();
+            setStatus("Profil wird gespeichert... Profil fehlt, Insert läuft.");
+
+            const insertResult = await withTimeout(
+              client
+                .from("profiles")
+                .insert(payload)
+                .select("*")
+                .single(),
+              12000,
+              "Profil-Insert"
+            );
 
             profileError = insertResult.error || null;
             savedProfile = insertResult.data || null;
@@ -513,6 +540,7 @@
         return;
       }
 
+      setStatus("Profil gespeichert... UI wird aktualisiert.");
       pendingAvatarUrl = null;
       if (savedProfile) {
         currentProfile = savedProfile;
