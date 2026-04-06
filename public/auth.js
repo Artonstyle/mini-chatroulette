@@ -933,7 +933,7 @@
     }
   });
 
-  client.auth.onAuthStateChange(async (_event, session) => {
+  client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;
     updateAuthButtons();
     updateProfileSummary();
@@ -943,7 +943,9 @@
       setStatus("Bitte gib jetzt dein neues Passwort ein.");
     }
 
-    await loadProfile();
+    window.setTimeout(() => {
+      void loadProfile();
+    }, 0);
   });
 
   initAuth();
