@@ -504,19 +504,19 @@
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setStatus("Bitte wähle ein Bild aus.", "error");
+      setAvatarStatus("Bitte wähle ein Bild aus.", "error");
       return;
     }
 
     if (file.size > 1024 * 1024 * 10) {
-      setStatus("Das Bild ist zu groß. Bitte nimm maximal 10 MB.", "error");
+      setAvatarStatus("Das Bild ist zu groß. Bitte nimm maximal 10 MB.", "error");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== "string" || !reader.result.startsWith("data:image/")) {
-        setStatus("Profilbild konnte nicht gelesen werden.", "error");
+        setAvatarStatus("Profilbild konnte nicht gelesen werden.", "error");
         return;
       }
 
@@ -845,6 +845,7 @@
   registerSubmit?.addEventListener("click", handleRegister);
   resetSubmit?.addEventListener("click", handleResetPasswordFixed);
   logoutSubmit?.addEventListener("click", handleLogout);
+  profileSave?.addEventListener("click", () => saveProfile({}, { manual: true }));
   profileAvatarPick?.addEventListener("click", () => profileAvatarInput?.click());
   profileAvatarInput?.addEventListener("change", handleAvatarSelection);
   profileChangePassword?.addEventListener("click", () => {
@@ -852,7 +853,14 @@
     switchTab("reset");
     setStatus("Gib dein neues Passwort ein.", "success");
   });
-  mobileSettingsAccountBtn?.addEventListener("click", () => openModal(currentSession?.user ? "profile" : "login"));
+  mobileSettingsAccountBtn?.addEventListener("click", async () => {
+    if (currentSession?.user) {
+      await loadProfile();
+      openModal("profile");
+      return;
+    }
+    openModal("login");
+  });
   mobileSettingsItems.forEach((button) => {
     button.addEventListener("click", () => {
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
