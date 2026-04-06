@@ -809,16 +809,16 @@
 
   authToggleDesktop?.addEventListener("click", async () => {
     if (currentSession?.user) {
-      await loadProfile();
       openModal("profile");
+      await loadProfile();
       return;
     }
     openModal("login");
   });
   authToggleMobile?.addEventListener("click", async () => {
     if (currentSession?.user) {
-      await loadProfile();
       openModal("profile");
+      await loadProfile();
       return;
     }
     openModal("login");
@@ -833,8 +833,8 @@
   });
   window.addEventListener("mini-chatroulette:open-account", async () => {
     if (currentSession?.user) {
-      await loadProfile();
       openModal("profile");
+      await loadProfile();
       return;
     }
     openModal("login");
@@ -855,8 +855,8 @@
   });
   mobileSettingsAccountBtn?.addEventListener("click", async () => {
     if (currentSession?.user) {
-      await loadProfile();
       openModal("profile");
+      await loadProfile();
       return;
     }
     openModal("login");
