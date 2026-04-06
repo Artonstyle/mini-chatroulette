@@ -3925,10 +3925,55 @@ body.bg-4 .btn-send {
     line-height: 1.5;
   }
 
-  .mobile-settings-actions {
-    display: grid;
-    gap: 10px;
-  }
+.mobile-settings-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-settings-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-settings-item {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+  color: #eef4ff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  text-align: left;
+}
+
+.mobile-settings-item-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.mobile-settings-item-copy strong {
+  color: #f5fbff;
+  font-size: 1rem;
+}
+
+.mobile-settings-item-copy span {
+  color: #9db0c7;
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.mobile-settings-item-meta {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.06);
+  color: #c8d5e6;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
   .mobile-settings-btn {
     min-height: 52px;
@@ -4879,6 +4924,59 @@ body.bg-4 .btn-send {
     inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
+.auth-avatar-row {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.auth-avatar-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(49, 221, 118, 0.18);
+  color: #8effb1;
+  font-size: 1.6rem;
+  font-weight: 800;
+  background-size: cover;
+  background-position: center;
+}
+
+.auth-avatar-preview.has-image {
+  color: transparent;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16);
+}
+
+.auth-avatar-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.auth-avatar-copy strong {
+  color: #eef4ff;
+}
+
+.auth-avatar-copy span {
+  color: #9aa8c0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.auth-avatar-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 0.95rem;
+}
+
 .auth-primary-btn,
 .auth-secondary-btn,
 .auth-admin-link {
@@ -4999,6 +5097,11 @@ body.bg-4 .btn-send {
   min-height: 22px;
   margin-top: 16px;
   font-weight: 700;
+}
+
+.auth-status-inline {
+  margin: 2px 0 0;
+  min-height: 18px;
 }
 
 .mobile-settings-status {

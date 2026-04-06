@@ -373,38 +373,60 @@
       </div>
       <div class="mobile-pane-scroll">
         <div class="mobile-settings-stack">
-          <section id="mobileSettingsGuestCard" class="mobile-card mobile-settings-card">
+          <section class="mobile-card mobile-settings-card">
             <div id="mobileSettingsSummary" class="mobile-settings-summary">
-              <strong>Anmeldung</strong>
-              <span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>
+              <strong>Einstellung</strong>
+              <span>Konten, Datenschutz, Chats und weitere App-Optionen.</span>
             </div>
             <div class="mobile-settings-actions">
-              <button id="mobileSettingsLoginBtn" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Anmelden</button>
+              <button id="mobileSettingsAccountBtn" class="mobile-settings-btn mobile-settings-btn-primary" type="button">Konto</button>
             </div>
           </section>
 
-          <section id="mobileSettingsAccountCard" class="mobile-card mobile-settings-card" hidden>
-            <div class="mobile-settings-summary">
-              <strong>Dein Konto</strong>
-              <span>Hier kannst du Benutzernamen, Anzeigenamen und Telefonnummer verwalten.</span>
-            </div>
-            <div id="mobileAuthProfileSummary" class="auth-profile-summary">
-              <strong>Nicht eingeloggt</strong>
-              <span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>
-            </div>
-            <label class="auth-field">Benutzername
-              <input id="mobileProfileUsername" type="text" placeholder="Benutzername">
-            </label>
-            <label class="auth-field">Anzeigename
-              <input id="mobileProfileDisplayName" type="text" placeholder="Anzeigename">
-            </label>
-            <label class="auth-field">Telefonnummer
-              <input id="mobileProfilePhoneNumber" type="tel" placeholder="z. B. +49 151 23456789">
-            </label>
-            <div id="mobileSettingsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
-            <div class="mobile-settings-actions">
-              <button id="mobileProfileSave" class="mobile-settings-btn mobile-settings-btn-primary" type="button" onclick="window.miniChatrouletteSaveProfile && window.miniChatrouletteSaveProfile()">Profil speichern</button>
-              <button id="mobileSettingsLogoutBtn" class="mobile-settings-btn" type="button" onclick="window.miniChatrouletteLogout && window.miniChatrouletteLogout()">Logout</button>
+          <section class="mobile-card mobile-settings-card">
+            <div class="mobile-settings-list">
+              <button class="mobile-settings-item" type="button" data-settings-item="privacy">
+                <span class="mobile-settings-item-copy">
+                  <strong>Datenschutz</strong>
+                  <span>Blockieren, Sichtbarkeit und Privatsphäre</span>
+                </span>
+                <span class="mobile-settings-item-meta">Bald</span>
+              </button>
+              <button class="mobile-settings-item" type="button" data-settings-item="chats">
+                <span class="mobile-settings-item-copy">
+                  <strong>Chats</strong>
+                  <span>Hintergrund, Verlauf und Sendeverhalten</span>
+                </span>
+                <span class="mobile-settings-item-meta">Bald</span>
+              </button>
+              <button class="mobile-settings-item" type="button" data-settings-item="notifications">
+                <span class="mobile-settings-item-copy">
+                  <strong>Benachrichtigungen</strong>
+                  <span>Töne, Vorschau und Stummschalten</span>
+                </span>
+                <span class="mobile-settings-item-meta">Bald</span>
+              </button>
+              <button class="mobile-settings-item" type="button" data-settings-item="calls">
+                <span class="mobile-settings-item-copy">
+                  <strong>Anrufe</strong>
+                  <span>Klingelton, Datenverbrauch und Geräte</span>
+                </span>
+                <span class="mobile-settings-item-meta">Bald</span>
+              </button>
+              <button class="mobile-settings-item" type="button" data-settings-item="storage">
+                <span class="mobile-settings-item-copy">
+                  <strong>Speicher</strong>
+                  <span>Medien, große Dateien und Bereinigung</span>
+                </span>
+                <span class="mobile-settings-item-meta">Bald</span>
+              </button>
+              <button class="mobile-settings-item" type="button" data-settings-item="help">
+                <span class="mobile-settings-item-copy">
+                  <strong>Hilfe</strong>
+                  <span>Support, FAQ und App-Informationen</span>
+                </span>
+                <span class="mobile-settings-item-meta">Bald</span>
+              </button>
             </div>
           </section>
         </div>
@@ -473,7 +495,16 @@
 
       <section class="auth-panel auth-panel-profile" data-auth-panel="profile">
         <h2>Dein Konto</h2>
-        <p class="auth-hint">Hier kannst du deinen Benutzernamen, Anzeigenamen und Admin-Nachrichten verwalten.</p>
+        <p class="auth-hint">Hier kannst du dein Profil, dein Passwort und deine Kontodaten verwalten.</p>
+        <div class="auth-avatar-row">
+          <div id="profileAvatarPreview" class="auth-avatar-preview" aria-hidden="true">+</div>
+          <div class="auth-avatar-copy">
+            <strong>Profilbild</strong>
+            <span>Wähle ein Bild für dein Konto.</span>
+          </div>
+          <button id="profileAvatarPick" class="auth-secondary-btn auth-avatar-btn" type="button">Bild wählen</button>
+          <input id="profileAvatarInput" type="file" accept="image/*" hidden>
+        </div>
         <div id="authProfileSummary" class="auth-profile-summary">
           <strong>Nicht eingeloggt</strong>
           <span>Melde dich freiwillig an, um dein Profil zu speichern.</span>
@@ -487,15 +518,11 @@
         <label class="auth-field">Telefonnummer
           <input id="profilePhoneNumber" type="tel" placeholder="z. B. +49 151 23456789">
         </label>
+        <div id="profileStatusInline" class="auth-status auth-status-inline" aria-live="polite"></div>
         <div class="auth-profile-actions">
-          <button id="profileSave" class="auth-primary-btn" type="button">Profil speichern</button>
+          <button id="profileSave" class="auth-primary-btn" type="button" onclick="window.miniChatrouletteSaveProfile && window.miniChatrouletteSaveProfile()">Profil speichern</button>
+          <button id="profileChangePassword" class="auth-secondary-btn" type="button">Passwort ändern</button>
           <button id="logoutSubmit" class="auth-secondary-btn" type="button">Logout</button>
-        </div>
-        <div class="auth-inbox">
-          <div class="auth-inbox-title">Admin-Nachrichten</div>
-          <div id="authInboxList" class="auth-inbox-list">
-            <div class="auth-empty">Noch keine Nachrichten.</div>
-          </div>
         </div>
       </section>
 

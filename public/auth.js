@@ -33,14 +33,20 @@
   const profileUsername = document.getElementById("profileUsername");
   const profileDisplayName = document.getElementById("profileDisplayName");
   const profilePhoneNumber = document.getElementById("profilePhoneNumber");
+  const profileAvatarPreview = document.getElementById("profileAvatarPreview");
+  const profileAvatarInput = document.getElementById("profileAvatarInput");
+  const profileAvatarPick = document.getElementById("profileAvatarPick");
+  const profileStatusInline = document.getElementById("profileStatusInline");
   const profileSave = document.getElementById("profileSave");
+  const profileChangePassword = document.getElementById("profileChangePassword");
   const logoutSubmit = document.getElementById("logoutSubmit");
   const authProfileSummary = document.getElementById("authProfileSummary");
   const authInboxList = document.getElementById("authInboxList");
   const mobileSettingsGuestCard = document.getElementById("mobileSettingsGuestCard");
   const mobileSettingsAccountCard = document.getElementById("mobileSettingsAccountCard");
   const mobileSettingsSummary = document.getElementById("mobileSettingsSummary");
-  const mobileSettingsLoginBtn = document.getElementById("mobileSettingsLoginBtn");
+  const mobileSettingsAccountBtn = document.getElementById("mobileSettingsAccountBtn");
+  const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -57,12 +63,21 @@
   let currentSession = null;
   let currentProfile = null;
   let profileSaveTimer = null;
+  let profileSaveInFlight = null;
+  let pendingAvatarUrl = null;
+  let resetReturnTab = "login";
 
   function setStatus(message = "", type = "") {
-    if (!authStatus) return;
-    authStatus.textContent = message;
-    authStatus.className = "auth-status";
-    if (type) authStatus.classList.add(type);
+    if (authStatus) {
+      authStatus.textContent = message;
+      authStatus.className = "auth-status";
+      if (type) authStatus.classList.add(type);
+    }
+    if (profileStatusInline) {
+      profileStatusInline.textContent = message;
+      profileStatusInline.className = "auth-status auth-status-inline";
+      if (type) profileStatusInline.classList.add(type);
+    }
     if (mobileSettingsStatus) {
       mobileSettingsStatus.textContent = message;
       mobileSettingsStatus.className = "auth-status mobile-settings-status";
@@ -77,6 +92,31 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
+  }
+
+  function isSupabaseLockError(error) {
+    const message = String(error?.message || "").toLowerCase();
+    return message.includes("lock") || message.includes("stole it");
+  }
+
+  async function wait(ms) {
+    await new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  function updateAvatarPreview(url) {
+    if (!profileAvatarPreview) return;
+
+    const safeUrl = String(url || "").trim();
+    if (!safeUrl) {
+      profileAvatarPreview.style.backgroundImage = "";
+      profileAvatarPreview.textContent = "+";
+      profileAvatarPreview.classList.remove("has-image");
+      return;
+    }
+
+    profileAvatarPreview.style.backgroundImage = `url("${safeUrl.replaceAll('"', '\\"')}")`;
+    profileAvatarPreview.textContent = "";
+    profileAvatarPreview.classList.add("has-image");
   }
 
   function switchTab(tab) {
@@ -126,8 +166,6 @@
       if (mobileSettingsSummary) {
         mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
       }
-      if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = false;
-      if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = true;
       return;
     }
 
@@ -172,9 +210,23 @@
     if (locationInput && currentProfile.location_label) {
       locationInput.value = currentProfile.location_label;
     }
+
+    updateAvatarPreview(currentProfile.avatar_url || pendingAvatarUrl || "");
   }
 
   function buildProfilePayload(extra = {}) {
+    const activeUsername = activeTab === "profile"
+      ? profileUsername?.value?.trim()
+      : mobileProfileUsername?.value?.trim();
+
+    const activeDisplayName = activeTab === "profile"
+      ? profileDisplayName?.value?.trim()
+      : mobileProfileDisplayName?.value?.trim();
+
+    const activePhoneNumber = activeTab === "profile"
+      ? profilePhoneNumber?.value?.trim()
+      : mobileProfilePhoneNumber?.value?.trim();
+
     const fallbackUsername =
       currentProfile?.username ||
       currentSession?.user?.user_metadata?.username ||
@@ -188,9 +240,10 @@
 
     return {
       id: currentSession.user.id,
-      username: profileUsername?.value?.trim() || mobileProfileUsername?.value?.trim() || fallbackUsername,
-      display_name: profileDisplayName?.value?.trim() || mobileProfileDisplayName?.value?.trim() || fallbackDisplayName,
-      phone_number: profilePhoneNumber?.value?.trim() || mobileProfilePhoneNumber?.value?.trim() || currentProfile?.phone_number || null,
+      username: activeUsername || fallbackUsername,
+      display_name: activeDisplayName || fallbackDisplayName,
+      phone_number: activePhoneNumber || currentProfile?.phone_number || null,
+      avatar_url: pendingAvatarUrl || currentProfile?.avatar_url || null,
       gender: genderInput?.value || currentProfile?.gender || "unknown",
       seeking_gender: searchInput?.value || currentProfile?.seeking_gender || "unknown",
       location_label: locationInput?.value?.trim() || currentProfile?.location_label || null,
@@ -288,39 +341,205 @@
     await loadInbox();
   }
 
-  async function saveProfile(extra = {}) {
+  async function saveProfileLegacy(extra = {}, options = {}) {
     if (!currentSession?.user) {
       setStatus("Bitte melde dich zuerst an.", "error");
       return;
     }
 
+    const manual = Boolean(options.manual);
+
+    if (manual && profileSaveTimer) {
+      clearTimeout(profileSaveTimer);
+      profileSaveTimer = null;
+    }
+
+    if (profileSaveInFlight) {
+      if (manual) {
+        setStatus("Profil wird gerade gespeichert. Bitte kurz warten.", "error");
+      }
+      return profileSaveInFlight;
+    }
+
+    const run = async () => {
     const payload = buildProfilePayload(extra);
     const { error } = await client.from("profiles").upsert(payload);
 
     if (error) {
-      setStatus("Profil konnte nicht gespeichert werden.", "error");
+      const message = String(error.message || "").toLowerCase();
+      if (message.includes("duplicate key") || message.includes("profiles_username_key") || message.includes("username")) {
+        setStatus("Der Benutzername ist schon vergeben. Bitte nimm einen anderen.", "error");
+        return;
+      }
+      setStatus(error.message || "Profil konnte nicht gespeichert werden.", "error");
       return;
     }
 
-    await client.auth.updateUser({
+    const { error: updateError } = await client.auth.updateUser({
       data: {
         username: payload.username,
-        display_name: payload.display_name
+        display_name: payload.display_name,
+        avatar_url: payload.avatar_url
       }
     });
 
+    pendingAvatarUrl = null;
+
+    if (updateError) {
+      const authLockMessage = String(updateError.message || "").toLowerCase();
+      if (authLockMessage.includes("lock") || authLockMessage.includes("stole it")) {
+        setStatus("Profil gespeichert. Schließe andere offene App-Tabs, damit die Anmeldung nicht konkurriert.", "success");
+        await loadProfile();
+        return;
+      }
+
+      setStatus(`Profil gespeichert, aber Auth-Metadaten nicht: ${updateError.message}`, "error");
+      await loadProfile();
+      return;
+    }
+
     setStatus("Profil gespeichert.", "success");
     await loadProfile();
+    };
+
+    profileSaveInFlight = run().finally(() => {
+      profileSaveInFlight = null;
+    });
+
+    return profileSaveInFlight;
   }
 
   function queueProfileSave() {
     if (!currentSession?.user) return;
     if (profileSaveTimer) clearTimeout(profileSaveTimer);
+    if (profileSaveInFlight) return;
 
     profileSaveTimer = setTimeout(() => {
       saveProfile();
       profileSaveTimer = null;
     }, 600);
+  }
+
+  async function saveProfile(extra = {}, options = {}) {
+    if (!currentSession?.user) {
+      setStatus("Bitte melde dich zuerst an.", "error");
+      return;
+    }
+
+    const manual = Boolean(options.manual);
+
+    if (manual && profileSaveTimer) {
+      clearTimeout(profileSaveTimer);
+      profileSaveTimer = null;
+    }
+
+    if (profileSaveInFlight) {
+      if (manual) {
+        setStatus("Profil wird gerade gespeichert. Bitte kurz warten.", "error");
+      }
+      return profileSaveInFlight;
+    }
+
+    const run = async () => {
+      const payload = buildProfilePayload(extra);
+
+      let profileError = null;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const { error } = await client.from("profiles").upsert(payload);
+          profileError = error || null;
+        } catch (error) {
+          profileError = error;
+        }
+
+        if (!profileError) break;
+        if (!isSupabaseLockError(profileError) || attempt === 2) break;
+        await wait(250 * (attempt + 1));
+      }
+
+      if (profileError) {
+        const message = String(profileError.message || "").toLowerCase();
+        if (message.includes("duplicate key") || message.includes("profiles_username_key") || message.includes("username")) {
+          setStatus("Der Benutzername ist schon vergeben. Bitte nimm einen anderen.", "error");
+          return;
+        }
+        if (isSupabaseLockError(profileError)) {
+          setStatus("Speichern ist gerade blockiert. Schliesse andere offene Mini-Chatroulette-Tabs und versuche es nochmal.", "error");
+          return;
+        }
+        setStatus(profileError.message || "Profil konnte nicht gespeichert werden.", "error");
+        return;
+      }
+
+      let updateError = null;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const result = await client.auth.updateUser({
+            data: {
+              username: payload.username,
+              display_name: payload.display_name,
+              avatar_url: payload.avatar_url
+            }
+          });
+          updateError = result.error || null;
+        } catch (error) {
+          updateError = error;
+        }
+
+        if (!updateError) break;
+        if (!isSupabaseLockError(updateError) || attempt === 2) break;
+        await wait(250 * (attempt + 1));
+      }
+
+      pendingAvatarUrl = null;
+
+      if (updateError) {
+        if (isSupabaseLockError(updateError)) {
+          setStatus("Profil gespeichert. Schliesse andere offene Mini-Chatroulette-Fenster, damit die Anmeldung nicht konkurriert.", "success");
+          await loadProfile();
+          return;
+        }
+
+        setStatus(`Profil gespeichert, aber Konto-Metadaten nicht: ${updateError.message}`, "error");
+        await loadProfile();
+        return;
+      }
+
+      setStatus("Profil gespeichert.", "success");
+      await loadProfile();
+    };
+
+    profileSaveInFlight = run().finally(() => {
+      profileSaveInFlight = null;
+    });
+
+    return profileSaveInFlight;
+  }
+
+  async function handleAvatarSelection(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setStatus("Bitte wähle ein Bild aus.", "error");
+      return;
+    }
+
+    if (file.size > 1024 * 1024 * 2) {
+      setStatus("Das Bild ist zu groß. Bitte nimm maximal 2 MB.", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingAvatarUrl = typeof reader.result === "string" ? reader.result : null;
+      updateAvatarPreview(pendingAvatarUrl || "");
+      setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
+    };
+    reader.onerror = () => {
+      setStatus("Profilbild konnte nicht gelesen werden.", "error");
+    };
+    reader.readAsDataURL(file);
   }
 
   function clearSupabaseSessionStorage() {
@@ -509,7 +728,7 @@
     void handleLogout();
   };
   window.miniChatrouletteSaveProfile = () => {
-    void saveProfile();
+    void saveProfile({}, { manual: true });
   };
 
   async function initAuth() {
@@ -552,10 +771,21 @@
   registerSubmit?.addEventListener("click", handleRegister);
   resetSubmit?.addEventListener("click", handleResetPassword);
   logoutSubmit?.addEventListener("click", handleLogout);
-  profileSave?.addEventListener("click", () => saveProfile());
-  mobileSettingsLoginBtn?.addEventListener("click", () => openModal("login"));
+  profileAvatarPick?.addEventListener("click", () => profileAvatarInput?.click());
+  profileAvatarInput?.addEventListener("change", handleAvatarSelection);
+  profileChangePassword?.addEventListener("click", () => {
+    resetReturnTab = "profile";
+    switchTab("reset");
+    setStatus("Gib dein neues Passwort ein.", "success");
+  });
+  mobileSettingsAccountBtn?.addEventListener("click", () => openModal(currentSession?.user ? "profile" : "login"));
+  mobileSettingsItems.forEach((button) => {
+    button.addEventListener("click", () => {
+      setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
+    });
+  });
   mobileSettingsLogoutBtn?.addEventListener("click", handleLogout);
-  mobileProfileSave?.addEventListener("click", () => saveProfile());
+  mobileProfileSave?.addEventListener("click", () => saveProfile({}, { manual: true }));
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -569,12 +799,6 @@
     input?.addEventListener("change", queueProfileSave);
   });
 
-  profileUsername?.addEventListener("input", queueProfileSave);
-  profileDisplayName?.addEventListener("input", queueProfileSave);
-  profilePhoneNumber?.addEventListener("input", queueProfileSave);
-  mobileProfileUsername?.addEventListener("input", queueProfileSave);
-  mobileProfileDisplayName?.addEventListener("input", queueProfileSave);
-  mobileProfilePhoneNumber?.addEventListener("input", queueProfileSave);
 
   client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
