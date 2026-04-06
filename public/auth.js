@@ -495,33 +495,21 @@
 
     const reader = new FileReader();
     reader.onload = () => {
-      const image = new Image();
-      image.onload = () => {
-        const maxSize = 512;
-        const ratio = Math.min(maxSize / image.width, maxSize / image.height, 1);
-        const width = Math.max(1, Math.round(image.width * ratio));
-        const height = Math.max(1, Math.round(image.height * ratio));
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx) {
-          setStatus("Profilbild konnte nicht verarbeitet werden.", "error");
-          return;
-        }
-
-        ctx.drawImage(image, 0, 0, width, height);
-        pendingAvatarUrl = canvas.toDataURL("image/jpeg", 0.82);
-        updateAvatarPreview(pendingAvatarUrl || "");
-        setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
-      };
-      image.onerror = () => {
+      if (typeof reader.result !== "string" || !reader.result.startsWith("data:image/")) {
         setStatus("Profilbild konnte nicht gelesen werden.", "error");
-      };
-      image.src = typeof reader.result === "string" ? reader.result : "";
+        return;
+      }
+
+      pendingAvatarUrl = reader.result;
+      updateAvatarPreview(pendingAvatarUrl || "");
+      setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
     };
     reader.onerror = () => {
+      const type = String(file.type || "").toLowerCase();
+      if (type.includes("heic") || type.includes("heif")) {
+        setStatus("HEIC-Bilder werden hier nicht sauber unterstützt. Bitte nimm JPG oder PNG.", "error");
+        return;
+      };
       setStatus("Profilbild konnte nicht gelesen werden.", "error");
     };
     reader.readAsDataURL(file);
