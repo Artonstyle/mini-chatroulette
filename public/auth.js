@@ -5,7 +5,14 @@
 
   if (!supabaseGlobal || !supabaseUrl || !supabaseAnonKey) return;
 
-  const client = supabaseGlobal.createClient(supabaseUrl, supabaseAnonKey);
+  const client = supabaseGlobal.createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage
+    }
+  });
 
   const body = document.body;
   const authModal = document.getElementById("authModal");
@@ -525,8 +532,8 @@
       return;
     }
 
-    if (file.size > 1024 * 1024 * 2) {
-      setStatus("Das Bild ist zu groß. Bitte nimm maximal 2 MB.", "error");
+    if (file.size > 1024 * 1024 * 10) {
+      setStatus("Das Bild ist zu groß. Bitte nimm maximal 10 MB.", "error");
       return;
     }
 
@@ -794,11 +801,6 @@
       handleLogout();
     }
   });
-
-  [genderInput, searchInput, locationInput].forEach((input) => {
-    input?.addEventListener("change", queueProfileSave);
-  });
-
 
   client.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
