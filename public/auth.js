@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const client = window.getMiniChatrouletteSupabaseClient?.();
 
   if (!client) return;
@@ -463,7 +463,7 @@
           return;
         }
         if (isSupabaseLockError(profileError)) {
-          setStatus("Speichern ist gerade blockiert. Schliesse andere offene Mini-Chatroulette-Tabs und versuche es nochmal.", "error");
+          setStatus("Speichern ist gerade blockiert. Schließe andere offene Mini-Chatroulette-Tabs und versuche es nochmal.", "error");
           return;
         }
         setStatus(profileError.message || "Profil konnte nicht gespeichert werden.", "error");
@@ -857,3 +857,4 @@
 
   initAuth();
 })();
+
