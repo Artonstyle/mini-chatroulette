@@ -32,6 +32,7 @@
   const profileAvatarPreview = document.getElementById("profileAvatarPreview");
   const profileAvatarInput = document.getElementById("profileAvatarInput");
   const profileAvatarPick = document.getElementById("profileAvatarPick");
+  const profileAvatarStatus = document.getElementById("profileAvatarStatus");
   const profileStatusInline = document.getElementById("profileStatusInline");
   const profileSave = document.getElementById("profileSave");
   const profileChangePassword = document.getElementById("profileChangePassword");
@@ -65,21 +66,33 @@
   let authHistoryOpen = false;
 
   function setStatus(message = "", type = "") {
-    if (authStatus) {
+    const isProfileContext = activeTab === "profile";
+
+    if (authStatus && !isProfileContext) {
       authStatus.textContent = message;
       authStatus.className = "auth-status";
       if (type) authStatus.classList.add(type);
     }
-    if (profileStatusInline) {
+    if (profileStatusInline && isProfileContext) {
       profileStatusInline.textContent = message;
       profileStatusInline.className = "auth-status auth-status-inline";
       if (type) profileStatusInline.classList.add(type);
+    } else if (profileStatusInline && !isProfileContext) {
+      profileStatusInline.textContent = "";
+      profileStatusInline.className = "auth-status auth-status-inline";
     }
     if (mobileSettingsStatus) {
       mobileSettingsStatus.textContent = message;
       mobileSettingsStatus.className = "auth-status mobile-settings-status";
       if (type) mobileSettingsStatus.classList.add(type);
     }
+  }
+
+  function setAvatarStatus(message = "", type = "") {
+    if (!profileAvatarStatus) return;
+    profileAvatarStatus.textContent = message;
+    profileAvatarStatus.className = "auth-status auth-status-inline";
+    if (type) profileAvatarStatus.classList.add(type);
   }
 
   function escapeHtml(text) {
@@ -124,6 +137,7 @@
     activeTab = tab;
     authPanels.forEach((panel) => panel.classList.toggle("active", panel.dataset.authPanel === tab));
     setStatus("");
+    setAvatarStatus("");
   }
 
   function hideModal() {
@@ -502,15 +516,15 @@
 
       pendingAvatarUrl = reader.result;
       updateAvatarPreview(pendingAvatarUrl || "");
-      setStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
+      setAvatarStatus("Profilbild ausgewählt. Jetzt Profil speichern.", "success");
     };
     reader.onerror = () => {
       const type = String(file.type || "").toLowerCase();
       if (type.includes("heic") || type.includes("heif")) {
-        setStatus("HEIC-Bilder werden hier nicht sauber unterstützt. Bitte nimm JPG oder PNG.", "error");
+        setAvatarStatus("HEIC-Bilder werden hier nicht sauber unterstützt. Bitte nimm JPG oder PNG.", "error");
         return;
       };
-      setStatus("Profilbild konnte nicht gelesen werden.", "error");
+      setAvatarStatus("Profilbild konnte nicht gelesen werden.", "error");
     };
     reader.readAsDataURL(file);
   }

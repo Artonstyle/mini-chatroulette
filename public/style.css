@@ -5122,6 +5122,10 @@ body.bg-4 .btn-send {
   min-height: 18px;
 }
 
+#profileAvatarStatus {
+  margin: -4px 0 10px;
+}
+
 .mobile-settings-status {
   min-height: 20px;
   margin: 4px 0 2px;
