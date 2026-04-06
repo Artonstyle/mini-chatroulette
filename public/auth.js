@@ -457,21 +457,44 @@
     }
 
     profileSaveInFlight = true;
+    setStatus("Profil wird gespeichert...");
 
     try {
       const payload = buildProfilePayload(extra);
+      const payloadForUpdate = { ...payload };
+      delete payloadForUpdate.id;
 
       let profileError = null;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
+      let savedProfile = null;
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const { error } = await client.from("profiles").upsert(payload);
+          const { data, error } = await client
+            .from("profiles")
+            .update(payloadForUpdate)
+            .eq("id", currentSession.user.id)
+            .select("*")
+            .single();
+
           profileError = error || null;
+          savedProfile = data || null;
+
+          if (error && error.code === "PGRST116") {
+            const insertResult = await client
+              .from("profiles")
+              .insert(payload)
+              .select("*")
+              .single();
+
+            profileError = insertResult.error || null;
+            savedProfile = insertResult.data || null;
+          }
         } catch (error) {
           profileError = error;
         }
 
         if (!profileError) break;
-        if (!isSupabaseLockError(profileError) || attempt === 2) break;
+        if (!isSupabaseLockError(profileError) || attempt === 1) break;
         await wait(250 * (attempt + 1));
       }
 
@@ -491,9 +514,14 @@
       }
 
       pendingAvatarUrl = null;
-
+      if (savedProfile) {
+        currentProfile = savedProfile;
+        fillProfileFields();
+        updateProfileSummary();
+      } else {
+        await loadProfile();
+      }
       setStatus(`Profil gespeichert. ${getProfileDebugLabel()}`, "success");
-      await loadProfile();
     } finally {
       profileSaveInFlight = false;
     }
