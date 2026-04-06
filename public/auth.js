@@ -128,6 +128,53 @@
     }
   }
 
+  function getSupabaseRestBase() {
+    const base = String(window.MINI_CHATROULETTE_SUPABASE_URL || "").replace(/\/+$/, "");
+    return `${base}/rest/v1`;
+  }
+
+  function getSupabaseAuthHeaders() {
+    const token = currentSession?.access_token;
+    return {
+      apikey: window.MINI_CHATROULETTE_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    };
+  }
+
+  async function updateProfileViaRest(id, payload) {
+    const response = await fetch(`${getSupabaseRestBase()}/profiles?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: getSupabaseAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`REST ${response.status}: ${errorText || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? (data[0] || null) : data;
+  }
+
+  async function insertProfileViaRest(payload) {
+    const response = await fetch(`${getSupabaseRestBase()}/profiles`, {
+      method: "POST",
+      headers: getSupabaseAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`REST ${response.status}: ${errorText || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? (data[0] || null) : data;
+  }
+
   function updateAvatarPreview(url) {
     if (!profileAvatarPreview) return;
 
@@ -485,39 +532,29 @@
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
           setStatus(`Profil wird gespeichert... Update ${attempt + 1}/2 läuft.`);
-
-          const { data, error } = await withTimeout(
-            client
-              .from("profiles")
-              .update(payloadForUpdate)
-              .eq("id", currentSession.user.id)
-              .select("*")
-              .single(),
+          savedProfile = await withTimeout(
+            updateProfileViaRest(currentSession.user.id, payloadForUpdate),
             12000,
             "Profil-Update"
           );
-
-          profileError = error || null;
-          savedProfile = data || null;
-
-          if (error && error.code === "PGRST116") {
-            setStatus("Profil wird gespeichert... Profil fehlt, Insert läuft.");
-
-            const insertResult = await withTimeout(
-              client
-                .from("profiles")
-                .insert(payload)
-                .select("*")
-                .single(),
-              12000,
-              "Profil-Insert"
-            );
-
-            profileError = insertResult.error || null;
-            savedProfile = insertResult.data || null;
-          }
+          profileError = null;
         } catch (error) {
           profileError = error;
+          const errorText = String(error?.message || "");
+          const notFound = errorText.includes("REST 406") || errorText.includes("PGRST116");
+          if (notFound) {
+            try {
+              setStatus("Profil wird gespeichert... Profil fehlt, Insert läuft.");
+              savedProfile = await withTimeout(
+                insertProfileViaRest(payload),
+                12000,
+                "Profil-Insert"
+              );
+              profileError = null;
+            } catch (insertError) {
+              profileError = insertError;
+            }
+          }
         }
 
         if (!profileError) break;
