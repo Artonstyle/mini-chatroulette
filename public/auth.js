@@ -478,39 +478,7 @@
         return;
       }
 
-      let updateError = null;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        try {
-          const result = await client.auth.updateUser({
-            data: {
-              username: payload.username,
-              display_name: payload.display_name,
-              avatar_url: payload.avatar_url
-            }
-          });
-          updateError = result.error || null;
-        } catch (error) {
-          updateError = error;
-        }
-
-        if (!updateError) break;
-        if (!isSupabaseLockError(updateError) || attempt === 2) break;
-        await wait(250 * (attempt + 1));
-      }
-
       pendingAvatarUrl = null;
-
-      if (updateError) {
-        if (isSupabaseLockError(updateError)) {
-          setStatus("Profil gespeichert. Schliesse andere offene Mini-Chatroulette-Fenster, damit die Anmeldung nicht konkurriert.", "success");
-          await loadProfile();
-          return;
-        }
-
-        setStatus(`Profil gespeichert, aber Konto-Metadaten nicht: ${updateError.message}`, "error");
-        await loadProfile();
-        return;
-      }
 
       setStatus("Profil gespeichert.", "success");
       await loadProfile();
