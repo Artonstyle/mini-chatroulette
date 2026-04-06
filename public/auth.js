@@ -214,6 +214,11 @@
     if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = false;
   }
 
+  function getProfileDebugLabel() {
+    if (!currentProfile) return "Kein Profil geladen";
+    return `Username: ${currentProfile.username || "-"} | Anzeigename: ${currentProfile.display_name || "-"} | Telefon: ${currentProfile.phone_number || "-"}`;
+  }
+
   function fillProfileFields() {
     if (!currentProfile) return;
 
@@ -477,16 +482,17 @@
           return;
         }
         if (isSupabaseLockError(profileError)) {
-          setStatus("Speichern ist gerade blockiert. Schließe andere offene Mini-Chatroulette-Tabs und versuche es nochmal.", "error");
+          setStatus(`Speichern ist gerade blockiert. Grund: ${profileError.message || "Unbekannter Lock-Fehler"}`, "error");
           return;
         }
-        setStatus(profileError.message || "Profil konnte nicht gespeichert werden.", "error");
+        const detail = profileError.code ? `${profileError.code}: ${profileError.message}` : (profileError.message || "Profil konnte nicht gespeichert werden.");
+        setStatus(detail, "error");
         return;
       }
 
       pendingAvatarUrl = null;
 
-      setStatus("Profil gespeichert.", "success");
+      setStatus(`Profil gespeichert. ${getProfileDebugLabel()}`, "success");
       await loadProfile();
     } finally {
       profileSaveInFlight = false;
@@ -801,8 +807,22 @@
     button.addEventListener("click", () => switchTab(button.dataset.authSwitch));
   });
 
-  authToggleDesktop?.addEventListener("click", () => openModal("login"));
-  authToggleMobile?.addEventListener("click", () => openModal("login"));
+  authToggleDesktop?.addEventListener("click", async () => {
+    if (currentSession?.user) {
+      await loadProfile();
+      openModal("profile");
+      return;
+    }
+    openModal("login");
+  });
+  authToggleMobile?.addEventListener("click", async () => {
+    if (currentSession?.user) {
+      await loadProfile();
+      openModal("profile");
+      return;
+    }
+    openModal("login");
+  });
   authClose?.addEventListener("click", closeModal);
   authModal?.querySelector(".auth-backdrop")?.addEventListener("click", closeModal);
   window.addEventListener("popstate", () => {
@@ -811,8 +831,13 @@
       hideModal();
     }
   });
-  window.addEventListener("mini-chatroulette:open-account", () => {
-    openModal(currentSession?.user ? "profile" : "login");
+  window.addEventListener("mini-chatroulette:open-account", async () => {
+    if (currentSession?.user) {
+      await loadProfile();
+      openModal("profile");
+      return;
+    }
+    openModal("login");
   });
 
   loginSubmit?.addEventListener("click", handleLogin);
