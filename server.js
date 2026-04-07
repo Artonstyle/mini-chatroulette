@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-app.use(express.json());
+app.use(express.json({ limit: "15mb" }));
 app.use(express.static("public"));
 
 const waitingClients = [];
@@ -278,6 +278,65 @@ async function callSupabaseRpc(functionName, accessToken, params = {}) {
             "Content-Length": Buffer.byteLength(body)
         }
     }, body);
+}
+
+async function patchSupabaseProfile(accessToken, userId, payload) {
+    const body = JSON.stringify(payload);
+    return httpsRequestJson(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body),
+            "Prefer": "return=representation"
+        }
+    }, body);
+}
+
+async function insertSupabaseProfile(accessToken, payload) {
+    const body = JSON.stringify(payload);
+    return httpsRequestJson(`${SUPABASE_URL}/rest/v1/profiles`, {
+        method: "POST",
+        headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body),
+            "Prefer": "return=representation"
+        }
+    }, body);
+}
+
+async function fetchSupabaseProfile(accessToken, userId) {
+    return httpsRequestJson(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=*`, {
+        method: "GET",
+        headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Accept": "application/json"
+        }
+    });
+}
+
+function normalizeProfileSavePayload(body = {}) {
+    const username = String(body.username || "").trim() || null;
+    const displayName = String(body.display_name || "").trim() || null;
+    const phoneNumber = String(body.phone_number || "").trim() || null;
+    const avatarUrl = String(body.avatar_url || "").trim() || null;
+    const gender = String(body.gender || "").trim() || null;
+    const seekingGender = String(body.seeking_gender || "").trim() || null;
+    const locationLabel = String(body.location_label || "").trim() || null;
+
+    return {
+        username,
+        display_name: displayName,
+        phone_number: phoneNumber,
+        avatar_url: avatarUrl,
+        gender,
+        seeking_gender: seekingGender,
+        location_label: locationLabel
+    };
 }
 
 function requireAdmin(req, res, next) {
@@ -646,6 +705,66 @@ app.get("/admin/supabase/overview", requireAdmin, async (req, res) => {
         res.status(400).json({
             ok: false,
             error: error.message || "Supabase-Daten konnten nicht geladen werden"
+        });
+    }
+});
+
+app.post("/api/profile/save", async (req, res) => {
+    const accessToken = getSupabaseAccessToken(req);
+    if (!accessToken) {
+        return res.status(401).json({ ok: false, error: "Supabase-Session fehlt" });
+    }
+
+    const userId = String(req.body?.id || "").trim();
+    if (!userId) {
+        return res.status(400).json({ ok: false, error: "Profil-ID fehlt" });
+    }
+
+    const payload = normalizeProfileSavePayload(req.body);
+
+    try {
+        let savedProfile = null;
+
+        try {
+            const rpcResult = await callSupabaseRpc("save_my_profile", accessToken, {
+                p_username: payload.username,
+                p_display_name: payload.display_name,
+                p_phone_number: payload.phone_number,
+                p_avatar_url: payload.avatar_url,
+                p_gender: payload.gender,
+                p_seeking_gender: payload.seeking_gender,
+                p_location_label: payload.location_label
+            });
+
+            savedProfile = Array.isArray(rpcResult) ? (rpcResult[0] || null) : rpcResult;
+        } catch (rpcError) {
+            const message = String(rpcError?.message || "");
+            const rpcMissing =
+                message.includes("save_my_profile") ||
+                message.includes("Could not find the function") ||
+                message.includes("could not find the function");
+
+            if (!rpcMissing) {
+                throw rpcError;
+            }
+
+            let patchResult = await patchSupabaseProfile(accessToken, userId, payload);
+            if (!Array.isArray(patchResult) || patchResult.length === 0) {
+                patchResult = await insertSupabaseProfile(accessToken, { id: userId, ...payload });
+            }
+            savedProfile = Array.isArray(patchResult) ? (patchResult[0] || null) : patchResult;
+        }
+
+        if (!savedProfile) {
+            const fetched = await fetchSupabaseProfile(accessToken, userId);
+            savedProfile = Array.isArray(fetched) ? (fetched[0] || null) : fetched;
+        }
+
+        return res.json({ ok: true, profile: savedProfile });
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            error: error?.message || "Profil konnte serverseitig nicht gespeichert werden."
         });
     }
 });

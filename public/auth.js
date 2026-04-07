@@ -143,6 +143,23 @@
     };
   }
 
+  async function saveProfileViaServer(payload) {
+    const response = await fetch("/api/profile/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-supabase-access-token": currentSession?.access_token || ""
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result?.ok === false) {
+      throw new Error(result?.error || `Serverfehler ${response.status}`);
+    }
+    return result.profile || null;
+  }
+
   async function updateProfileViaRest(id, payload) {
     const response = await fetch(`${getSupabaseRestBase()}/profiles?id=eq.${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -531,30 +548,15 @@
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          setStatus(`Profil wird gespeichert... REST ${attempt + 1}/2 läuft.`);
+          setStatus(`Profil wird gespeichert... Server ${attempt + 1}/2 läuft.`);
           savedProfile = await withTimeout(
-            updateProfileViaRest(currentSession.user.id, payloadForUpdate),
+            saveProfileViaServer(payload),
             12000,
-            "Profil-Update"
+            "Profil-Server"
           );
           profileError = null;
         } catch (error) {
           profileError = error;
-          const errorText = String(error?.message || "");
-          const notFound = errorText.includes("REST 406") || errorText.includes("PGRST116");
-          if (notFound) {
-            try {
-              setStatus("Profil wird gespeichert... Profil fehlt, Insert läuft.");
-              savedProfile = await withTimeout(
-                insertProfileViaRest(payload),
-                12000,
-                "Profil-Insert"
-              );
-              profileError = null;
-            } catch (insertError) {
-              profileError = insertError;
-            }
-          }
         }
 
         if (!profileError) break;
