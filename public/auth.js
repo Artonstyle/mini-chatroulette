@@ -540,15 +540,14 @@
 
     try {
       const payload = buildProfilePayload(extra);
-      const payloadForUpdate = { ...payload };
-      delete payloadForUpdate.id;
+      const hasAvatarInPayload = Boolean(payload.avatar_url);
 
       let profileError = null;
       let savedProfile = null;
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          setStatus(`Profil wird gespeichert... Server ${attempt + 1}/2 läuft.`);
+          setStatus(`Profil wird gespeichert... Server ${attempt + 1}/2 läuft. Bild im Request: ${hasAvatarInPayload ? "ja" : "nein"}`);
           savedProfile = await withTimeout(
             saveProfileViaServer(payload),
             12000,
@@ -588,7 +587,7 @@
       } else {
         await loadProfile();
       }
-      setStatus(`Profil gespeichert. ${getProfileDebugLabel()}`, "success");
+      setStatus(`Profil gespeichert. ${getProfileDebugLabel()} | avatar_url: ${savedProfile?.avatar_url ? "gesetzt" : "leer"}`, "success");
     } finally {
       profileSaveInFlight = false;
     }
