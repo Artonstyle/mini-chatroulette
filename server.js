@@ -123,6 +123,46 @@ function httpsRequestJson(url, options = {}, body = null) {
     });
 }
 
+function httpsRequestRaw(url, options = {}, body = null) {
+    return new Promise((resolve, reject) => {
+        const req = https.request(url, options, (res) => {
+            const chunks = [];
+            res.on("data", (chunk) => {
+                chunks.push(chunk);
+            });
+            res.on("end", () => {
+                const rawBuffer = Buffer.concat(chunks);
+                const rawText = rawBuffer.toString("utf8");
+
+                if (res.statusCode >= 400) {
+                    let message = rawText || `Request failed with status ${res.statusCode}`;
+                    try {
+                        const parsed = rawText ? JSON.parse(rawText) : null;
+                        message =
+                            parsed?.message ||
+                            parsed?.error_description ||
+                            parsed?.error ||
+                            message;
+                    } catch (_) {
+                        // keep rawText
+                    }
+                    return reject(new Error(message));
+                }
+
+                resolve({ statusCode: res.statusCode, rawBuffer, rawText });
+            });
+        });
+
+        req.on("error", reject);
+
+        if (body) {
+            req.write(body);
+        }
+
+        req.end();
+    });
+}
+
 function toRadians(value) {
     return (value * Math.PI) / 180;
 }
@@ -337,6 +377,58 @@ function normalizeProfileSavePayload(body = {}) {
         seeking_gender: seekingGender,
         location_label: locationLabel
     };
+}
+
+function parseImageDataUrl(dataUrl) {
+    const raw = String(dataUrl || "").trim();
+    const match = raw.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) return null;
+
+    const mimeType = match[1].toLowerCase();
+    const base64 = match[2];
+    return {
+        mimeType,
+        buffer: Buffer.from(base64, "base64")
+    };
+}
+
+function getImageExtension(mimeType) {
+    switch (mimeType) {
+        case "image/jpeg":
+            return "jpg";
+        case "image/png":
+            return "png";
+        case "image/webp":
+            return "webp";
+        case "image/gif":
+            return "gif";
+        default:
+            return "bin";
+    }
+}
+
+async function uploadProfileAvatar(accessToken, userId, dataUrl) {
+    const parsed = parseImageDataUrl(dataUrl);
+    if (!parsed) {
+        return String(dataUrl || "").trim() || null;
+    }
+
+    const extension = getImageExtension(parsed.mimeType);
+    const objectPath = `${userId}/profile/avatar-${Date.now()}.${extension}`;
+    const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
+
+    await httpsRequestRaw(`${SUPABASE_URL}/storage/v1/object/status-media/${encodedPath}`, {
+        method: "POST",
+        headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": parsed.mimeType,
+            "Content-Length": parsed.buffer.length,
+            "x-upsert": "true"
+        }
+    }, parsed.buffer);
+
+    return `${SUPABASE_URL}/storage/v1/object/public/status-media/${encodedPath}`;
 }
 
 function requireAdmin(req, res, next) {
@@ -723,6 +815,10 @@ app.post("/api/profile/save", async (req, res) => {
     const payload = normalizeProfileSavePayload(req.body);
 
     try {
+        if (payload.avatar_url && payload.avatar_url.startsWith("data:image/")) {
+            payload.avatar_url = await uploadProfileAvatar(accessToken, userId, payload.avatar_url);
+        }
+
         let savedProfile = null;
 
         try {
