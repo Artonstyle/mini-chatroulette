@@ -29,6 +29,10 @@
   const profileUsername = document.getElementById("profileUsername");
   const profileDisplayName = document.getElementById("profileDisplayName");
   const profilePhoneNumber = document.getElementById("profilePhoneNumber");
+  const profileAge = document.getElementById("profileAge");
+  const profileCity = document.getElementById("profileCity");
+  const profileCountry = document.getElementById("profileCountry");
+  const profileBio = document.getElementById("profileBio");
   const profileAvatarPreview = document.getElementById("profileAvatarPreview");
   const profileAvatarInput = document.getElementById("profileAvatarInput");
   const profileAvatarPick = document.getElementById("profileAvatarPick");
@@ -295,7 +299,7 @@
 
   function getProfileDebugLabel() {
     if (!currentProfile) return "Kein Profil geladen";
-    return `Username: ${currentProfile.username || "-"} | Anzeigename: ${currentProfile.display_name || "-"} | Telefon: ${currentProfile.phone_number || "-"}`;
+    return `Username: ${currentProfile.username || "-"} | Anzeigename: ${currentProfile.display_name || "-"} | Telefon: ${currentProfile.phone_number || "-"} | Alter: ${currentProfile.age || "-"} | Stadt: ${currentProfile.city || "-"} | Land: ${currentProfile.country || "-"}`;
   }
 
   function fillProfileFields() {
@@ -304,6 +308,10 @@
     if (profileUsername) profileUsername.value = currentProfile.username || "";
     if (profileDisplayName) profileDisplayName.value = currentProfile.display_name || "";
     if (profilePhoneNumber) profilePhoneNumber.value = currentProfile.phone_number || "";
+    if (profileAge) profileAge.value = currentProfile.age || "";
+    if (profileCity) profileCity.value = currentProfile.city || "";
+    if (profileCountry) profileCountry.value = currentProfile.country || "";
+    if (profileBio) profileBio.value = currentProfile.bio || "";
     if (mobileProfileUsername) mobileProfileUsername.value = currentProfile.username || "";
     if (mobileProfileDisplayName) mobileProfileDisplayName.value = currentProfile.display_name || "";
     if (mobileProfilePhoneNumber) mobileProfilePhoneNumber.value = currentProfile.phone_number || "";
@@ -338,6 +346,11 @@
       ? profilePhoneNumber?.value?.trim()
       : mobileProfilePhoneNumber?.value?.trim();
 
+    const activeAgeRaw = profileAge?.value?.trim();
+    const activeCity = profileCity?.value?.trim();
+    const activeCountry = profileCountry?.value?.trim();
+    const activeBio = profileBio?.value?.trim();
+
     const fallbackUsername =
       currentProfile?.username ||
       currentSession?.user?.user_metadata?.username ||
@@ -355,6 +368,10 @@
       display_name: activeDisplayName || fallbackDisplayName,
       phone_number: activePhoneNumber || currentProfile?.phone_number || null,
       avatar_url: pendingAvatarUrl || currentProfile?.avatar_url || null,
+      age: activeAgeRaw ? Number(activeAgeRaw) : (currentProfile?.age ?? null),
+      city: activeCity || currentProfile?.city || null,
+      country: activeCountry || currentProfile?.country || null,
+      bio: activeBio || currentProfile?.bio || null,
       gender: genderInput?.value || currentProfile?.gender || "unknown",
       seeking_gender: searchInput?.value || currentProfile?.seeking_gender || "unknown",
       location_label: locationInput?.value?.trim() || currentProfile?.location_label || null,

@@ -4917,10 +4917,10 @@ body.bg-4 .btn-send {
   line-height: 1.3;
 }
 
-.auth-panel input {
+.auth-panel input,
+.auth-panel textarea {
   width: 100%;
   margin-top: 8px;
-  height: 54px;
   border-radius: 16px;
   border: 1px solid rgba(147, 163, 193, 0.16);
   background: rgba(35, 46, 61, 0.92);
@@ -4930,11 +4930,24 @@ body.bg-4 .btn-send {
   box-sizing: border-box;
 }
 
-.auth-panel input::placeholder {
+.auth-panel input {
+  height: 54px;
+}
+
+.auth-panel textarea {
+  min-height: 110px;
+  padding: 14px 18px;
+  resize: vertical;
+  font: inherit;
+}
+
+.auth-panel input::placeholder,
+.auth-panel textarea::placeholder {
   color: #8b99b2;
 }
 
-.auth-panel input:focus {
+.auth-panel input:focus,
+.auth-panel textarea:focus {
   outline: none;
   border-color: rgba(105, 162, 255, 0.6);
   box-shadow:

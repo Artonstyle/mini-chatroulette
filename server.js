@@ -363,7 +363,11 @@ function normalizeProfileSavePayload(body = {}) {
     const username = String(body.username || "").trim() || null;
     const displayName = String(body.display_name || "").trim() || null;
     const phoneNumber = String(body.phone_number || "").trim() || null;
-    const avatarUrl = String(body.avatar_url || "").trim() || null;
+    const ageValue = Number(body.age);
+    const age = Number.isFinite(ageValue) && ageValue >= 18 && ageValue <= 120 ? ageValue : null;
+    const city = String(body.city || "").trim() || null;
+    const country = String(body.country || "").trim() || null;
+    const bio = String(body.bio || "").trim() || null;
     const gender = String(body.gender || "").trim() || null;
     const seekingGender = String(body.seeking_gender || "").trim() || null;
     const locationLabel = String(body.location_label || "").trim() || null;
@@ -372,6 +376,10 @@ function normalizeProfileSavePayload(body = {}) {
         username,
         display_name: displayName,
         phone_number: phoneNumber,
+        age,
+        city,
+        country,
+        bio,
         gender,
         seeking_gender: seekingGender,
         location_label: locationLabel
@@ -825,38 +833,13 @@ app.post("/api/profile/save", async (req, res) => {
 
         let savedProfile = null;
 
-        try {
-            phase = "rpc_save_my_profile";
-            const rpcResult = await callSupabaseRpc("save_my_profile", accessToken, {
-                p_username: payload.username,
-                p_display_name: payload.display_name,
-                p_phone_number: payload.phone_number,
-                p_avatar_url: payload.avatar_url,
-                p_gender: payload.gender,
-                p_seeking_gender: payload.seeking_gender,
-                p_location_label: payload.location_label
-            });
-
-            savedProfile = Array.isArray(rpcResult) ? (rpcResult[0] || null) : rpcResult;
-        } catch (rpcError) {
-            const message = String(rpcError?.message || "");
-            const rpcMissing =
-                message.includes("save_my_profile") ||
-                message.includes("Could not find the function") ||
-                message.includes("could not find the function");
-
-            if (!rpcMissing) {
-                throw rpcError;
-            }
-
-            phase = "rest_patch_profile";
-            let patchResult = await patchSupabaseProfile(accessToken, userId, payload);
-            if (!Array.isArray(patchResult) || patchResult.length === 0) {
-                phase = "rest_insert_profile";
-                patchResult = await insertSupabaseProfile(accessToken, { id: userId, ...payload });
-            }
-            savedProfile = Array.isArray(patchResult) ? (patchResult[0] || null) : patchResult;
+        phase = "rest_patch_profile";
+        let patchResult = await patchSupabaseProfile(accessToken, userId, payload);
+        if (!Array.isArray(patchResult) || patchResult.length === 0) {
+            phase = "rest_insert_profile";
+            patchResult = await insertSupabaseProfile(accessToken, { id: userId, ...payload });
         }
+        savedProfile = Array.isArray(patchResult) ? (patchResult[0] || null) : patchResult;
 
         if (!savedProfile) {
             phase = "rest_fetch_profile";
