@@ -365,9 +365,33 @@
   async function ensureProfile() {
     if (!currentSession?.user) return;
 
-    const payload = buildProfilePayload();
-    const { error } = await client.from("profiles").upsert(payload);
-    if (error) throw error;
+    const userId = currentSession.user.id;
+    const { data: existingProfile, error: selectError } = await client
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (selectError) throw selectError;
+    if (existingProfile?.id) return;
+
+    const fallbackUsername =
+      currentSession?.user?.user_metadata?.username ||
+      currentSession?.user?.email?.split("@")[0] ||
+      `user${Date.now().toString().slice(-6)}`;
+
+    const fallbackDisplayName =
+      currentSession?.user?.user_metadata?.display_name ||
+      fallbackUsername;
+
+    const payload = {
+      id: userId,
+      username: fallbackUsername,
+      display_name: fallbackDisplayName
+    };
+
+    const { error: insertError } = await client.from("profiles").insert(payload);
+    if (insertError) throw insertError;
   }
 
   async function loadInbox() {
