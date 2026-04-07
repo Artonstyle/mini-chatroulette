@@ -813,6 +813,7 @@ app.post("/api/profile/save", async (req, res) => {
     }
 
     const payload = normalizeProfileSavePayload(req.body);
+    const requestedAvatar = payload.avatar_url;
 
     try {
         if (payload.avatar_url && payload.avatar_url.startsWith("data:image/")) {
@@ -854,6 +855,20 @@ app.post("/api/profile/save", async (req, res) => {
         if (!savedProfile) {
             const fetched = await fetchSupabaseProfile(accessToken, userId);
             savedProfile = Array.isArray(fetched) ? (fetched[0] || null) : fetched;
+        }
+
+        if (!savedProfile) {
+            return res.status(500).json({
+                ok: false,
+                error: "Profil wurde nicht zurückgegeben. Bitte Render-Logs prüfen."
+            });
+        }
+
+        if (requestedAvatar && !savedProfile.avatar_url) {
+            return res.status(500).json({
+                ok: false,
+                error: "Profilbild-Upload wurde angefordert, aber avatar_url blieb in Supabase leer."
+            });
         }
 
         return res.json({ ok: true, profile: savedProfile });
