@@ -814,15 +814,18 @@ app.post("/api/profile/save", async (req, res) => {
 
     const payload = normalizeProfileSavePayload(req.body);
     const requestedAvatar = payload.avatar_url;
+    let phase = "start";
 
     try {
         if (payload.avatar_url && payload.avatar_url.startsWith("data:image/")) {
+            phase = "avatar_upload";
             payload.avatar_url = await uploadProfileAvatar(accessToken, userId, payload.avatar_url);
         }
 
         let savedProfile = null;
 
         try {
+            phase = "rpc_save_my_profile";
             const rpcResult = await callSupabaseRpc("save_my_profile", accessToken, {
                 p_username: payload.username,
                 p_display_name: payload.display_name,
@@ -845,14 +848,17 @@ app.post("/api/profile/save", async (req, res) => {
                 throw rpcError;
             }
 
+            phase = "rest_patch_profile";
             let patchResult = await patchSupabaseProfile(accessToken, userId, payload);
             if (!Array.isArray(patchResult) || patchResult.length === 0) {
+                phase = "rest_insert_profile";
                 patchResult = await insertSupabaseProfile(accessToken, { id: userId, ...payload });
             }
             savedProfile = Array.isArray(patchResult) ? (patchResult[0] || null) : patchResult;
         }
 
         if (!savedProfile) {
+            phase = "rest_fetch_profile";
             const fetched = await fetchSupabaseProfile(accessToken, userId);
             savedProfile = Array.isArray(fetched) ? (fetched[0] || null) : fetched;
         }
@@ -873,9 +879,16 @@ app.post("/api/profile/save", async (req, res) => {
 
         return res.json({ ok: true, profile: savedProfile });
     } catch (error) {
+        const message = error?.message || "Profil konnte serverseitig nicht gespeichert werden.";
+        console.error("[profile-save]", {
+            phase,
+            userId,
+            hasAvatar: Boolean(requestedAvatar),
+            message
+        });
         return res.status(500).json({
             ok: false,
-            error: error?.message || "Profil konnte serverseitig nicht gespeichert werden."
+            error: `[${phase}] ${message}`
         });
     }
 });
