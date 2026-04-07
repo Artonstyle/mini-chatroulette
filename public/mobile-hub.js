@@ -859,7 +859,11 @@
     }).join("");
   }
 
+  let hubRefreshInFlight = false;
+
   async function refreshAll() {
+    if (hubRefreshInFlight) return;
+    hubRefreshInFlight = true;
     try {
       await loadProfiles();
       await loadChatPreviews();
@@ -876,6 +880,8 @@
         loadCalls(),
         loadDirectMessages()
       ]);
+    } finally {
+      hubRefreshInFlight = false;
     }
   }
 
@@ -888,7 +894,7 @@
     }
     closeStatusViewer();
     closeStatusEditor();
-    if (tab === "status" || tab === "calls" || tab === "chat" || tab === "settings") {
+    if (tab === "status" || tab === "calls" || tab === "chat") {
       void refreshAll();
     }
   });
@@ -968,18 +974,22 @@
     renderChatContacts();
     await loadDirectMessages();
   });
-  client.auth.onAuthStateChange(async (_event, session) => {
+  client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;
     activeContactId = null;
     updateChatView();
     closeStatusViewer();
     resetStatusSelection();
-    await refreshAll();
+    window.setTimeout(() => {
+      void refreshAll();
+    }, 0);
   });
 
-  client.auth.getSession().then(async ({ data }) => {
+  client.auth.getSession().then(({ data }) => {
     currentSession = data.session;
     updateChatView();
-    await refreshAll();
+    window.setTimeout(() => {
+      void refreshAll();
+    }, 0);
   });
 })();

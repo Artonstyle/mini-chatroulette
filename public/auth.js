@@ -175,21 +175,6 @@
     return Array.isArray(data) ? (data[0] || null) : data;
   }
 
-  async function saveProfileViaRpc(payload) {
-    const { data, error } = await client.rpc("save_my_profile", {
-      p_username: payload.username ?? null,
-      p_display_name: payload.display_name ?? null,
-      p_phone_number: payload.phone_number ?? null,
-      p_avatar_url: payload.avatar_url ?? null,
-      p_gender: payload.gender ?? null,
-      p_seeking_gender: payload.seeking_gender ?? null,
-      p_location_label: payload.location_label ?? null
-    });
-
-    if (error) throw error;
-    return Array.isArray(data) ? (data[0] || null) : data;
-  }
-
   function updateAvatarPreview(url) {
     if (!profileAvatarPreview) return;
 
@@ -546,43 +531,28 @@
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          setStatus(`Profil wird gespeichert... RPC ${attempt + 1}/2 läuft.`);
+          setStatus(`Profil wird gespeichert... REST ${attempt + 1}/2 läuft.`);
           savedProfile = await withTimeout(
-            saveProfileViaRpc(payload),
+            updateProfileViaRest(currentSession.user.id, payloadForUpdate),
             12000,
-            "Profil-RPC"
+            "Profil-Update"
           );
           profileError = null;
         } catch (error) {
           profileError = error;
-          const errorText = String(error?.message || "").toLowerCase();
-          const rpcMissing = errorText.includes("save_my_profile") || errorText.includes("could not find the function");
-          if (rpcMissing) {
+          const errorText = String(error?.message || "");
+          const notFound = errorText.includes("REST 406") || errorText.includes("PGRST116");
+          if (notFound) {
             try {
-              setStatus(`Profil wird gespeichert... REST-Fallback ${attempt + 1}/2 läuft.`);
+              setStatus("Profil wird gespeichert... Profil fehlt, Insert läuft.");
               savedProfile = await withTimeout(
-                updateProfileViaRest(currentSession.user.id, payloadForUpdate),
+                insertProfileViaRest(payload),
                 12000,
-                "Profil-Update"
+                "Profil-Insert"
               );
               profileError = null;
-            } catch (restError) {
-              profileError = restError;
-              const restText = String(restError?.message || "");
-              const notFound = restText.includes("REST 406") || restText.includes("PGRST116");
-              if (notFound) {
-                try {
-                  setStatus("Profil wird gespeichert... Profil fehlt, Insert läuft.");
-                  savedProfile = await withTimeout(
-                    insertProfileViaRest(payload),
-                    12000,
-                    "Profil-Insert"
-                  );
-                  profileError = null;
-                } catch (insertError) {
-                  profileError = insertError;
-                }
-              }
+            } catch (insertError) {
+              profileError = insertError;
             }
           }
         }
