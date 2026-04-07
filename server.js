@@ -817,6 +817,16 @@ app.post("/api/profile/save", async (req, res) => {
     let phase = "start";
 
     try {
+        phase = "rest_fetch_existing_profile";
+        const existingProfileResult = await fetchSupabaseProfile(accessToken, userId).catch(() => []);
+        const existingProfile = Array.isArray(existingProfileResult)
+            ? (existingProfileResult[0] || null)
+            : existingProfileResult;
+
+        if (!payload.avatar_url && existingProfile?.avatar_url) {
+            payload.avatar_url = existingProfile.avatar_url;
+        }
+
         if (payload.avatar_url && payload.avatar_url.startsWith("data:image/")) {
             phase = "avatar_upload";
             payload.avatar_url = await uploadProfileAvatar(accessToken, userId, payload.avatar_url);
