@@ -372,7 +372,6 @@ function normalizeProfileSavePayload(body = {}) {
         username,
         display_name: displayName,
         phone_number: phoneNumber,
-        avatar_url: avatarUrl,
         gender,
         seeking_gender: seekingGender,
         location_label: locationLabel
@@ -813,23 +812,15 @@ app.post("/api/profile/save", async (req, res) => {
     }
 
     const payload = normalizeProfileSavePayload(req.body);
-    const requestedAvatar = payload.avatar_url;
+    const requestedAvatar = String(req.body?.avatar_url || "").trim();
     let phase = "start";
 
     try {
-        phase = "rest_fetch_existing_profile";
-        const existingProfileResult = await fetchSupabaseProfile(accessToken, userId).catch(() => []);
-        const existingProfile = Array.isArray(existingProfileResult)
-            ? (existingProfileResult[0] || null)
-            : existingProfileResult;
-
-        if (!payload.avatar_url && existingProfile?.avatar_url) {
-            payload.avatar_url = existingProfile.avatar_url;
-        }
-
-        if (payload.avatar_url && payload.avatar_url.startsWith("data:image/")) {
+        if (requestedAvatar.startsWith("data:image/")) {
             phase = "avatar_upload";
-            payload.avatar_url = await uploadProfileAvatar(accessToken, userId, payload.avatar_url);
+            payload.avatar_url = await uploadProfileAvatar(accessToken, userId, requestedAvatar);
+        } else if (requestedAvatar) {
+            payload.avatar_url = requestedAvatar;
         }
 
         let savedProfile = null;
