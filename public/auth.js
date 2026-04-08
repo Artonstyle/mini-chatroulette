@@ -52,6 +52,7 @@
   const mobileSettingsPrivacyView = document.getElementById("mobileSettingsPrivacyView");
   const mobileSettingsChatsView = document.getElementById("mobileSettingsChatsView");
   const mobileSettingsNotificationsView = document.getElementById("mobileSettingsNotificationsView");
+  const mobileSettingsCallsView = document.getElementById("mobileSettingsCallsView");
   const privacyShowOnline = document.getElementById("privacyShowOnline");
   const privacyShowPhone = document.getElementById("privacyShowPhone");
   const privacyShowAvatar = document.getElementById("privacyShowAvatar");
@@ -74,6 +75,12 @@
   const notificationsCallAlerts = document.getElementById("notificationsCallAlerts");
   const notificationsQuietHours = document.getElementById("notificationsQuietHours");
   const mobileNotificationsStatus = document.getElementById("mobileNotificationsStatus");
+  const callsRingtoneEnabled = document.getElementById("callsRingtoneEnabled");
+  const callsVibrationEnabled = document.getElementById("callsVibrationEnabled");
+  const callsVideoDefault = document.getElementById("callsVideoDefault");
+  const callsDataSaver = document.getElementById("callsDataSaver");
+  const callsMissedAlerts = document.getElementById("callsMissedAlerts");
+  const mobileCallsStatus = document.getElementById("mobileCallsStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -153,6 +160,21 @@
     };
   }
 
+  function getCallsStorageKey() {
+    const suffix = currentSession?.user?.id || "guest";
+    return `mini-chatroulette-calls-${suffix}`;
+  }
+
+  function getDefaultCallSettings() {
+    return {
+      ringtone: true,
+      vibration: true,
+      videoDefault: false,
+      dataSaver: false,
+      missedAlerts: true
+    };
+  }
+
   function loadChatSettings() {
     try {
       const raw = localStorage.getItem(getChatSettingsStorageKey());
@@ -203,6 +225,36 @@
     if (notificationsStatusAlerts) notificationsStatusAlerts.checked = !!settings.statusAlerts;
     if (notificationsCallAlerts) notificationsCallAlerts.checked = !!settings.callAlerts;
     if (notificationsQuietHours) notificationsQuietHours.checked = !!settings.quietHours;
+  }
+
+  function loadCallSettings() {
+    try {
+      const raw = localStorage.getItem(getCallsStorageKey());
+      const parsed = raw ? JSON.parse(raw) : {};
+      return { ...getDefaultCallSettings(), ...(parsed || {}) };
+    } catch {
+      return getDefaultCallSettings();
+    }
+  }
+
+  function saveCallSettings(settings) {
+    localStorage.setItem(getCallsStorageKey(), JSON.stringify(settings));
+  }
+
+  function setCallsStatus(message = "", type = "") {
+    if (!mobileCallsStatus) return;
+    mobileCallsStatus.textContent = message;
+    mobileCallsStatus.className = "auth-status mobile-settings-status";
+    if (type) mobileCallsStatus.classList.add(type);
+  }
+
+  function renderCallSettings() {
+    const settings = loadCallSettings();
+    if (callsRingtoneEnabled) callsRingtoneEnabled.checked = !!settings.ringtone;
+    if (callsVibrationEnabled) callsVibrationEnabled.checked = !!settings.vibration;
+    if (callsVideoDefault) callsVideoDefault.checked = !!settings.videoDefault;
+    if (callsDataSaver) callsDataSaver.checked = !!settings.dataSaver;
+    if (callsMissedAlerts) callsMissedAlerts.checked = !!settings.missedAlerts;
   }
 
   function renderChatSettings() {
@@ -366,6 +418,15 @@
         setNotificationsStatus("");
       }
     }
+    if (mobileSettingsCallsView) {
+      const isCalls = viewName === "calls";
+      mobileSettingsCallsView.hidden = !isCalls;
+      mobileSettingsCallsView.classList.toggle("active", isCalls);
+      if (isCalls) {
+        renderCallSettings();
+        setCallsStatus("");
+      }
+    }
   }
 
   function setStatus(message = "", type = "") {
@@ -431,6 +492,18 @@
     };
     saveNotificationsSettings(nextSettings);
     setNotificationsStatus("Benachrichtigungen gespeichert.", "success");
+  }
+
+  function handleCallSettingsToggle() {
+    const nextSettings = {
+      ringtone: !!callsRingtoneEnabled?.checked,
+      vibration: !!callsVibrationEnabled?.checked,
+      videoDefault: !!callsVideoDefault?.checked,
+      dataSaver: !!callsDataSaver?.checked,
+      missedAlerts: !!callsMissedAlerts?.checked
+    };
+    saveCallSettings(nextSettings);
+    setCallsStatus("Anruf-Einstellungen gespeichert.", "success");
   }
 
   function readFileAsDataUrl(file) {
@@ -1376,6 +1449,10 @@
         await openSettingsSubview("notifications");
         return;
       }
+      if (section === "calls") {
+        await openSettingsSubview("calls");
+        return;
+      }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
   });
@@ -1396,6 +1473,13 @@
     notificationsCallAlerts,
     notificationsQuietHours
   ].forEach((input) => input?.addEventListener("change", handleNotificationsToggle));
+  [
+    callsRingtoneEnabled,
+    callsVibrationEnabled,
+    callsVideoDefault,
+    callsDataSaver,
+    callsMissedAlerts
+  ].forEach((input) => input?.addEventListener("change", handleCallSettingsToggle));
   [
     chatEnterToSend,
     chatKeepHistory,

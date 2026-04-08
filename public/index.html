@@ -414,7 +414,7 @@
                     <strong>Anrufe</strong>
                     <span>Klingelton, Datenverbrauch und Geräte</span>
                   </span>
-                  <span class="mobile-settings-item-meta">Bald</span>
+                  <span class="mobile-settings-item-meta">Öffnen</span>
                 </button>
                 <button class="mobile-settings-item" type="button" data-settings-item="storage">
                   <span class="mobile-settings-item-copy">
@@ -646,6 +646,66 @@
               </div>
 
               <div id="mobileNotificationsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
+            </section>
+          </div>
+
+          <div id="mobileSettingsCallsView" class="mobile-settings-view" hidden>
+            <section class="mobile-card mobile-settings-card mobile-settings-detail-card">
+              <div class="mobile-settings-detail-head">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Anrufe</strong>
+                  <span>Steuere Klingeln, Video und Datenverbrauch für deine Anrufe.</span>
+                </div>
+              </div>
+
+              <div class="mobile-privacy-list">
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Klingelton aktiv</strong>
+                    <span>Spiele einen Klingelton bei eingehenden Anrufen.</span>
+                  </span>
+                  <input id="callsRingtoneEnabled" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Vibration bei Anrufen</strong>
+                    <span>Lass das Handy bei eingehenden Anrufen vibrieren.</span>
+                  </span>
+                  <input id="callsVibrationEnabled" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Video standardmäßig einschalten</strong>
+                    <span>Starte Anrufe bevorzugt direkt mit Kamera.</span>
+                  </span>
+                  <input id="callsVideoDefault" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Daten sparen</strong>
+                    <span>Reduziere Qualität, um mobiles Datenvolumen zu schonen.</span>
+                  </span>
+                  <input id="callsDataSaver" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Verpasste Anrufe anzeigen</strong>
+                    <span>Erinnere mich an verpasste Sprach- und Videoanrufe.</span>
+                  </span>
+                  <input id="callsMissedAlerts" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+              </div>
+
+              <div id="mobileCallsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
             </section>
           </div>
         </div>
