@@ -4645,6 +4645,14 @@ body.chat-open[data-chat-background="image"] .chat-box {
     font-size: 0.9rem;
   }
 
+  .mobile-thread-typing {
+    margin-top: -4px;
+    color: #31dd76;
+    font-size: 0.84rem;
+    font-weight: 700;
+    padding: 0 4px;
+  }
+
   .mobile-message-list {
     flex: 1;
     min-height: 0;
@@ -4699,6 +4707,20 @@ body.chat-open[data-chat-background="image"] .chat-box {
     gap: 10px;
     align-items: center;
     padding: 10px 0 2px;
+  }
+
+  .mobile-message-icon-btn {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: #eef5ff;
+    font-size: 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .mobile-message-form input {

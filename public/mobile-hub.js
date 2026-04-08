@@ -50,10 +50,14 @@
   const directChatMeta = document.getElementById("directChatMeta");
   const directChatClear = document.getElementById("directChatClear");
   const directChatHeader = document.getElementById("directChatHeader");
+  const directChatTyping = document.getElementById("directChatTyping");
   const directMessageList = document.getElementById("directMessageList");
   const directMessageForm = document.getElementById("directMessageForm");
   const directMessageInput = document.getElementById("directMessageInput");
+  const directMessageAttach = document.getElementById("directMessageAttach");
+  const directMessageMic = document.getElementById("directMessageMic");
   const directMessageSend = document.getElementById("directMessageSend");
+  const directMessageMediaInput = document.getElementById("directMessageMediaInput");
   const directChatFab = document.querySelector(".mobile-chat-fab");
 
   let currentSession = null;
@@ -72,6 +76,7 @@
   let textDragging = false;
   let textDragOffset = { x: 0, y: 0 };
   let realtimeChannel = null;
+  let typingTimeout = null;
   let demoMessages = [
     {
       id: "demo-1",
@@ -516,6 +521,21 @@
 
     profiles = data || [];
     profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+
+    const ids = profiles.map((profile) => profile.id).filter(Boolean);
+    if (!ids.length) return;
+
+    const { data: presenceData } = await client
+      .from("user_presence")
+      .select("user_id,is_online,last_seen_at")
+      .in("user_id", ids);
+
+    const presenceMap = new Map((presenceData || []).map((entry) => [entry.user_id, entry]));
+    profiles = profiles.map((profile) => ({
+      ...profile,
+      presence: presenceMap.get(profile.id) || null
+    }));
+    profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
   }
 
   async function loadChatPreviews() {
@@ -617,6 +637,7 @@
     if (!activeContactId) {
       setThreadAvatar(null);
       if (directChatClear) directChatClear.hidden = true;
+      if (directChatTyping) directChatTyping.hidden = true;
       if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
       if (directChatMeta) directChatMeta.textContent = "Wähle einen registrierten Nutzer aus.";
       directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Wähle einen registrierten Nutzer aus.</span>";
@@ -631,6 +652,7 @@
       const demoProfile = getDemoProfile();
       setThreadAvatar(demoProfile);
       if (directChatClear) directChatClear.hidden = false;
+      if (directChatTyping) directChatTyping.hidden = true;
       if (directChatTitle) directChatTitle.textContent = getDisplayName(demoProfile);
       if (directChatMeta) directChatMeta.textContent = "Lokaler Testchat";
       directChatHeader.innerHTML = `
@@ -663,6 +685,7 @@
     if (!currentSession?.user) {
       setThreadAvatar(null);
       if (directChatClear) directChatClear.hidden = true;
+      if (directChatTyping) directChatTyping.hidden = true;
       if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
       if (directChatMeta) directChatMeta.textContent = "Melde dich an, um Nachrichten zu sehen.";
       directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Melde dich an, um Nachrichten zu sehen.</span>";
@@ -676,11 +699,19 @@
     const activeProfile = profileMap.get(activeContactId);
     setThreadAvatar(activeProfile);
     if (directChatClear) directChatClear.hidden = false;
+    if (directChatTyping) directChatTyping.hidden = true;
     if (directChatTitle) directChatTitle.textContent = getDisplayName(activeProfile);
-    if (directChatMeta) directChatMeta.textContent = getProfileMeta(activeProfile);
+    if (directChatMeta) {
+      const presence = activeProfile?.presence;
+      directChatMeta.textContent = presence?.is_online
+        ? "online"
+        : presence?.last_seen_at
+          ? `zuletzt online ${formatChatTime(presence.last_seen_at)}`
+          : getProfileMeta(activeProfile);
+    }
     directChatHeader.innerHTML = `
       <strong>${escapeHtml(getDisplayName(activeProfile))}</strong>
-      <span>${escapeHtml(getProfileMeta(activeProfile))}</span>
+      <span>${escapeHtml(getProfileMeta(activeProfile))}${activeProfile?.presence?.is_online ? " · online" : ""}</span>
     `;
 
     directMessageInput.disabled = false;
@@ -753,6 +784,23 @@
       directMessageInput.value = "";
       renderChatContacts();
       await loadDirectMessages();
+      if (directChatTyping) {
+        directChatTyping.hidden = false;
+        directChatTyping.textContent = "Demo Chat tippt...";
+      }
+      window.clearTimeout(typingTimeout);
+      typingTimeout = window.setTimeout(async () => {
+        demoMessages.push({
+          id: `demo-reply-${Date.now()}`,
+          sender_id: DEMO_CONTACT_ID,
+          recipient_id: "me",
+          message: "Alles klar, das war eine automatische Demo-Antwort.",
+          created_at: new Date().toISOString()
+        });
+        if (directChatTyping) directChatTyping.hidden = true;
+        renderChatContacts();
+        await loadDirectMessages();
+      }, 1100);
       return;
     }
 
@@ -1229,6 +1277,49 @@
   });
   directChatClear?.addEventListener("click", () => {
     void clearDirectChat();
+  });
+  directMessageAttach?.addEventListener("click", () => {
+    directMessageMediaInput?.click();
+  });
+  directMessageMediaInput?.addEventListener("change", () => {
+    const file = directMessageMediaInput.files?.[0];
+    if (!file) return;
+    const label = file.type.startsWith("image/")
+      ? `Foto ausgewählt: ${file.name}`
+      : file.type.startsWith("video/")
+        ? `Video ausgewählt: ${file.name}`
+        : `Datei ausgewählt: ${file.name}`;
+    if (activeContactId === DEMO_CONTACT_ID) {
+      demoMessages.push({
+        id: `demo-file-${Date.now()}`,
+        sender_id: "me",
+        recipient_id: DEMO_CONTACT_ID,
+        message: label,
+        created_at: new Date().toISOString()
+      });
+      renderChatContacts();
+      void loadDirectMessages();
+    } else {
+      if (directChatTyping) {
+        directChatTyping.hidden = false;
+        directChatTyping.textContent = "Medienversand kommt als nächster Schritt.";
+      }
+      window.clearTimeout(typingTimeout);
+      typingTimeout = window.setTimeout(() => {
+        if (directChatTyping) directChatTyping.hidden = true;
+      }, 1600);
+    }
+    directMessageMediaInput.value = "";
+  });
+  directMessageMic?.addEventListener("click", () => {
+    if (directChatTyping) {
+      directChatTyping.hidden = false;
+      directChatTyping.textContent = "Sprachmemos kommen als nächster Schritt.";
+    }
+    window.clearTimeout(typingTimeout);
+    typingTimeout = window.setTimeout(() => {
+      if (directChatTyping) directChatTyping.hidden = true;
+    }, 1600);
   });
   client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;

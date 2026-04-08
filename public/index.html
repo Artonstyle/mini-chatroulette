@@ -354,12 +354,16 @@
               <strong>Kontakt wählen</strong>
               <span>Wähle einen registrierten Nutzer aus.</span>
             </div>
+            <div id="directChatTyping" class="mobile-thread-typing" hidden>tippt...</div>
             <div id="directMessageList" class="mobile-message-list">
               <div class="mobile-empty-state">Noch keine Nachrichten.</div>
             </div>
             <form id="directMessageForm" class="mobile-message-form">
+              <button id="directMessageAttach" class="mobile-message-icon-btn" type="button" aria-label="Medien senden">＋</button>
               <input id="directMessageInput" type="text" placeholder="Nachricht schreiben..." disabled>
+              <button id="directMessageMic" class="mobile-message-icon-btn" type="button" aria-label="Sprachnachricht">🎤</button>
               <button id="directMessageSend" type="submit" disabled>Senden</button>
+              <input id="directMessageMediaInput" type="file" accept="image/*,video/*,audio/*" hidden>
             </form>
           </section>
         </section>
