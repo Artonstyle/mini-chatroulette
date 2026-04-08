@@ -4626,7 +4626,7 @@ body.chat-open[data-chat-background="image"] .chat-box {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    padding: 14px;
+    padding: 14px 14px 0;
     gap: 12px;
     background:
       radial-gradient(circle at top left, rgba(63, 198, 113, 0.08), transparent 24%),
@@ -4660,6 +4660,7 @@ body.chat-open[data-chat-background="image"] .chat-box {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding-bottom: 8px;
   }
 
   .mobile-direct-message {
@@ -4703,10 +4704,16 @@ body.chat-open[data-chat-background="image"] .chat-box {
   }
 
   .mobile-message-form {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
     display: flex;
     gap: 10px;
     align-items: center;
-    padding: 10px 0 2px;
+    padding: 12px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+    margin-top: auto;
+    background: linear-gradient(180deg, rgba(11,20,26,0), rgba(11,20,26,0.88) 22%, #0b141a 58%);
+    backdrop-filter: blur(6px);
   }
 
   .mobile-message-icon-btn {
