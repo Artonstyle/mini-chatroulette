@@ -3963,7 +3963,8 @@ body.bg-4 .btn-send {
 }
 
 .mobile-settings-view.active {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -4019,6 +4020,7 @@ body.bg-4 .btn-send {
 
 .mobile-settings-detail-card {
   gap: 18px;
+  overflow: hidden;
 }
 
 .mobile-settings-detail-head {
