@@ -79,6 +79,119 @@ const searchSelect = document.getElementById("search");
 const countrySelect = document.getElementById("country");
 const locationInput = document.getElementById("locationText");
 
+function initMobileInlineSelects() {
+    if (window.innerWidth > 800) return;
+
+    const inlineSelects = [genderSelect, searchSelect, countrySelect].filter(Boolean);
+    if (!inlineSelects.length) return;
+
+    let activeMenu = null;
+
+    const closeMenus = () => {
+        inlineSelects.forEach((select) => {
+            const host = select.closest(".mobile-inline-select");
+            if (!host) return;
+            host.classList.remove("open");
+            const button = host.querySelector(".mobile-inline-select-btn");
+            if (button) button.setAttribute("aria-expanded", "false");
+        });
+        activeMenu = null;
+    };
+
+    inlineSelects.forEach((select) => {
+        if (select.dataset.mobileInlineReady === "true") return;
+
+        const host = document.createElement("div");
+        host.className = "mobile-inline-select";
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "mobile-inline-select-btn";
+        button.setAttribute("aria-haspopup", "listbox");
+        button.setAttribute("aria-expanded", "false");
+
+        const valueText = document.createElement("span");
+        valueText.className = "mobile-inline-select-value";
+        valueText.textContent = select.options[select.selectedIndex]?.textContent || "";
+
+        const chevron = document.createElement("span");
+        chevron.className = "mobile-inline-select-chevron";
+        chevron.innerHTML = "&#9662;";
+
+        button.append(valueText, chevron);
+
+        const menu = document.createElement("div");
+        menu.className = "mobile-inline-select-menu";
+        menu.setAttribute("role", "listbox");
+
+        Array.from(select.options).forEach((option) => {
+            const optionButton = document.createElement("button");
+            optionButton.type = "button";
+            optionButton.className = "mobile-inline-select-option";
+            optionButton.textContent = option.textContent || "";
+            optionButton.dataset.value = option.value;
+            optionButton.setAttribute("role", "option");
+            optionButton.setAttribute("aria-selected", option.selected ? "true" : "false");
+
+            if (option.selected) {
+                optionButton.classList.add("selected");
+            }
+
+            optionButton.addEventListener("click", () => {
+                select.value = option.value;
+                valueText.textContent = option.textContent || "";
+                menu.querySelectorAll(".mobile-inline-select-option").forEach((entry) => {
+                    const selected = entry.dataset.value === option.value;
+                    entry.classList.toggle("selected", selected);
+                    entry.setAttribute("aria-selected", selected ? "true" : "false");
+                });
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                closeMenus();
+            });
+
+            menu.appendChild(optionButton);
+        });
+
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const willOpen = activeMenu !== menu;
+            closeMenus();
+            if (!willOpen) return;
+            host.classList.add("open");
+            button.setAttribute("aria-expanded", "true");
+            activeMenu = menu;
+        });
+
+        select.addEventListener("change", () => {
+            valueText.textContent = select.options[select.selectedIndex]?.textContent || "";
+            menu.querySelectorAll(".mobile-inline-select-option").forEach((entry) => {
+                const selected = entry.dataset.value === select.value;
+                entry.classList.toggle("selected", selected);
+                entry.setAttribute("aria-selected", selected ? "true" : "false");
+            });
+        });
+
+        select.parentNode.insertBefore(host, select);
+        host.append(button, menu, select);
+        select.dataset.mobileInlineReady = "true";
+    });
+
+    document.body.classList.add("mobile-inline-selects-ready");
+
+    document.addEventListener("click", (event) => {
+        if (event.target.closest(".mobile-inline-select")) return;
+        closeMenus();
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 800) {
+            document.body.classList.remove("mobile-inline-selects-ready");
+            closeMenus();
+        }
+    });
+}
+
 const config = {
     iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
@@ -234,6 +347,8 @@ function cycleBackground() {
     const nextBackground = BACKGROUNDS[(currentIndex + 1) % BACKGROUNDS.length];
     applyBackground(nextBackground);
 }
+
+initMobileInlineSelects();
 
 function applyLocalBackground(imageDataUrl) {
     document.body.classList.remove("custom-bg-active");

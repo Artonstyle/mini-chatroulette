@@ -4365,6 +4365,7 @@ body.bg-4 .btn-send {
     margin-bottom: 0;
     color: #d1d7db;
     font-size: 13px;
+    position: relative;
   }
 
   .form-left select,
@@ -4379,6 +4380,91 @@ body.bg-4 .btn-send {
     color: #fff;
     font-size: 15px;
     display: block;
+  }
+
+  body.mobile-inline-selects-ready .form-left select {
+    position: absolute;
+    inset: auto;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mobile-inline-select {
+    position: relative;
+    width: 100%;
+    max-width: 286px;
+    margin-top: 6px;
+  }
+
+  .mobile-inline-select-btn {
+    width: 100%;
+    min-height: 47px;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 12px;
+    background: #202c33;
+    color: #fff;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+
+  .mobile-inline-select-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 10px;
+  }
+
+  .mobile-inline-select-chevron {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    transition: transform 0.2s ease;
+  }
+
+  .mobile-inline-select.open .mobile-inline-select-chevron {
+    transform: rotate(180deg);
+  }
+
+  .mobile-inline-select-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 14px;
+    background: rgba(16, 23, 31, 0.98);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.34);
+    z-index: 120;
+  }
+
+  .mobile-inline-select.open .mobile-inline-select-menu {
+    display: flex;
+  }
+
+  .mobile-inline-select-option {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #eaf2f6;
+    text-align: left;
+    padding: 11px 12px;
+    font-size: 15px;
+  }
+
+  .mobile-inline-select-option.selected {
+    background: rgba(37, 211, 102, 0.14);
+    color: #25d366;
   }
 
   .btn-start {
