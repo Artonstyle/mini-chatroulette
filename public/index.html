@@ -373,64 +373,139 @@
       </div>
       <div class="mobile-pane-scroll">
         <div class="mobile-settings-stack">
-          <section class="mobile-card mobile-settings-card">
-            <div class="mobile-settings-list">
-              <button id="mobileSettingsAccountBtn" class="mobile-settings-item mobile-settings-item-primary" type="button">
-                <span class="mobile-settings-item-copy">
-                  <strong>Profil</strong>
-                  <span>Profilbild, Name, Bio und Kontodaten</span>
-                </span>
-                <span class="mobile-settings-item-meta">Öffnen</span>
-              </button>
-            </div>
-          </section>
+          <div id="mobileSettingsHomeView" class="mobile-settings-view active">
+            <section class="mobile-card mobile-settings-card">
+              <div class="mobile-settings-list">
+                <button id="mobileSettingsAccountBtn" class="mobile-settings-item mobile-settings-item-primary" type="button">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Profil</strong>
+                    <span>Profilbild, Name, Bio und Kontodaten</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Öffnen</span>
+                </button>
+              </div>
+            </section>
 
-          <section class="mobile-card mobile-settings-card">
-            <div class="mobile-settings-list">
-              <button class="mobile-settings-item" type="button" data-settings-item="privacy">
-                <span class="mobile-settings-item-copy">
+            <section class="mobile-card mobile-settings-card">
+              <div class="mobile-settings-list">
+                <button class="mobile-settings-item" type="button" data-settings-item="privacy">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Datenschutz</strong>
+                    <span>Blockieren, Sichtbarkeit und Privatsphäre</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Öffnen</span>
+                </button>
+                <button class="mobile-settings-item" type="button" data-settings-item="chats">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Chats</strong>
+                    <span>Hintergrund, Verlauf und Sendeverhalten</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Bald</span>
+                </button>
+                <button class="mobile-settings-item" type="button" data-settings-item="notifications">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Benachrichtigungen</strong>
+                    <span>Töne, Vorschau und Stummschalten</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Bald</span>
+                </button>
+                <button class="mobile-settings-item" type="button" data-settings-item="calls">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Anrufe</strong>
+                    <span>Klingelton, Datenverbrauch und Geräte</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Bald</span>
+                </button>
+                <button class="mobile-settings-item" type="button" data-settings-item="storage">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Speicher</strong>
+                    <span>Medien, große Dateien und Bereinigung</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Bald</span>
+                </button>
+                <button class="mobile-settings-item" type="button" data-settings-item="help">
+                  <span class="mobile-settings-item-copy">
+                    <strong>Hilfe</strong>
+                    <span>Support, FAQ und App-Informationen</span>
+                  </span>
+                  <span class="mobile-settings-item-meta">Bald</span>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <div id="mobileSettingsPrivacyView" class="mobile-settings-view" hidden>
+            <section class="mobile-card mobile-settings-card mobile-settings-detail-card">
+              <div class="mobile-settings-detail-head">
+                <button id="mobileSettingsBackBtn" class="mobile-settings-back" type="button" aria-label="Zurück">‹</button>
+                <div class="mobile-settings-detail-copy">
                   <strong>Datenschutz</strong>
-                  <span>Blockieren, Sichtbarkeit und Privatsphäre</span>
-                </span>
-                <span class="mobile-settings-item-meta">Bald</span>
-              </button>
-              <button class="mobile-settings-item" type="button" data-settings-item="chats">
-                <span class="mobile-settings-item-copy">
-                  <strong>Chats</strong>
-                  <span>Hintergrund, Verlauf und Sendeverhalten</span>
-                </span>
-                <span class="mobile-settings-item-meta">Bald</span>
-              </button>
-              <button class="mobile-settings-item" type="button" data-settings-item="notifications">
-                <span class="mobile-settings-item-copy">
-                  <strong>Benachrichtigungen</strong>
-                  <span>Töne, Vorschau und Stummschalten</span>
-                </span>
-                <span class="mobile-settings-item-meta">Bald</span>
-              </button>
-              <button class="mobile-settings-item" type="button" data-settings-item="calls">
-                <span class="mobile-settings-item-copy">
-                  <strong>Anrufe</strong>
-                  <span>Klingelton, Datenverbrauch und Geräte</span>
-                </span>
-                <span class="mobile-settings-item-meta">Bald</span>
-              </button>
-              <button class="mobile-settings-item" type="button" data-settings-item="storage">
-                <span class="mobile-settings-item-copy">
-                  <strong>Speicher</strong>
-                  <span>Medien, große Dateien und Bereinigung</span>
-                </span>
-                <span class="mobile-settings-item-meta">Bald</span>
-              </button>
-              <button class="mobile-settings-item" type="button" data-settings-item="help">
-                <span class="mobile-settings-item-copy">
-                  <strong>Hilfe</strong>
-                  <span>Support, FAQ und App-Informationen</span>
-                </span>
-                <span class="mobile-settings-item-meta">Bald</span>
-              </button>
-            </div>
-          </section>
+                  <span>Lege fest, was andere sehen und wie sie dich erreichen.</span>
+                </div>
+              </div>
+
+              <div class="mobile-privacy-list">
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Online-Status anzeigen</strong>
+                    <span>Andere sehen, ob du gerade aktiv bist.</span>
+                  </span>
+                  <input id="privacyShowOnline" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Telefonnummer sichtbar</strong>
+                    <span>Zeige deine Nummer in Profil und Direktchat.</span>
+                  </span>
+                  <input id="privacyShowPhone" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Profilbild sichtbar</strong>
+                    <span>Andere dürfen dein Profilbild sehen.</span>
+                  </span>
+                  <input id="privacyShowAvatar" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Direktnachrichten erlauben</strong>
+                    <span>Registrierte Nutzer dürfen dir direkt schreiben.</span>
+                  </span>
+                  <input id="privacyAllowDirectMessages" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Lesebestätigungen</strong>
+                    <span>Zeige an, wenn du Nachrichten gelesen hast.</span>
+                  </span>
+                  <input id="privacyReadReceipts" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+              </div>
+
+              <div class="mobile-settings-divider"></div>
+
+              <div class="mobile-settings-blocked">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Blockierte Nutzer</strong>
+                  <span>Hier siehst du, wen du blockiert hast.</span>
+                </div>
+                <div id="privacyBlockedList" class="mobile-blocked-list">
+                  <div class="mobile-empty-state">Noch keine blockierten Nutzer.</div>
+                </div>
+              </div>
+
+              <div id="mobilePrivacyStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
+            </section>
+          </div>
         </div>
       </div>
     </section>

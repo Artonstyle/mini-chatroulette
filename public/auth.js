@@ -47,6 +47,16 @@
   const mobileSettingsAccountCard = document.getElementById("mobileSettingsAccountCard");
   const mobileSettingsAccountBtn = document.getElementById("mobileSettingsAccountBtn");
   const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
+  const mobileSettingsHomeView = document.getElementById("mobileSettingsHomeView");
+  const mobileSettingsPrivacyView = document.getElementById("mobileSettingsPrivacyView");
+  const mobileSettingsBackBtn = document.getElementById("mobileSettingsBackBtn");
+  const privacyShowOnline = document.getElementById("privacyShowOnline");
+  const privacyShowPhone = document.getElementById("privacyShowPhone");
+  const privacyShowAvatar = document.getElementById("privacyShowAvatar");
+  const privacyAllowDirectMessages = document.getElementById("privacyAllowDirectMessages");
+  const privacyReadReceipts = document.getElementById("privacyReadReceipts");
+  const privacyBlockedList = document.getElementById("privacyBlockedList");
+  const mobilePrivacyStatus = document.getElementById("mobilePrivacyStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -67,6 +77,121 @@
   let resetReturnTab = "login";
   let passwordChangeInFlight = false;
   let authHistoryOpen = false;
+  let settingsSubview = "home";
+
+  function getPrivacyStorageKey() {
+    const suffix = currentSession?.user?.id || "guest";
+    return `mini-chatroulette-privacy-${suffix}`;
+  }
+
+  function getDefaultPrivacySettings() {
+    return {
+      showOnline: true,
+      showPhone: false,
+      showAvatar: true,
+      allowDirectMessages: true,
+      readReceipts: true
+    };
+  }
+
+  function loadPrivacySettings() {
+    try {
+      const raw = localStorage.getItem(getPrivacyStorageKey());
+      const parsed = raw ? JSON.parse(raw) : {};
+      return { ...getDefaultPrivacySettings(), ...(parsed || {}) };
+    } catch {
+      return getDefaultPrivacySettings();
+    }
+  }
+
+  function savePrivacySettings(settings) {
+    localStorage.setItem(getPrivacyStorageKey(), JSON.stringify(settings));
+  }
+
+  function setPrivacyStatus(message = "", type = "") {
+    if (!mobilePrivacyStatus) return;
+    mobilePrivacyStatus.textContent = message;
+    mobilePrivacyStatus.className = "auth-status mobile-settings-status";
+    if (type) mobilePrivacyStatus.classList.add(type);
+  }
+
+  function renderPrivacySettings() {
+    const settings = loadPrivacySettings();
+    if (privacyShowOnline) privacyShowOnline.checked = !!settings.showOnline;
+    if (privacyShowPhone) privacyShowPhone.checked = !!settings.showPhone;
+    if (privacyShowAvatar) privacyShowAvatar.checked = !!settings.showAvatar;
+    if (privacyAllowDirectMessages) privacyAllowDirectMessages.checked = !!settings.allowDirectMessages;
+    if (privacyReadReceipts) privacyReadReceipts.checked = !!settings.readReceipts;
+  }
+
+  async function renderBlockedUsers() {
+    if (!privacyBlockedList) return;
+    if (!currentSession?.user) {
+      privacyBlockedList.innerHTML = `<div class="mobile-empty-state">Melde dich an, um deine Blockliste zu sehen.</div>`;
+      return;
+    }
+
+    const { data, error } = await client
+      .from("blocks")
+      .select("blocked_id, created_at")
+      .eq("blocker_id", currentSession.user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      privacyBlockedList.innerHTML = `<div class="mobile-empty-state">Blockliste konnte nicht geladen werden.</div>`;
+      return;
+    }
+
+    if (!data?.length) {
+      privacyBlockedList.innerHTML = `<div class="mobile-empty-state">Noch keine blockierten Nutzer.</div>`;
+      return;
+    }
+
+    const ids = data.map((entry) => entry.blocked_id).filter(Boolean);
+    let profileMap = new Map();
+
+    if (ids.length) {
+      const { data: profilesData } = await client
+        .from("profiles")
+        .select("id, username, display_name")
+        .in("id", ids);
+
+      profileMap = new Map((profilesData || []).map((entry) => [entry.id, entry]));
+    }
+
+    privacyBlockedList.innerHTML = data.map((entry) => {
+      const profile = profileMap.get(entry.blocked_id);
+      const name = profile?.display_name || profile?.username || "Unbekannter Nutzer";
+      const sub = profile?.username ? `@${profile.username}` : "Blockiert";
+      return `
+        <div class="mobile-blocked-item">
+          <span class="mobile-blocked-copy">
+            <strong>${escapeHtml(name)}</strong>
+            <span>${escapeHtml(sub)}</span>
+          </span>
+          <span class="mobile-settings-item-meta">Blockiert</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function openSettingsSubview(viewName) {
+    settingsSubview = viewName;
+    if (mobileSettingsHomeView) {
+      mobileSettingsHomeView.hidden = viewName !== "home";
+      mobileSettingsHomeView.classList.toggle("active", viewName === "home");
+    }
+    if (mobileSettingsPrivacyView) {
+      const isPrivacy = viewName === "privacy";
+      mobileSettingsPrivacyView.hidden = !isPrivacy;
+      mobileSettingsPrivacyView.classList.toggle("active", isPrivacy);
+      if (isPrivacy) {
+        renderPrivacySettings();
+        setPrivacyStatus("");
+        await renderBlockedUsers();
+      }
+    }
+  }
 
   function setStatus(message = "", type = "") {
     const isProfileContext = activeTab === "profile";
@@ -89,6 +214,18 @@
       mobileSettingsStatus.className = "auth-status mobile-settings-status";
       if (type) mobileSettingsStatus.classList.add(type);
     }
+  }
+
+  function handlePrivacyToggle() {
+    const nextSettings = {
+      showOnline: !!privacyShowOnline?.checked,
+      showPhone: !!privacyShowPhone?.checked,
+      showAvatar: !!privacyShowAvatar?.checked,
+      allowDirectMessages: !!privacyAllowDirectMessages?.checked,
+      readReceipts: !!privacyReadReceipts?.checked
+    };
+    savePrivacySettings(nextSettings);
+    setPrivacyStatus("Datenschutz gespeichert.", "success");
   }
 
   function setAvatarStatus(message = "", type = "") {
@@ -990,12 +1127,27 @@
     openModal("login");
   });
   mobileSettingsItems.forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
+      const section = button.dataset.settingsItem;
+      if (section === "privacy") {
+        await openSettingsSubview("privacy");
+        return;
+      }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
   });
+  mobileSettingsBackBtn?.addEventListener("click", () => {
+    void openSettingsSubview("home");
+  });
   mobileSettingsLogoutBtn?.addEventListener("click", handleLogout);
   mobileProfileSave?.addEventListener("click", () => saveProfile({}, { manual: true }));
+  [
+    privacyShowOnline,
+    privacyShowPhone,
+    privacyShowAvatar,
+    privacyAllowDirectMessages,
+    privacyReadReceipts
+  ].forEach((input) => input?.addEventListener("change", handlePrivacyToggle));
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -1009,6 +1161,8 @@
     currentSession = session;
     updateAuthButtons();
     updateProfileSummary();
+    renderPrivacySettings();
+    void renderBlockedUsers();
 
     if (_event === "PASSWORD_RECOVERY") {
       openModal("reset");
@@ -1021,5 +1175,6 @@
   });
 
   initAuth();
+  void openSettingsSubview("home");
 })();
 
