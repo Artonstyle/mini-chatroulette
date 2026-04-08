@@ -4371,7 +4371,7 @@ body.bg-4 .btn-send {
   #locationText {
     width: 100%;
     max-width: 286px;
-    margin: 6px auto 0 auto;
+    margin: 6px 0 0 0;
     padding: 11px 12px;
     border: none;
     border-radius: 12px;
@@ -4384,11 +4384,11 @@ body.bg-4 .btn-send {
   .btn-start {
     width: 100%;
     max-width: 286px;
-    margin: 8px auto 0 auto;
+    margin: 8px 0 0 0;
   }
 
   .online-right {
-    margin: 0 auto 8px auto;
+    margin: 0 0 8px 0;
     width: 100%;
     max-width: 286px;
     text-align: left;
