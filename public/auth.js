@@ -78,6 +78,17 @@
   let authHistoryOpen = false;
   let settingsSubview = "home";
 
+  function syncSettingsSubviewHistory(viewName, options = {}) {
+    if (window.innerWidth > 800) return;
+    const pushHistory = options.pushHistory !== false;
+    const nextState = { ...(window.history.state || {}), miniChatrouletteSettingsSubview: viewName };
+    if (pushHistory) {
+      window.history.pushState(nextState, "");
+    } else {
+      window.history.replaceState(nextState, "");
+    }
+  }
+
   function getPrivacyStorageKey() {
     const suffix = currentSession?.user?.id || "guest";
     return `mini-chatroulette-privacy-${suffix}`;
@@ -174,8 +185,9 @@
     }).join("");
   }
 
-  async function openSettingsSubview(viewName) {
+  async function openSettingsSubview(viewName, options = {}) {
     settingsSubview = viewName;
+    syncSettingsSubviewHistory(viewName, options);
     if (mobileSettingsHomeView) {
       mobileSettingsHomeView.hidden = viewName !== "home";
       mobileSettingsHomeView.classList.toggle("active", viewName === "home");
@@ -1144,6 +1156,24 @@
     privacyAllowDirectMessages,
     privacyReadReceipts
   ].forEach((input) => input?.addEventListener("change", handlePrivacyToggle));
+  window.addEventListener("mini-chatroulette:mobile-tab", (event) => {
+    const tab = event.detail?.tab;
+    if (tab === "settings") {
+      void openSettingsSubview("home", { pushHistory: false });
+      return;
+    }
+    if (settingsSubview !== "home") {
+      settingsSubview = "home";
+    }
+  });
+  window.addEventListener("popstate", (event) => {
+    if (window.innerWidth > 800) return;
+    const tab = event.state?.miniChatrouletteTab;
+    if (tab !== "settings") return;
+    const viewName = event.state?.miniChatrouletteSettingsSubview || "home";
+    if (viewName === settingsSubview) return;
+    void openSettingsSubview(viewName, { pushHistory: false });
+  });
   document.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -1171,6 +1201,6 @@
   });
 
   initAuth();
-  void openSettingsSubview("home");
+  void openSettingsSubview("home", { pushHistory: false });
 })();
 
