@@ -80,6 +80,7 @@
   const callsVideoDefault = document.getElementById("callsVideoDefault");
   const callsDataSaver = document.getElementById("callsDataSaver");
   const callsMissedAlerts = document.getElementById("callsMissedAlerts");
+  const callRingtoneButtons = Array.from(document.querySelectorAll("[data-call-ringtone]"));
   const mobileCallsStatus = document.getElementById("mobileCallsStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
@@ -171,7 +172,8 @@
       vibration: true,
       videoDefault: false,
       dataSaver: false,
-      missedAlerts: true
+      missedAlerts: true,
+      ringtoneTone: "classic"
     };
   }
 
@@ -255,6 +257,11 @@
     if (callsVideoDefault) callsVideoDefault.checked = !!settings.videoDefault;
     if (callsDataSaver) callsDataSaver.checked = !!settings.dataSaver;
     if (callsMissedAlerts) callsMissedAlerts.checked = !!settings.missedAlerts;
+    callRingtoneButtons.forEach((button) => {
+      const selected = button.dataset.callRingtone === settings.ringtoneTone;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
   }
 
   function renderChatSettings() {
@@ -495,12 +502,14 @@
   }
 
   function handleCallSettingsToggle() {
+    const selectedRingtone = callRingtoneButtons.find((button) => button.classList.contains("is-selected"))?.dataset.callRingtone || "classic";
     const nextSettings = {
       ringtone: !!callsRingtoneEnabled?.checked,
       vibration: !!callsVibrationEnabled?.checked,
       videoDefault: !!callsVideoDefault?.checked,
       dataSaver: !!callsDataSaver?.checked,
-      missedAlerts: !!callsMissedAlerts?.checked
+      missedAlerts: !!callsMissedAlerts?.checked,
+      ringtoneTone: selectedRingtone
     };
     saveCallSettings(nextSettings);
     setCallsStatus("Anruf-Einstellungen gespeichert.", "success");
@@ -1480,6 +1489,14 @@
     callsDataSaver,
     callsMissedAlerts
   ].forEach((input) => input?.addEventListener("change", handleCallSettingsToggle));
+  callRingtoneButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      callRingtoneButtons.forEach((entry) => entry.classList.remove("is-selected"));
+      button.classList.add("is-selected");
+      handleCallSettingsToggle();
+      renderCallSettings();
+    });
+  });
   [
     chatEnterToSend,
     chatKeepHistory,
