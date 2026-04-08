@@ -4331,14 +4331,14 @@ body.bg-4 .btn-send {
     top: 54%;
     left: 50%;
     transform: translate(-50%, -50%) scale(1);
-    width: calc(100% - 28px);
-    max-width: 390px;
+    width: calc(100% - 42px);
+    max-width: 344px;
     z-index: 66;
     background: rgba(0,0,0,0.52);
     border-radius: 22px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     border: 1px solid rgba(255,255,255,0.06);
-    padding: 16px;
+    padding: 14px 12px;
     margin: 0;
     pointer-events: auto;
     backdrop-filter: blur(12px);
@@ -4356,7 +4356,7 @@ body.bg-4 .btn-send {
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 10px;
+    gap: 8px;
     align-items: stretch;
   }
 
@@ -4364,33 +4364,37 @@ body.bg-4 .btn-send {
     display: block;
     margin-bottom: 0;
     color: #d1d7db;
-    font-size: 14px;
+    font-size: 13px;
   }
 
-  .form-left select {
+  .form-left select,
+  #locationText {
     width: 100%;
-    max-width: 320px;
+    max-width: 286px;
     margin: 6px auto 0 auto;
-    padding: 12px;
+    padding: 11px 12px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #202c33;
     color: #fff;
     font-size: 15px;
+    display: block;
   }
 
   .btn-start {
     width: 100%;
-    max-width: 320px;
+    max-width: 286px;
     margin: 8px auto 0 auto;
   }
 
   .online-right {
-    margin-top: 10px;
-    text-align: center;
+    margin: 0 auto 8px auto;
+    width: 100%;
+    max-width: 286px;
+    text-align: left;
     background: #111b21;
     border-radius: 12px;
-    padding: 10px;
+    padding: 10px 12px;
     color: #25d366;
   }
 
@@ -4482,6 +4486,12 @@ body.bg-4 .btn-send {
     box-shadow: 0 8px 20px rgba(0,0,0,0.22);
     border-radius: 14px;
     overflow: hidden;
+  }
+
+  body:not(.chatting) .local-video-wrap {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+    pointer-events: none;
   }
 
   .remote-wrap {
@@ -4608,6 +4618,10 @@ body.bg-4 .btn-send {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
+  }
+
+  body:not(.chatting) .buttons.remote-buttons {
+    display: none;
   }
 
   .moderation-actions {
