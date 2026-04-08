@@ -135,6 +135,8 @@
     const threadOpen = Boolean(activeContactId);
     if (directChatListView) directChatListView.hidden = threadOpen;
     if (directChatThreadView) directChatThreadView.hidden = !threadOpen;
+    body.classList.toggle("mobile-chat-thread-open", threadOpen);
+    body.classList.toggle("mobile-bottom-nav-hidden", threadOpen);
   }
 
   function syncTextOverlay() {

@@ -3301,11 +3301,28 @@ body.bg-4 .btn-send {
     box-shadow: 0 20px 46px rgba(0,0,0,0.42);
   }
 
+  body.mobile-chat-thread-open .mobile-hub {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    box-shadow: none;
+  }
+
   .mobile-pane[data-mobile-pane="settings"] {
     background: #0b1118;
   }
 
   .mobile-pane[data-mobile-pane="chat"] {
+    background: #0b141a;
+  }
+
+  body.mobile-chat-thread-open .mobile-pane[data-mobile-pane="chat"] {
     background: #0b141a;
   }
 
@@ -4378,6 +4395,11 @@ body.chat-open[data-chat-background="image"] .chat-box {
     height: 100%;
   }
 
+  body.mobile-chat-thread-open .mobile-chat-thread-view {
+    display: flex;
+    flex-direction: column;
+  }
+
   .mobile-chat-appbar,
   .mobile-thread-appbar {
     display: flex;
@@ -4633,6 +4655,10 @@ body.chat-open[data-chat-background="image"] .chat-box {
       #0b141a;
   }
 
+  body.mobile-chat-thread-open .mobile-chat-thread {
+    padding: 10px 14px 0;
+  }
+
   .mobile-thread-header {
     padding: 14px;
     display: flex;
@@ -4714,6 +4740,10 @@ body.chat-open[data-chat-background="image"] .chat-box {
     margin-top: auto;
     background: linear-gradient(180deg, rgba(11,20,26,0), rgba(11,20,26,0.88) 22%, #0b141a 58%);
     backdrop-filter: blur(6px);
+  }
+
+  body.mobile-chat-thread-open .mobile-message-form {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .mobile-message-icon-btn {
