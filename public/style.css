@@ -4228,19 +4228,19 @@ body[data-chat-font-size="large"] .chat-input input {
   font-size: 17px;
 }
 
-body[data-chat-background="default"] .chat-box {
+body.chat-open[data-chat-background="default"] .chat-box {
   background: linear-gradient(180deg, rgba(20, 25, 36, 0.94), rgba(12, 16, 24, 0.96));
 }
 
-body[data-chat-background="dark"] .chat-box {
+body.chat-open[data-chat-background="dark"] .chat-box {
   background: linear-gradient(180deg, rgba(10, 12, 18, 0.98), rgba(5, 7, 12, 0.98));
 }
 
-body[data-chat-background="soft"] .chat-box {
+body.chat-open[data-chat-background="soft"] .chat-box {
   background: linear-gradient(180deg, rgba(25, 34, 48, 0.94), rgba(17, 25, 36, 0.96));
 }
 
-body[data-chat-background="image"] .chat-box {
+body.chat-open[data-chat-background="image"] .chat-box {
   background:
     linear-gradient(180deg, rgba(8, 12, 18, 0.68), rgba(7, 10, 16, 0.82)),
     var(--chat-custom-bg-image) center / cover no-repeat;
