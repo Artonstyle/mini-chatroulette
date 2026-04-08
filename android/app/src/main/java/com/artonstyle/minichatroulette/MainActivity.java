@@ -8,6 +8,8 @@ import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private WebView appWebView;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -16,16 +18,26 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
-        WebView webView = bridge.getWebView();
-        if (webView == null) {
+        appWebView = bridge.getWebView();
+        if (appWebView == null) {
             return;
         }
 
-        webView.setBackgroundColor(Color.BLACK);
+        appWebView.setBackgroundColor(Color.BLACK);
 
-        WebSettings settings = webView.getSettings();
+        WebSettings settings = appWebView.getSettings();
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (appWebView != null && appWebView.canGoBack()) {
+            appWebView.goBack();
+            return;
+        }
+
+        super.onBackPressed();
     }
 }
