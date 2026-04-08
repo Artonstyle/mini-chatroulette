@@ -334,7 +334,7 @@
     };
     saveChatSettings(nextSettings);
     applyChatSettingsToUi();
-    setChatsStatus("Chat-Einstellungen gespeichert.", "success");
+    setChatsStatus("");
   }
 
   function readFileAsDataUrl(file) {
@@ -363,7 +363,7 @@
     saveChatSettings(nextSettings);
     renderChatSettings();
     applyChatSettingsToUi();
-    setChatsStatus("Chat-Hintergrund gespeichert.", "success");
+    setChatsStatus("");
     if (chatBackgroundInput) chatBackgroundInput.value = "";
   }
 
