@@ -79,6 +79,8 @@ const searchSelect = document.getElementById("search");
 const countrySelect = document.getElementById("country");
 const locationInput = document.getElementById("locationText");
 
+let enterToSendEnabled = false;
+
 function initMobileInlineSelects() {
     if (window.innerWidth > 800) return;
 
@@ -1421,6 +1423,18 @@ sendBtn.onclick = () => {
         input.value = "";
     }
 };
+
+input?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    if (!enterToSendEnabled) return;
+    event.preventDefault();
+    sendBtn.click();
+});
+
+window.addEventListener("mini-chatroulette:chat-settings-updated", (event) => {
+    const settings = event.detail || {};
+    enterToSendEnabled = !!settings.enterToSend;
+});
 
 // --- Mobile Drag ---
 (function () {

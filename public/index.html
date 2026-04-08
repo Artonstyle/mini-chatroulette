@@ -505,6 +505,74 @@
               <div id="mobilePrivacyStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
             </section>
           </div>
+
+          <div id="mobileSettingsChatsView" class="mobile-settings-view" hidden>
+            <section class="mobile-card mobile-settings-card mobile-settings-detail-card">
+              <div class="mobile-settings-detail-head">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Chats</strong>
+                  <span>Lege fest, wie sich Nachrichten und Chatbereich verhalten.</span>
+                </div>
+              </div>
+
+              <div class="mobile-privacy-list">
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Enter zum Senden</strong>
+                    <span>Sende Nachrichten direkt mit der Enter-Taste.</span>
+                  </span>
+                  <input id="chatEnterToSend" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Chatverlauf behalten</strong>
+                    <span>Nachrichten auf diesem Gerät zwischenspeichern.</span>
+                  </span>
+                  <input id="chatKeepHistory" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Medien automatisch laden</strong>
+                    <span>Lade Bilder und Videos im Chat automatisch.</span>
+                  </span>
+                  <input id="chatAutoLoadMedia" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+              </div>
+
+              <div class="mobile-settings-divider"></div>
+
+              <div class="mobile-settings-blocked">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Schriftgröße</strong>
+                  <span>Stelle ein, wie groß Chat-Nachrichten angezeigt werden.</span>
+                </div>
+                <div class="mobile-radio-list">
+                  <label class="mobile-radio-item">
+                    <input type="radio" name="chatFontSize" value="small">
+                    <span class="mobile-radio-mark"></span>
+                    <span class="mobile-radio-copy">Klein</span>
+                  </label>
+                  <label class="mobile-radio-item">
+                    <input type="radio" name="chatFontSize" value="medium">
+                    <span class="mobile-radio-mark"></span>
+                    <span class="mobile-radio-copy">Mittel</span>
+                  </label>
+                  <label class="mobile-radio-item">
+                    <input type="radio" name="chatFontSize" value="large">
+                    <span class="mobile-radio-mark"></span>
+                    <span class="mobile-radio-copy">Groß</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="mobileChatsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
+            </section>
+          </div>
         </div>
       </div>
     </section>

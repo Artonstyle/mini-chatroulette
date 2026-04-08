@@ -49,6 +49,7 @@
   const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
   const mobileSettingsHomeView = document.getElementById("mobileSettingsHomeView");
   const mobileSettingsPrivacyView = document.getElementById("mobileSettingsPrivacyView");
+  const mobileSettingsChatsView = document.getElementById("mobileSettingsChatsView");
   const privacyShowOnline = document.getElementById("privacyShowOnline");
   const privacyShowPhone = document.getElementById("privacyShowPhone");
   const privacyShowAvatar = document.getElementById("privacyShowAvatar");
@@ -56,6 +57,11 @@
   const privacyReadReceipts = document.getElementById("privacyReadReceipts");
   const privacyBlockedList = document.getElementById("privacyBlockedList");
   const mobilePrivacyStatus = document.getElementById("mobilePrivacyStatus");
+  const chatEnterToSend = document.getElementById("chatEnterToSend");
+  const chatKeepHistory = document.getElementById("chatKeepHistory");
+  const chatAutoLoadMedia = document.getElementById("chatAutoLoadMedia");
+  const chatFontSizeRadios = Array.from(document.querySelectorAll('input[name="chatFontSize"]'));
+  const mobileChatsStatus = document.getElementById("mobileChatsStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -102,6 +108,59 @@
       allowDirectMessages: true,
       readReceipts: true
     };
+  }
+
+  function getChatSettingsStorageKey() {
+    const suffix = currentSession?.user?.id || "guest";
+    return `mini-chatroulette-chat-settings-${suffix}`;
+  }
+
+  function getDefaultChatSettings() {
+    return {
+      enterToSend: false,
+      keepHistory: true,
+      autoLoadMedia: true,
+      fontSize: "medium"
+    };
+  }
+
+  function loadChatSettings() {
+    try {
+      const raw = localStorage.getItem(getChatSettingsStorageKey());
+      const parsed = raw ? JSON.parse(raw) : {};
+      return { ...getDefaultChatSettings(), ...(parsed || {}) };
+    } catch {
+      return getDefaultChatSettings();
+    }
+  }
+
+  function saveChatSettings(settings) {
+    localStorage.setItem(getChatSettingsStorageKey(), JSON.stringify(settings));
+  }
+
+  function setChatsStatus(message = "", type = "") {
+    if (!mobileChatsStatus) return;
+    mobileChatsStatus.textContent = message;
+    mobileChatsStatus.className = "auth-status mobile-settings-status";
+    if (type) mobileChatsStatus.classList.add(type);
+  }
+
+  function renderChatSettings() {
+    const settings = loadChatSettings();
+    if (chatEnterToSend) chatEnterToSend.checked = !!settings.enterToSend;
+    if (chatKeepHistory) chatKeepHistory.checked = !!settings.keepHistory;
+    if (chatAutoLoadMedia) chatAutoLoadMedia.checked = !!settings.autoLoadMedia;
+    chatFontSizeRadios.forEach((radio) => {
+      radio.checked = radio.value === settings.fontSize;
+    });
+  }
+
+  function applyChatSettingsToUi() {
+    const settings = loadChatSettings();
+    document.body.dataset.chatFontSize = settings.fontSize || "medium";
+    window.dispatchEvent(new CustomEvent("mini-chatroulette:chat-settings-updated", {
+      detail: settings
+    }));
   }
 
   function loadPrivacySettings() {
@@ -202,6 +261,15 @@
         await renderBlockedUsers();
       }
     }
+    if (mobileSettingsChatsView) {
+      const isChats = viewName === "chats";
+      mobileSettingsChatsView.hidden = !isChats;
+      mobileSettingsChatsView.classList.toggle("active", isChats);
+      if (isChats) {
+        renderChatSettings();
+        setChatsStatus("");
+      }
+    }
   }
 
   function setStatus(message = "", type = "") {
@@ -237,6 +305,19 @@
     };
     savePrivacySettings(nextSettings);
     setPrivacyStatus("Datenschutz gespeichert.", "success");
+  }
+
+  function handleChatSettingsChange() {
+    const selectedFont = chatFontSizeRadios.find((radio) => radio.checked)?.value || "medium";
+    const nextSettings = {
+      enterToSend: !!chatEnterToSend?.checked,
+      keepHistory: !!chatKeepHistory?.checked,
+      autoLoadMedia: !!chatAutoLoadMedia?.checked,
+      fontSize: selectedFont
+    };
+    saveChatSettings(nextSettings);
+    applyChatSettingsToUi();
+    setChatsStatus("Chat-Einstellungen gespeichert.", "success");
   }
 
   function setAvatarStatus(message = "", type = "") {
@@ -1144,6 +1225,10 @@
         await openSettingsSubview("privacy");
         return;
       }
+      if (section === "chats") {
+        await openSettingsSubview("chats");
+        return;
+      }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
   });
@@ -1156,6 +1241,12 @@
     privacyAllowDirectMessages,
     privacyReadReceipts
   ].forEach((input) => input?.addEventListener("change", handlePrivacyToggle));
+  [
+    chatEnterToSend,
+    chatKeepHistory,
+    chatAutoLoadMedia,
+    ...chatFontSizeRadios
+  ].forEach((input) => input?.addEventListener("change", handleChatSettingsChange));
   window.addEventListener("mini-chatroulette:mobile-tab", (event) => {
     const tab = event.detail?.tab;
     if (tab === "settings") {
@@ -1188,6 +1279,8 @@
     updateAuthButtons();
     updateProfileSummary();
     renderPrivacySettings();
+    renderChatSettings();
+    applyChatSettingsToUi();
     void renderBlockedUsers();
 
     if (_event === "PASSWORD_RECOVERY") {
@@ -1201,6 +1294,8 @@
   });
 
   initAuth();
+  renderChatSettings();
+  applyChatSettingsToUi();
   void openSettingsSubview("home", { pushHistory: false });
 })();
 

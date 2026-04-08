@@ -4136,6 +4136,78 @@ body.bg-4 .btn-send {
   font-size: 0.88rem;
 }
 
+.mobile-radio-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.mobile-radio-item input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-radio-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.4);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mobile-radio-mark::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #25d366;
+  opacity: 0;
+  transform: scale(0.65);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.mobile-radio-item input:checked + .mobile-radio-mark {
+  border-color: #25d366;
+}
+
+.mobile-radio-item input:checked + .mobile-radio-mark::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.mobile-radio-copy {
+  color: #eef4ff;
+  font-size: 0.95rem;
+}
+
+body[data-chat-font-size="small"] .chat-messages,
+body[data-chat-font-size="small"] .chat-input input {
+  font-size: 13px;
+}
+
+body[data-chat-font-size="medium"] .chat-messages,
+body[data-chat-font-size="medium"] .chat-input input {
+  font-size: 15px;
+}
+
+body[data-chat-font-size="large"] .chat-messages,
+body[data-chat-font-size="large"] .chat-input input {
+  font-size: 17px;
+}
+
   .mobile-settings-btn {
     min-height: 52px;
     border-radius: 16px;
