@@ -51,6 +51,7 @@
   const directMessageForm = document.getElementById("directMessageForm");
   const directMessageInput = document.getElementById("directMessageInput");
   const directMessageSend = document.getElementById("directMessageSend");
+  const directChatFab = document.querySelector(".mobile-chat-fab");
 
   let currentSession = null;
   let profileMap = new Map();
@@ -67,6 +68,7 @@
   let textOverlayState = { text: "", x: 50, y: 28 };
   let textDragging = false;
   let textDragOffset = { x: 0, y: 0 };
+  let realtimeChannel = null;
 
   function getStatusMediaInput() {
     return document.getElementById("statusMediaFileInline");
@@ -299,6 +301,14 @@
       .join("");
   }
 
+  function renderAvatarMarkup(profile) {
+    const avatarUrl = String(profile?.avatar_url || "").trim();
+    if (avatarUrl) {
+      return `<span class="mobile-chat-avatar has-image"><img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(getDisplayName(profile))}"></span>`;
+    }
+    return `<span class="mobile-chat-avatar">${escapeHtml(getInitials(profile))}</span>`;
+  }
+
   function requireLoginMessage(text) {
     return `<div class="mobile-empty-state">${escapeHtml(text)}</div>`;
   }
@@ -437,7 +447,7 @@
 
     const { data, error } = await client
       .from("profiles")
-      .select("id,username,display_name,phone_number,is_banned")
+      .select("id,username,display_name,phone_number,avatar_url,is_banned")
       .neq("id", currentSession.user.id)
       .eq("is_banned", false)
       .order("display_name", { ascending: true });
@@ -461,7 +471,7 @@
     const userId = currentSession.user.id;
     const { data, error } = await client
       .from("direct_messages")
-      .select("sender_id,recipient_id,message,created_at")
+      .select("sender_id,recipient_id,message,created_at,read_at")
       .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
       .order("created_at", { ascending: false })
       .limit(200);
@@ -475,7 +485,12 @@
     for (const item of data || []) {
       const partnerId = item.sender_id === userId ? item.recipient_id : item.sender_id;
       if (!partnerId || nextMap.has(partnerId)) continue;
-      nextMap.set(partnerId, item);
+      const unreadCount = (data || []).filter((entry) => (
+        entry.sender_id === partnerId &&
+        entry.recipient_id === userId &&
+        !entry.read_at
+      )).length;
+      nextMap.set(partnerId, { ...item, unreadCount });
     }
     chatPreviewMap = nextMap;
   }
@@ -511,13 +526,16 @@
       const preview = chatPreviewMap.get(profile.id);
       return `
         <button class="mobile-chat-contact ${profile.id === activeContactId ? "active" : ""}" type="button" data-contact-id="${profile.id}">
-          <span class="mobile-chat-avatar">${escapeHtml(getInitials(profile))}</span>
+          ${renderAvatarMarkup(profile)}
           <span class="mobile-chat-contact-copy">
             <span class="mobile-chat-contact-top">
               <strong>${escapeHtml(getDisplayName(profile))}</strong>
               <time>${escapeHtml(formatChatTime(preview?.created_at))}</time>
             </span>
-            <span class="mobile-chat-contact-bottom">${escapeHtml(preview?.message || getProfileMeta(profile))}</span>
+            <span class="mobile-chat-contact-bottom">
+              <span class="mobile-chat-contact-snippet">${escapeHtml(preview?.message || getProfileMeta(profile))}</span>
+              ${preview?.unreadCount ? `<span class="mobile-chat-unread-badge">${preview.unreadCount > 9 ? "9+" : preview.unreadCount}</span>` : ""}
+            </span>
           </span>
         </button>
       `;
@@ -572,7 +590,7 @@
     const userId = currentSession.user.id;
     const { data, error } = await client
       .from("direct_messages")
-      .select("id,sender_id,recipient_id,message,created_at")
+      .select("id,sender_id,recipient_id,message,created_at,read_at")
       .or(`and(sender_id.eq.${userId},recipient_id.eq.${activeContactId}),and(sender_id.eq.${activeContactId},recipient_id.eq.${userId})`)
       .order("created_at", { ascending: true })
       .limit(200);
@@ -597,6 +615,17 @@
     `).join("");
 
     directMessageList.scrollTop = directMessageList.scrollHeight;
+    const unreadIds = (data || [])
+      .filter((message) => message.sender_id === activeContactId && !message.read_at)
+      .map((message) => message.id);
+    if (unreadIds.length) {
+      await client
+        .from("direct_messages")
+        .update({ read_at: new Date().toISOString() })
+        .in("id", unreadIds);
+      await loadChatPreviews();
+      renderChatContacts();
+    }
     updateChatView();
   }
 
@@ -622,6 +651,43 @@
     await loadChatPreviews();
     renderChatContacts();
     await loadDirectMessages();
+  }
+
+  async function handleRealtimeMessageChange() {
+    await loadChatPreviews();
+    renderChatContacts();
+    if (activeContactId) {
+      await loadDirectMessages();
+    }
+  }
+
+  function setupRealtimeSubscriptions() {
+    if (realtimeChannel) {
+      client.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+    if (!currentSession?.user) return;
+
+    const userId = currentSession.user.id;
+    realtimeChannel = client
+      .channel(`mobile-hub-${userId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "direct_messages",
+        filter: `sender_id=eq.${userId}`
+      }, () => {
+        void handleRealtimeMessageChange();
+      })
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "direct_messages",
+        filter: `recipient_id=eq.${userId}`
+      }, () => {
+        void handleRealtimeMessageChange();
+      })
+      .subscribe();
   }
 
   function attachOwnStatusCardBehavior(isLoggedIn) {
@@ -901,6 +967,9 @@
 
   directChatSearch?.addEventListener("input", renderChatContacts);
   directMessageForm?.addEventListener("submit", sendDirectMessage);
+  directChatFab?.addEventListener("click", () => {
+    directChatSearch?.focus();
+  });
   statusEditorClose?.addEventListener("click", resetStatusSelection);
   statusPublishBtn?.addEventListener("click", publishStatus);
   statusEditorTools.forEach((button) => {
@@ -976,6 +1045,7 @@
   });
   client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;
+    setupRealtimeSubscriptions();
     activeContactId = null;
     updateChatView();
     closeStatusViewer();
@@ -987,6 +1057,7 @@
 
   client.auth.getSession().then(({ data }) => {
     currentSession = data.session;
+    setupRealtimeSubscriptions();
     updateChatView();
     window.setTimeout(() => {
       void refreshAll();
