@@ -3281,8 +3281,14 @@ body.bg-4 .btn-send {
     background: #000;
   }
 
+  body.mobile-settings-mode .mobile-hub {
+    background: #0b1118;
+    border-color: rgba(255,255,255,0.06);
+    box-shadow: 0 20px 46px rgba(0,0,0,0.42);
+  }
+
   .mobile-pane[data-mobile-pane="settings"] {
-    background: linear-gradient(180deg, rgba(9, 13, 20, 0.98), rgba(7, 10, 16, 0.99));
+    background: #0b1118;
   }
 
   .mobile-pane-head {
@@ -3310,7 +3316,7 @@ body.bg-4 .btn-send {
   }
 
   .mobile-pane[data-mobile-pane="settings"] .mobile-pane-scroll {
-    background: linear-gradient(180deg, rgba(9, 13, 20, 0.98), rgba(7, 10, 16, 0.99));
+    background: #0b1118;
   }
 
   .mobile-status-shell {
@@ -3925,6 +3931,8 @@ body.bg-4 .btn-send {
     padding: 18px;
     display: grid;
     gap: 16px;
+    background: #161d28;
+    border: 1px solid rgba(255,255,255,0.06);
   }
 
   .mobile-settings-summary {
