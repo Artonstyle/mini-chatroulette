@@ -4006,9 +4006,7 @@ body.bg-4 .btn-send {
 }
 
 .mobile-settings-detail-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  display: block;
 }
 
 .mobile-settings-detail-copy {
@@ -4025,21 +4023,6 @@ body.bg-4 .btn-send {
   color: #9db0c7;
   line-height: 1.45;
   font-size: 0.92rem;
-}
-
-.mobile-settings-back {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.05);
-  color: #eef4ff;
-  font-size: 28px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .mobile-privacy-list {

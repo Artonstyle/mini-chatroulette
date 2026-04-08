@@ -49,7 +49,6 @@
   const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
   const mobileSettingsHomeView = document.getElementById("mobileSettingsHomeView");
   const mobileSettingsPrivacyView = document.getElementById("mobileSettingsPrivacyView");
-  const mobileSettingsBackBtn = document.getElementById("mobileSettingsBackBtn");
   const privacyShowOnline = document.getElementById("privacyShowOnline");
   const privacyShowPhone = document.getElementById("privacyShowPhone");
   const privacyShowAvatar = document.getElementById("privacyShowAvatar");
@@ -1135,9 +1134,6 @@
       }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
-  });
-  mobileSettingsBackBtn?.addEventListener("click", () => {
-    void openSettingsSubview("home");
   });
   mobileSettingsLogoutBtn?.addEventListener("click", handleLogout);
   mobileProfileSave?.addEventListener("click", () => saveProfile({}, { manual: true }));
