@@ -3923,8 +3923,6 @@ body.bg-4 .btn-send {
   .mobile-settings-stack {
     display: grid;
     gap: 12px;
-    min-height: 100%;
-    align-content: start;
   }
 
   .mobile-settings-card {
@@ -3967,8 +3965,6 @@ body.bg-4 .btn-send {
 .mobile-settings-view.active {
   display: grid;
   gap: 12px;
-  min-height: 100%;
-  align-content: start;
 }
 
 .mobile-settings-item {
