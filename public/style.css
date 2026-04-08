@@ -3256,6 +3256,10 @@ body.bg-4 .btn-send {
     display: none;
   }
 
+  body.mobile-pane-open .mobile-topbar {
+    display: none;
+  }
+
   body.mobile-status-mode .mobile-hub {
     top: 0;
     left: 0;
