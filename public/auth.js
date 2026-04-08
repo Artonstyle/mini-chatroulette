@@ -45,7 +45,6 @@
   const authInboxList = document.getElementById("authInboxList");
   const mobileSettingsGuestCard = document.getElementById("mobileSettingsGuestCard");
   const mobileSettingsAccountCard = document.getElementById("mobileSettingsAccountCard");
-  const mobileSettingsSummary = document.getElementById("mobileSettingsSummary");
   const mobileSettingsAccountBtn = document.getElementById("mobileSettingsAccountBtn");
   const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
@@ -273,9 +272,6 @@
       if (mobileAuthProfileSummary) {
         mobileAuthProfileSummary.innerHTML = "<strong>Nicht eingeloggt</strong><span>Melde dich an, um dein Konto und dein Profil zu speichern.</span>";
       }
-      if (mobileSettingsSummary) {
-        mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
-      }
       return;
     }
 
@@ -289,9 +285,6 @@
     }
     if (mobileAuthProfileSummary) {
       mobileAuthProfileSummary.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(email)}</span>`;
-    }
-    if (mobileSettingsSummary) {
-      mobileSettingsSummary.innerHTML = "<strong>Anmeldung</strong><span>Öffne hier die normale Anmeldung wie über das Männchen oben.</span>";
     }
     if (mobileSettingsGuestCard) mobileSettingsGuestCard.hidden = true;
     if (mobileSettingsAccountCard) mobileSettingsAccountCard.hidden = false;

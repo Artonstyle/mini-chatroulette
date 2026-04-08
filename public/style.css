@@ -3949,6 +3949,16 @@ body.bg-4 .btn-send {
   text-align: left;
 }
 
+.mobile-settings-item-primary {
+  background: linear-gradient(180deg, rgba(57, 220, 117, 0.16), rgba(39, 190, 98, 0.08));
+  border-color: rgba(57, 220, 117, 0.22);
+}
+
+.mobile-settings-item-primary .mobile-settings-item-meta {
+  background: rgba(57, 220, 117, 0.16);
+  color: #dafbe5;
+}
+
 .mobile-settings-item-copy {
   display: grid;
   gap: 4px;
