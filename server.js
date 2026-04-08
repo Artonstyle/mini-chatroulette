@@ -359,6 +359,18 @@ async function fetchSupabaseProfile(accessToken, userId) {
     });
 }
 
+async function deleteSupabaseDirectMessages(accessToken, filterQuery) {
+    return httpsRequestJson(`${SUPABASE_URL}/rest/v1/direct_messages?${filterQuery}`, {
+        method: "DELETE",
+        headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        }
+    });
+}
+
 function normalizeProfileSavePayload(body = {}) {
     const username = String(body.username || "").trim() || null;
     const displayName = String(body.display_name || "").trim() || null;
@@ -873,6 +885,72 @@ app.post("/api/profile/save", async (req, res) => {
         return res.status(500).json({
             ok: false,
             error: `[${phase}] ${message}`
+        });
+    }
+});
+
+app.post("/api/direct-chat/delete-message", async (req, res) => {
+    const accessToken = getSupabaseAccessToken(req);
+    const messageId = String(req.body?.messageId || "").trim();
+
+    if (!accessToken) {
+        return res.status(401).json({ ok: false, error: "Supabase-Session fehlt" });
+    }
+
+    if (!messageId) {
+        return res.status(400).json({ ok: false, error: "Nachrichten-ID fehlt" });
+    }
+
+    try {
+        const result = await deleteSupabaseDirectMessages(
+            accessToken,
+            `id=eq.${encodeURIComponent(messageId)}&select=id`
+        );
+        return res.json({ ok: true, deleted: Array.isArray(result) ? result.length : 0 });
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            error: error.message || "Nachricht konnte nicht gelöscht werden"
+        });
+    }
+});
+
+app.post("/api/direct-chat/clear", async (req, res) => {
+    const accessToken = getSupabaseAccessToken(req);
+    const contactId = String(req.body?.contactId || "").trim();
+
+    if (!accessToken) {
+        return res.status(401).json({ ok: false, error: "Supabase-Session fehlt" });
+    }
+
+    if (!contactId) {
+        return res.status(400).json({ ok: false, error: "Kontakt-ID fehlt" });
+    }
+
+    try {
+        const userData = await httpsRequestJson(`${SUPABASE_URL}/auth/v1/user`, {
+            method: "GET",
+            headers: {
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+        const userId = String(userData?.id || "").trim();
+        if (!userId) {
+            return res.status(401).json({ ok: false, error: "Benutzer konnte nicht ermittelt werden" });
+        }
+
+        const filter = [
+            `or=(and(sender_id.eq.${encodeURIComponent(userId)},recipient_id.eq.${encodeURIComponent(contactId)}),and(sender_id.eq.${encodeURIComponent(contactId)},recipient_id.eq.${encodeURIComponent(userId)}))`,
+            "select=id"
+        ].join("&");
+
+        const result = await deleteSupabaseDirectMessages(accessToken, filter);
+        return res.json({ ok: true, deleted: Array.isArray(result) ? result.length : 0 });
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            error: error.message || "Chat konnte nicht gelöscht werden"
         });
     }
 });

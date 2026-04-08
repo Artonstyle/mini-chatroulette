@@ -45,8 +45,10 @@
   const directChatListView = document.getElementById("directChatListView");
   const directChatThreadView = document.getElementById("directChatThreadView");
   const directChatBack = document.getElementById("directChatBack");
+  const directChatAvatar = document.getElementById("directChatAvatar");
   const directChatTitle = document.getElementById("directChatTitle");
   const directChatMeta = document.getElementById("directChatMeta");
+  const directChatClear = document.getElementById("directChatClear");
   const directChatHeader = document.getElementById("directChatHeader");
   const directMessageList = document.getElementById("directMessageList");
   const directMessageForm = document.getElementById("directMessageForm");
@@ -345,6 +347,24 @@
     return `<span class="mobile-chat-avatar">${escapeHtml(getInitials(profile))}</span>`;
   }
 
+  function setThreadAvatar(profile) {
+    if (!directChatAvatar) return;
+    if (!profile) {
+      directChatAvatar.textContent = "?";
+      directChatAvatar.classList.remove("has-image");
+      directChatAvatar.innerHTML = "?";
+      return;
+    }
+    const avatarUrl = String(profile.avatar_url || "").trim();
+    if (avatarUrl) {
+      directChatAvatar.classList.add("has-image");
+      directChatAvatar.innerHTML = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(getDisplayName(profile))}">`;
+      return;
+    }
+    directChatAvatar.classList.remove("has-image");
+    directChatAvatar.textContent = getInitials(profile);
+  }
+
   function requireLoginMessage(text) {
     return `<div class="mobile-empty-state">${escapeHtml(text)}</div>`;
   }
@@ -595,6 +615,8 @@
     if (!directMessageList || !directChatHeader) return;
 
     if (!activeContactId) {
+      setThreadAvatar(null);
+      if (directChatClear) directChatClear.hidden = true;
       if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
       if (directChatMeta) directChatMeta.textContent = "Wähle einen registrierten Nutzer aus.";
       directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Wähle einen registrierten Nutzer aus.</span>";
@@ -607,6 +629,8 @@
 
     if (activeContactId === DEMO_CONTACT_ID) {
       const demoProfile = getDemoProfile();
+      setThreadAvatar(demoProfile);
+      if (directChatClear) directChatClear.hidden = false;
       if (directChatTitle) directChatTitle.textContent = getDisplayName(demoProfile);
       if (directChatMeta) directChatMeta.textContent = "Lokaler Testchat";
       directChatHeader.innerHTML = `
@@ -618,16 +642,27 @@
       directMessageInput.placeholder = "Demo-Nachricht schreiben...";
       directMessageList.innerHTML = demoMessages.map((message) => `
         <article class="mobile-direct-message ${message.sender_id === "me" ? "me" : ""}">
+          <button class="mobile-direct-message-delete" type="button" data-delete-message="${message.id}" aria-label="Nachricht löschen">×</button>
           <div>${escapeHtml(message.message)}</div>
           <span class="meta">${formatDate(message.created_at)}</span>
         </article>
       `).join("");
+      directMessageList.querySelectorAll("[data-delete-message]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          demoMessages = demoMessages.filter((message) => message.id !== button.dataset.deleteMessage);
+          renderChatContacts();
+          await loadDirectMessages();
+        });
+      });
       directMessageList.scrollTop = directMessageList.scrollHeight;
       updateChatView();
       return;
     }
 
     if (!currentSession?.user) {
+      setThreadAvatar(null);
+      if (directChatClear) directChatClear.hidden = true;
       if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
       if (directChatMeta) directChatMeta.textContent = "Melde dich an, um Nachrichten zu sehen.";
       directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Melde dich an, um Nachrichten zu sehen.</span>";
@@ -639,6 +674,8 @@
     }
 
     const activeProfile = profileMap.get(activeContactId);
+    setThreadAvatar(activeProfile);
+    if (directChatClear) directChatClear.hidden = false;
     if (directChatTitle) directChatTitle.textContent = getDisplayName(activeProfile);
     if (directChatMeta) directChatMeta.textContent = getProfileMeta(activeProfile);
     directChatHeader.innerHTML = `
@@ -671,10 +708,17 @@
 
     directMessageList.innerHTML = data.map((message) => `
       <article class="mobile-direct-message ${message.sender_id === currentSession.user.id ? "me" : ""}">
+        <button class="mobile-direct-message-delete" type="button" data-delete-message="${message.id}" aria-label="Nachricht löschen">×</button>
         <div>${escapeHtml(message.message)}</div>
         <span class="meta">${formatDate(message.created_at)}</span>
       </article>
     `).join("");
+    directMessageList.querySelectorAll("[data-delete-message]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void deleteDirectMessage(button.dataset.deleteMessage);
+      });
+    });
 
     directMessageList.scrollTop = directMessageList.scrollHeight;
     const unreadIds = (data || [])
@@ -726,6 +770,68 @@
     }
 
     directMessageInput.value = "";
+    await loadChatPreviews();
+    renderChatContacts();
+    await loadDirectMessages();
+  }
+
+  async function deleteDirectMessage(messageId) {
+    if (!messageId || !activeContactId) return;
+
+    if (activeContactId === DEMO_CONTACT_ID) {
+      demoMessages = demoMessages.filter((message) => message.id !== messageId);
+      renderChatContacts();
+      await loadDirectMessages();
+      return;
+    }
+
+    if (!currentSession?.access_token) return;
+
+    const response = await fetch("/api/direct-chat/delete-message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-supabase-access-token": currentSession.access_token
+      },
+      body: JSON.stringify({ messageId })
+    });
+
+    if (!response.ok) {
+      directMessageList.innerHTML = requireLoginMessage("Nachricht konnte nicht gelöscht werden. Prüfe bitte die neue SQL-Datei für Direktnachrichten.");
+      return;
+    }
+
+    await loadChatPreviews();
+    renderChatContacts();
+    await loadDirectMessages();
+  }
+
+  async function clearDirectChat() {
+    if (!activeContactId) return;
+
+    if (activeContactId === DEMO_CONTACT_ID) {
+      demoMessages = [];
+      renderChatContacts();
+      await loadDirectMessages();
+      return;
+    }
+
+    if (!currentSession?.access_token) return;
+
+    const response = await fetch("/api/direct-chat/clear", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-supabase-access-token": currentSession.access_token
+      },
+      body: JSON.stringify({ contactId: activeContactId })
+    });
+
+    if (!response.ok) {
+      directMessageList.innerHTML = requireLoginMessage("Chat konnte nicht gelöscht werden. Prüfe bitte die neue SQL-Datei für Direktnachrichten.");
+      return;
+    }
+
     await loadChatPreviews();
     renderChatContacts();
     await loadDirectMessages();
@@ -1120,6 +1226,9 @@
     updateChatView();
     renderChatContacts();
     await loadDirectMessages();
+  });
+  directChatClear?.addEventListener("click", () => {
+    void clearDirectChat();
   });
   client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;

@@ -77,6 +77,13 @@ to authenticated
 using (sender_id = auth.uid() or recipient_id = auth.uid() or public.is_admin())
 with check (sender_id = auth.uid() or recipient_id = auth.uid() or public.is_admin());
 
+drop policy if exists "direct_messages_delete_participants" on public.direct_messages;
+create policy "direct_messages_delete_participants"
+on public.direct_messages
+for delete
+to authenticated
+using (sender_id = auth.uid() or recipient_id = auth.uid() or public.is_admin());
+
 drop policy if exists "status_posts_select_active_authenticated" on public.status_posts;
 create policy "status_posts_select_active_authenticated"
 on public.status_posts

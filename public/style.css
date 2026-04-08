@@ -4577,12 +4577,48 @@ body.chat-open[data-chat-background="image"] .chat-box {
     font-size: 1.15rem;
   }
 
+  .mobile-thread-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 42px;
+    background: linear-gradient(180deg, #21c063, #17924b);
+    color: #0a1510;
+    font-weight: 900;
+    font-size: 0.84rem;
+  }
+
+  .mobile-thread-avatar.has-image {
+    background: #182127;
+  }
+
+  .mobile-thread-avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
   .mobile-thread-title-wrap {
     display: flex;
     flex: 1;
     min-width: 0;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .mobile-thread-clear {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    color: #f5fbff;
+    font-size: 1rem;
   }
 
   .mobile-chat-thread {
@@ -4619,6 +4655,7 @@ body.chat-open[data-chat-background="image"] .chat-box {
   }
 
   .mobile-direct-message {
+    position: relative;
     max-width: 86%;
     padding: 12px 14px;
     border-radius: 16px;
@@ -4637,6 +4674,24 @@ body.chat-open[data-chat-background="image"] .chat-box {
     margin-top: 6px;
     color: rgba(225, 235, 246, 0.58);
     font-size: 0.78rem;
+  }
+
+  .mobile-direct-message-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.18);
+    color: rgba(255,255,255,0.86);
+    font-size: 0.88rem;
+    line-height: 1;
+  }
+
+  .mobile-direct-message.me .mobile-direct-message-delete {
+    background: rgba(0,0,0,0.16);
   }
 
   .mobile-message-form {
