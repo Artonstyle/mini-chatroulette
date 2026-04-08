@@ -47,7 +47,6 @@
   const mobileSettingsAccountCard = document.getElementById("mobileSettingsAccountCard");
   const mobileSettingsAccountBtn = document.getElementById("mobileSettingsAccountBtn");
   const mobileSettingsItems = Array.from(document.querySelectorAll("[data-settings-item]"));
-  const mobileSettingsPaneScroll = document.querySelector('.mobile-pane[data-mobile-pane="settings"] .mobile-pane-scroll');
   const mobileSettingsHomeView = document.getElementById("mobileSettingsHomeView");
   const mobileSettingsPrivacyView = document.getElementById("mobileSettingsPrivacyView");
   const mobileSettingsChatsView = document.getElementById("mobileSettingsChatsView");
@@ -175,18 +174,6 @@
     window.dispatchEvent(new CustomEvent("mini-chatroulette:chat-settings-updated", {
       detail: settings
     }));
-  }
-
-  function preserveSettingsScrollPosition() {
-    const scrollTop = mobileSettingsPaneScroll?.scrollTop ?? null;
-    window.requestAnimationFrame(() => {
-      if (scrollTop != null && mobileSettingsPaneScroll) {
-        mobileSettingsPaneScroll.scrollTop = scrollTop;
-      }
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    });
   }
 
   function loadPrivacySettings() {
@@ -346,9 +333,7 @@
       fontSize: selectedFont
     };
     saveChatSettings(nextSettings);
-    applyChatSettingsToUi();
     setChatsStatus("");
-    preserveSettingsScrollPosition();
   }
 
   function readFileAsDataUrl(file) {
@@ -376,9 +361,7 @@
     };
     saveChatSettings(nextSettings);
     renderChatSettings();
-    applyChatSettingsToUi();
     setChatsStatus("");
-    preserveSettingsScrollPosition();
     if (chatBackgroundInput) chatBackgroundInput.value = "";
   }
 
