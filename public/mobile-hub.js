@@ -1,5 +1,6 @@
 (function () {
   const STATUS_MEDIA_BUCKET = "status-media";
+  const DEMO_CONTACT_ID = "__demo_contact__";
 
   const client = window.getMiniChatrouletteSupabaseClient?.();
 
@@ -69,6 +70,29 @@
   let textDragging = false;
   let textDragOffset = { x: 0, y: 0 };
   let realtimeChannel = null;
+  let demoMessages = [
+    {
+      id: "demo-1",
+      sender_id: DEMO_CONTACT_ID,
+      recipient_id: "me",
+      message: "Hey, das ist ein Demo-Chat zum Testen deiner Chat-Ansicht.",
+      created_at: new Date(Date.now() - 1000 * 60 * 22).toISOString()
+    },
+    {
+      id: "demo-2",
+      sender_id: "me",
+      recipient_id: DEMO_CONTACT_ID,
+      message: "Perfekt, dann kann ich Liste, Verlauf und Senden testen.",
+      created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString()
+    },
+    {
+      id: "demo-3",
+      sender_id: DEMO_CONTACT_ID,
+      recipient_id: "me",
+      message: "Genau. Diese Demo bleibt lokal und ist nur für deinen Test da.",
+      created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString()
+    }
+  ];
 
   function getStatusMediaInput() {
     return document.getElementById("statusMediaFileInline");
@@ -301,6 +325,17 @@
       .join("");
   }
 
+  function getDemoProfile() {
+    return {
+      id: DEMO_CONTACT_ID,
+      username: "demo.chat",
+      display_name: "Demo Chat",
+      phone_number: "Nur zum Testen",
+      avatar_url: "",
+      is_demo: true
+    };
+  }
+
   function renderAvatarMarkup(profile) {
     const avatarUrl = String(profile?.avatar_url || "").trim();
     if (avatarUrl) {
@@ -498,13 +533,9 @@
   function renderChatContacts() {
     if (!directChatList) return;
 
-    if (!currentSession?.user) {
-      directChatList.innerHTML = requireLoginMessage("Melde dich an, um direkte Chats zu nutzen.");
-      return;
-    }
-
     const query = directChatSearch?.value?.trim().toLowerCase() || "";
-    const filtered = profiles.filter((profile) => {
+    const contactPool = [getDemoProfile(), ...profiles];
+    const filtered = contactPool.filter((profile) => {
       const haystack = `${profile.display_name || ""} ${profile.username || ""} ${profile.phone_number || ""}`.toLowerCase();
       return haystack.includes(query);
     });
@@ -514,6 +545,8 @@
       const previewB = chatPreviewMap.get(b.id);
       const timeA = previewA?.created_at ? new Date(previewA.created_at).getTime() : 0;
       const timeB = previewB?.created_at ? new Date(previewB.created_at).getTime() : 0;
+      if (a.id === DEMO_CONTACT_ID) return -1;
+      if (b.id === DEMO_CONTACT_ID) return 1;
       return timeB - timeA || getDisplayName(a).localeCompare(getDisplayName(b), "de");
     });
 
@@ -523,7 +556,13 @@
     }
 
     directChatList.innerHTML = filtered.map((profile) => {
-      const preview = chatPreviewMap.get(profile.id);
+      const preview = profile.id === DEMO_CONTACT_ID
+        ? {
+            message: demoMessages[demoMessages.length - 1]?.message || "Demo-Nachricht",
+            created_at: demoMessages[demoMessages.length - 1]?.created_at || new Date().toISOString(),
+            unreadCount: 0
+          }
+        : chatPreviewMap.get(profile.id);
       return `
         <button class="mobile-chat-contact ${profile.id === activeContactId ? "active" : ""}" type="button" data-contact-id="${profile.id}">
           ${renderAvatarMarkup(profile)}
@@ -554,22 +593,44 @@
   async function loadDirectMessages() {
     if (!directMessageList || !directChatHeader) return;
 
-    if (!currentSession?.user) {
+    if (!activeContactId) {
       if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
-      if (directChatMeta) directChatMeta.textContent = "Melde dich an, um Nachrichten zu sehen.";
-      directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Melde dich an, um Nachrichten zu sehen.</span>";
-      directMessageList.innerHTML = requireLoginMessage("Noch keine Nachrichten.");
+      if (directChatMeta) directChatMeta.textContent = "Wähle einen registrierten Nutzer aus.";
+      directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Wähle einen registrierten Nutzer aus.</span>";
+      directMessageList.innerHTML = '<div class="mobile-empty-state">Noch keine Nachrichten.</div>';
       directMessageInput.disabled = true;
       directMessageSend.disabled = true;
       updateChatView();
       return;
     }
 
-    if (!activeContactId) {
+    if (activeContactId === DEMO_CONTACT_ID) {
+      const demoProfile = getDemoProfile();
+      if (directChatTitle) directChatTitle.textContent = getDisplayName(demoProfile);
+      if (directChatMeta) directChatMeta.textContent = "Lokaler Testchat";
+      directChatHeader.innerHTML = `
+        <strong>${escapeHtml(getDisplayName(demoProfile))}</strong>
+        <span>Teste hier frei die Chat-Oberfläche.</span>
+      `;
+      directMessageInput.disabled = false;
+      directMessageSend.disabled = false;
+      directMessageInput.placeholder = "Demo-Nachricht schreiben...";
+      directMessageList.innerHTML = demoMessages.map((message) => `
+        <article class="mobile-direct-message ${message.sender_id === "me" ? "me" : ""}">
+          <div>${escapeHtml(message.message)}</div>
+          <span class="meta">${formatDate(message.created_at)}</span>
+        </article>
+      `).join("");
+      directMessageList.scrollTop = directMessageList.scrollHeight;
+      updateChatView();
+      return;
+    }
+
+    if (!currentSession?.user) {
       if (directChatTitle) directChatTitle.textContent = "Kontakt wählen";
-      if (directChatMeta) directChatMeta.textContent = "Wähle einen registrierten Nutzer aus.";
-      directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Wähle einen registrierten Nutzer aus.</span>";
-      directMessageList.innerHTML = '<div class="mobile-empty-state">Noch keine Nachrichten.</div>';
+      if (directChatMeta) directChatMeta.textContent = "Melde dich an, um Nachrichten zu sehen.";
+      directChatHeader.innerHTML = "<strong>Kontakt wählen</strong><span>Melde dich an, um Nachrichten zu sehen.</span>";
+      directMessageList.innerHTML = requireLoginMessage("Noch keine Nachrichten.");
       directMessageInput.disabled = true;
       directMessageSend.disabled = true;
       updateChatView();
@@ -632,9 +693,25 @@
   async function sendDirectMessage(event) {
     event.preventDefault();
 
-    if (!currentSession?.user || !activeContactId) return;
+    if (!activeContactId) return;
     const text = directMessageInput?.value?.trim();
     if (!text) return;
+
+    if (activeContactId === DEMO_CONTACT_ID) {
+      demoMessages.push({
+        id: `demo-${Date.now()}`,
+        sender_id: "me",
+        recipient_id: DEMO_CONTACT_ID,
+        message: text,
+        created_at: new Date().toISOString()
+      });
+      directMessageInput.value = "";
+      renderChatContacts();
+      await loadDirectMessages();
+      return;
+    }
+
+    if (!currentSession?.user) return;
 
     const { error } = await client.from("direct_messages").insert({
       sender_id: currentSession.user.id,
