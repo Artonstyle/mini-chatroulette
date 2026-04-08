@@ -54,6 +54,7 @@
   const mobileSettingsNotificationsView = document.getElementById("mobileSettingsNotificationsView");
   const mobileSettingsCallsView = document.getElementById("mobileSettingsCallsView");
   const mobileSettingsStorageView = document.getElementById("mobileSettingsStorageView");
+  const mobileSettingsHelpView = document.getElementById("mobileSettingsHelpView");
   const privacyShowOnline = document.getElementById("privacyShowOnline");
   const privacyShowPhone = document.getElementById("privacyShowPhone");
   const privacyShowAvatar = document.getElementById("privacyShowAvatar");
@@ -90,6 +91,12 @@
   const storageReviewMediaBtn = document.getElementById("storageReviewMediaBtn");
   const mobileStorageUsageText = document.getElementById("mobileStorageUsageText");
   const mobileStorageStatus = document.getElementById("mobileStorageStatus");
+  const helpSupportBtn = document.getElementById("helpSupportBtn");
+  const helpFaqBtn = document.getElementById("helpFaqBtn");
+  const helpRulesBtn = document.getElementById("helpRulesBtn");
+  const helpReportBugBtn = document.getElementById("helpReportBugBtn");
+  const mobileHelpVersionText = document.getElementById("mobileHelpVersionText");
+  const mobileHelpStatus = document.getElementById("mobileHelpStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -338,6 +345,19 @@
     }
   }
 
+  function setHelpStatus(message = "", type = "") {
+    if (!mobileHelpStatus) return;
+    mobileHelpStatus.textContent = message;
+    mobileHelpStatus.className = "auth-status mobile-settings-status";
+    if (type) mobileHelpStatus.classList.add(type);
+  }
+
+  function renderHelpSettings() {
+    if (!mobileHelpVersionText) return;
+    const version = "Mini Chatroulette · Web-App · Stand 2026-04-08";
+    mobileHelpVersionText.textContent = version;
+  }
+
   function renderChatSettings() {
     const settings = loadChatSettings();
     if (chatEnterToSend) chatEnterToSend.checked = !!settings.enterToSend;
@@ -515,6 +535,15 @@
       if (isStorage) {
         renderStorageSettings();
         setStorageStatus("");
+      }
+    }
+    if (mobileSettingsHelpView) {
+      const isHelp = viewName === "help";
+      mobileSettingsHelpView.hidden = !isHelp;
+      mobileSettingsHelpView.classList.toggle("active", isHelp);
+      if (isHelp) {
+        renderHelpSettings();
+        setHelpStatus("");
       }
     }
   }
@@ -1574,6 +1603,10 @@
         await openSettingsSubview("storage");
         return;
       }
+      if (section === "help") {
+        await openSettingsSubview("help");
+        return;
+      }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
   });
@@ -1618,6 +1651,18 @@
   storageReviewMediaBtn?.addEventListener("click", () => {
     renderStorageSettings();
     setStorageStatus("Chat-Medien-Übersicht folgt als nächster Schritt.", "success");
+  });
+  helpSupportBtn?.addEventListener("click", () => {
+    setHelpStatus("Support-Kontakt folgt als nächster Schritt.", "success");
+  });
+  helpFaqBtn?.addEventListener("click", () => {
+    setHelpStatus("FAQ-Bereich folgt als nächster Schritt.", "success");
+  });
+  helpRulesBtn?.addEventListener("click", () => {
+    setHelpStatus("Datenschutz & Regeln folgen als nächster Schritt.", "success");
+  });
+  helpReportBugBtn?.addEventListener("click", () => {
+    setHelpStatus("Fehlermeldung folgt als nächster Schritt.", "success");
   });
   [
     chatEnterToSend,
