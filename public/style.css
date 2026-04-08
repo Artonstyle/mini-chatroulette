@@ -3182,6 +3182,13 @@ body.bg-4 .btn-send {
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 16px 36px rgba(0,0,0,0.34);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+  }
+
+  body.mobile-bottom-nav-hidden .mobile-bottom-nav {
+    opacity: 0;
+    transform: translateY(24px);
+    pointer-events: none;
   }
 
   .mobile-bottom-tab {
@@ -4576,6 +4583,19 @@ body.bg-4 .btn-send {
     z-index: 65;
     gap: 10px;
     justify-content: center;
+    transition: bottom 0.22s ease;
+  }
+
+  body.mobile-bottom-nav-hidden .buttons {
+    bottom: 10px;
+  }
+
+  body.mobile-bottom-nav-hidden .match-meta-bar {
+    bottom: 72px;
+  }
+
+  body.mobile-bottom-nav-hidden .local-video-controls {
+    bottom: 78px;
   }
 
   .buttons.remote-buttons {

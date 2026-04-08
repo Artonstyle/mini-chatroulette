@@ -564,6 +564,7 @@
 
       let unread = 0;
       let currentMobileTab = "chats";
+      let mobileMenuVisibleInChats = false;
 
       function isMobile() {
         return window.innerWidth <= 800;
@@ -597,6 +598,11 @@
         });
       }
 
+      function syncMobileChrome() {
+        const hideBottomNav = isMobile() && currentMobileTab === "chats" && !mobileMenuVisibleInChats;
+        body.classList.toggle("mobile-bottom-nav-hidden", hideBottomNav);
+      }
+
       function setActiveBottomTab(tabName, options = {}) {
         const pushHistory = options.pushHistory !== false;
         bottomTabs.forEach((button) => {
@@ -605,7 +611,9 @@
           button.setAttribute("aria-pressed", isActive ? "true" : "false");
         });
         currentMobileTab = tabName;
+        mobileMenuVisibleInChats = tabName !== "chats";
         syncMobileHub(tabName);
+        syncMobileChrome();
         if (pushHistory && isMobile()) {
           const nextState = { ...(window.history.state || {}), miniChatrouletteTab: tabName };
           window.history.pushState(nextState, "");
@@ -690,6 +698,17 @@
         overlay.addEventListener("click", closePanels);
       }
 
+      window.toggleMiniChatrouletteMobileMenu = function toggleMiniChatrouletteMobileMenu() {
+        if (!isMobile()) return;
+        if (currentMobileTab !== "chats") return;
+        mobileMenuVisibleInChats = !mobileMenuVisibleInChats;
+        syncMobileChrome();
+      };
+
+      window.addEventListener("mini-chatroulette:toggle-mobile-menu", () => {
+        window.toggleMiniChatrouletteMobileMenu();
+      });
+
       window.history.replaceState({ ...(window.history.state || {}), miniChatrouletteTab: "chats" }, "");
       window.addEventListener("popstate", (event) => {
         if (!isMobile()) return;
@@ -712,7 +731,12 @@
       });
 
       window.addEventListener("resize", () => {
-        if (!isMobile()) closePanels();
+        if (!isMobile()) {
+          closePanels();
+          body.classList.remove("mobile-bottom-nav-hidden");
+          return;
+        }
+        syncMobileChrome();
       });
 
       setActiveBottomTab("chats", { pushHistory: false });

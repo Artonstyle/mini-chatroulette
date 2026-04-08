@@ -1455,8 +1455,19 @@ sendBtn.onclick = () => {
     window.addEventListener("pointercancel", stopDrag);
     window.addEventListener("resize", setInitialMobilePosition);
 
-    remoteVideo.addEventListener("pointerdown", (e) => {
+remoteVideo.addEventListener("pointerdown", (e) => {
         if (e.target.closest(".video-icon-btn")) return;
+
+        if (isMobile()) {
+            const now = Date.now();
+            const lastTap = Number(remoteVideo.dataset.lastTapTs || "0");
+            if (now - lastTap < 320) {
+                window.dispatchEvent(new CustomEvent("mini-chatroulette:toggle-mobile-menu"));
+                remoteVideo.dataset.lastTapTs = "0";
+            } else {
+                remoteVideo.dataset.lastTapTs = String(now);
+            }
+        }
 
         if (isMobile()) {
             const nextVisible = !localVideoWrap.classList.contains("mobile-controls-open");
