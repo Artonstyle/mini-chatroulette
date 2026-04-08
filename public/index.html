@@ -400,14 +400,14 @@
                     <strong>Chats</strong>
                     <span>Hintergrund, Verlauf und Sendeverhalten</span>
                   </span>
-                  <span class="mobile-settings-item-meta">Bald</span>
+                  <span class="mobile-settings-item-meta">Öffnen</span>
                 </button>
                 <button class="mobile-settings-item" type="button" data-settings-item="notifications">
                   <span class="mobile-settings-item-copy">
                     <strong>Benachrichtigungen</strong>
                     <span>Töne, Vorschau und Stummschalten</span>
                   </span>
-                  <span class="mobile-settings-item-meta">Bald</span>
+                  <span class="mobile-settings-item-meta">Öffnen</span>
                 </button>
                 <button class="mobile-settings-item" type="button" data-settings-item="calls">
                   <span class="mobile-settings-item-copy">
@@ -577,6 +577,75 @@
               </div>
 
               <div id="mobileChatsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
+            </section>
+          </div>
+
+          <div id="mobileSettingsNotificationsView" class="mobile-settings-view" hidden>
+            <section class="mobile-card mobile-settings-card mobile-settings-detail-card">
+              <div class="mobile-settings-detail-head">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Benachrichtigungen</strong>
+                  <span>Lege fest, welche Hinweise, Töne und Vorschauen du sehen möchtest.</span>
+                </div>
+              </div>
+
+              <div class="mobile-privacy-list">
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Nachrichtenton</strong>
+                    <span>Spiele einen Ton bei neuen Chats und Direktnachrichten.</span>
+                  </span>
+                  <input id="notificationsMessageSound" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Vibration</strong>
+                    <span>Dein Handy vibriert bei neuen Nachrichten und Hinweisen.</span>
+                  </span>
+                  <input id="notificationsVibration" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Vorschau anzeigen</strong>
+                    <span>Zeige eine kurze Nachrichtenvorschau auf dem Gerät.</span>
+                  </span>
+                  <input id="notificationsPreview" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Status-Benachrichtigungen</strong>
+                    <span>Informiere mich über neue Status von Kontakten.</span>
+                  </span>
+                  <input id="notificationsStatusAlerts" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Anruf-Benachrichtigungen</strong>
+                    <span>Zeige Hinweise bei verpassten oder eingehenden Anrufen.</span>
+                  </span>
+                  <input id="notificationsCallAlerts" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Nachts stummschalten</strong>
+                    <span>Reduziere Benachrichtigungen in der Nacht automatisch.</span>
+                  </span>
+                  <input id="notificationsQuietHours" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+              </div>
+
+              <div id="mobileNotificationsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
             </section>
           </div>
         </div>

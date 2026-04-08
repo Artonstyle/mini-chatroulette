@@ -51,6 +51,7 @@
   const mobileSettingsHomeView = document.getElementById("mobileSettingsHomeView");
   const mobileSettingsPrivacyView = document.getElementById("mobileSettingsPrivacyView");
   const mobileSettingsChatsView = document.getElementById("mobileSettingsChatsView");
+  const mobileSettingsNotificationsView = document.getElementById("mobileSettingsNotificationsView");
   const privacyShowOnline = document.getElementById("privacyShowOnline");
   const privacyShowPhone = document.getElementById("privacyShowPhone");
   const privacyShowAvatar = document.getElementById("privacyShowAvatar");
@@ -66,6 +67,13 @@
   const chatBackgroundInput = document.getElementById("chatBackgroundInput");
   const chatFontSizeButtons = Array.from(document.querySelectorAll("[data-chat-font-size]"));
   const mobileChatsStatus = document.getElementById("mobileChatsStatus");
+  const notificationsMessageSound = document.getElementById("notificationsMessageSound");
+  const notificationsVibration = document.getElementById("notificationsVibration");
+  const notificationsPreview = document.getElementById("notificationsPreview");
+  const notificationsStatusAlerts = document.getElementById("notificationsStatusAlerts");
+  const notificationsCallAlerts = document.getElementById("notificationsCallAlerts");
+  const notificationsQuietHours = document.getElementById("notificationsQuietHours");
+  const mobileNotificationsStatus = document.getElementById("mobileNotificationsStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -129,6 +137,22 @@
     };
   }
 
+  function getNotificationsStorageKey() {
+    const suffix = currentSession?.user?.id || "guest";
+    return `mini-chatroulette-notifications-${suffix}`;
+  }
+
+  function getDefaultNotificationsSettings() {
+    return {
+      messageSound: true,
+      vibration: true,
+      preview: true,
+      statusAlerts: true,
+      callAlerts: true,
+      quietHours: false
+    };
+  }
+
   function loadChatSettings() {
     try {
       const raw = localStorage.getItem(getChatSettingsStorageKey());
@@ -148,6 +172,37 @@
     mobileChatsStatus.textContent = message;
     mobileChatsStatus.className = "auth-status mobile-settings-status";
     if (type) mobileChatsStatus.classList.add(type);
+  }
+
+  function loadNotificationsSettings() {
+    try {
+      const raw = localStorage.getItem(getNotificationsStorageKey());
+      const parsed = raw ? JSON.parse(raw) : {};
+      return { ...getDefaultNotificationsSettings(), ...(parsed || {}) };
+    } catch {
+      return getDefaultNotificationsSettings();
+    }
+  }
+
+  function saveNotificationsSettings(settings) {
+    localStorage.setItem(getNotificationsStorageKey(), JSON.stringify(settings));
+  }
+
+  function setNotificationsStatus(message = "", type = "") {
+    if (!mobileNotificationsStatus) return;
+    mobileNotificationsStatus.textContent = message;
+    mobileNotificationsStatus.className = "auth-status mobile-settings-status";
+    if (type) mobileNotificationsStatus.classList.add(type);
+  }
+
+  function renderNotificationsSettings() {
+    const settings = loadNotificationsSettings();
+    if (notificationsMessageSound) notificationsMessageSound.checked = !!settings.messageSound;
+    if (notificationsVibration) notificationsVibration.checked = !!settings.vibration;
+    if (notificationsPreview) notificationsPreview.checked = !!settings.preview;
+    if (notificationsStatusAlerts) notificationsStatusAlerts.checked = !!settings.statusAlerts;
+    if (notificationsCallAlerts) notificationsCallAlerts.checked = !!settings.callAlerts;
+    if (notificationsQuietHours) notificationsQuietHours.checked = !!settings.quietHours;
   }
 
   function renderChatSettings() {
@@ -302,6 +357,15 @@
         setChatsStatus("");
       }
     }
+    if (mobileSettingsNotificationsView) {
+      const isNotifications = viewName === "notifications";
+      mobileSettingsNotificationsView.hidden = !isNotifications;
+      mobileSettingsNotificationsView.classList.toggle("active", isNotifications);
+      if (isNotifications) {
+        renderNotificationsSettings();
+        setNotificationsStatus("");
+      }
+    }
   }
 
   function setStatus(message = "", type = "") {
@@ -354,6 +418,19 @@
     saveChatSettings(nextSettings);
     setChatsStatus("");
     preserveSettingsScrollPosition();
+  }
+
+  function handleNotificationsToggle() {
+    const nextSettings = {
+      messageSound: !!notificationsMessageSound?.checked,
+      vibration: !!notificationsVibration?.checked,
+      preview: !!notificationsPreview?.checked,
+      statusAlerts: !!notificationsStatusAlerts?.checked,
+      callAlerts: !!notificationsCallAlerts?.checked,
+      quietHours: !!notificationsQuietHours?.checked
+    };
+    saveNotificationsSettings(nextSettings);
+    setNotificationsStatus("Benachrichtigungen gespeichert.", "success");
   }
 
   function readFileAsDataUrl(file) {
@@ -1295,6 +1372,10 @@
         await openSettingsSubview("chats");
         return;
       }
+      if (section === "notifications") {
+        await openSettingsSubview("notifications");
+        return;
+      }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
   });
@@ -1307,6 +1388,14 @@
     privacyAllowDirectMessages,
     privacyReadReceipts
   ].forEach((input) => input?.addEventListener("change", handlePrivacyToggle));
+  [
+    notificationsMessageSound,
+    notificationsVibration,
+    notificationsPreview,
+    notificationsStatusAlerts,
+    notificationsCallAlerts,
+    notificationsQuietHours
+  ].forEach((input) => input?.addEventListener("change", handleNotificationsToggle));
   [
     chatEnterToSend,
     chatKeepHistory,
