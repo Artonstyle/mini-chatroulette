@@ -28,6 +28,12 @@ let mobileControlsRevealTimer = null;
 let matchMetaRevealTimer = null;
 let currentMatchMetaText = "";
 
+function setMobileBottomMenuVisible(visible) {
+    window.dispatchEvent(new CustomEvent("mini-chatroulette:set-mobile-menu-visibility", {
+        detail: { visible: !!visible }
+    }));
+}
+
 // DOM-Elemente
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
@@ -1136,6 +1142,7 @@ startBtn.onclick = async () => {
         locationText: locationInput?.value?.trim() || ""
     }));
 
+    setMobileBottomMenuVisible(false);
     startBtn.disabled = true;
     stopBtn.disabled = false;
     enableVideoControls();
@@ -1170,6 +1177,7 @@ nextBtn.onclick = async () => {
         locationText: locationInput?.value?.trim() || ""
     }));
 
+    setMobileBottomMenuVisible(false);
     nextBtn.disabled = true;
     stopBtn.disabled = false;
     enableVideoControls();
@@ -1195,6 +1203,7 @@ stopBtn.onclick = () => {
     closePeerConnection(false);
     showStoppedOverlay();
 
+    setMobileBottomMenuVisible(true);
     startBtn.disabled = false;
     stopBtn.disabled = true;
     nextBtn.disabled = true;

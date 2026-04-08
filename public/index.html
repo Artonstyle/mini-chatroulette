@@ -564,7 +564,7 @@
 
       let unread = 0;
       let currentMobileTab = "chats";
-      let mobileMenuVisibleInChats = false;
+      let mobileMenuVisibleInChats = true;
 
       function isMobile() {
         return window.innerWidth <= 800;
@@ -603,6 +603,11 @@
         body.classList.toggle("mobile-bottom-nav-hidden", hideBottomNav);
       }
 
+      function setMobileMenuVisibilityInChats(visible) {
+        mobileMenuVisibleInChats = !!visible;
+        syncMobileChrome();
+      }
+
       function setActiveBottomTab(tabName, options = {}) {
         const pushHistory = options.pushHistory !== false;
         bottomTabs.forEach((button) => {
@@ -611,7 +616,9 @@
           button.setAttribute("aria-pressed", isActive ? "true" : "false");
         });
         currentMobileTab = tabName;
-        mobileMenuVisibleInChats = tabName !== "chats";
+        if (tabName !== "chats") {
+          mobileMenuVisibleInChats = true;
+        }
         syncMobileHub(tabName);
         syncMobileChrome();
         if (pushHistory && isMobile()) {
@@ -698,11 +705,16 @@
         overlay.addEventListener("click", closePanels);
       }
 
+      window.addEventListener("mini-chatroulette:set-mobile-menu-visibility", (event) => {
+        if (!isMobile()) return;
+        if (currentMobileTab !== "chats") return;
+        setMobileMenuVisibilityInChats(event.detail?.visible !== false);
+      });
+
       window.toggleMiniChatrouletteMobileMenu = function toggleMiniChatrouletteMobileMenu() {
         if (!isMobile()) return;
         if (currentMobileTab !== "chats") return;
-        mobileMenuVisibleInChats = !mobileMenuVisibleInChats;
-        syncMobileChrome();
+        setMobileMenuVisibilityInChats(!mobileMenuVisibleInChats);
       };
 
       window.addEventListener("mini-chatroulette:toggle-mobile-menu", () => {
