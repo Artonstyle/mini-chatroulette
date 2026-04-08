@@ -4215,6 +4215,10 @@ body.bg-4 .btn-send {
   gap: 10px;
 }
 
+.mobile-choice-list-single {
+  grid-template-columns: 1fr;
+}
+
 .mobile-choice-btn {
   width: 100%;
   min-height: 48px;

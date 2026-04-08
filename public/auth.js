@@ -53,6 +53,7 @@
   const mobileSettingsChatsView = document.getElementById("mobileSettingsChatsView");
   const mobileSettingsNotificationsView = document.getElementById("mobileSettingsNotificationsView");
   const mobileSettingsCallsView = document.getElementById("mobileSettingsCallsView");
+  const mobileSettingsStorageView = document.getElementById("mobileSettingsStorageView");
   const privacyShowOnline = document.getElementById("privacyShowOnline");
   const privacyShowPhone = document.getElementById("privacyShowPhone");
   const privacyShowAvatar = document.getElementById("privacyShowAvatar");
@@ -82,6 +83,13 @@
   const callsMissedAlerts = document.getElementById("callsMissedAlerts");
   const callRingtoneButtons = Array.from(document.querySelectorAll("[data-call-ringtone]"));
   const mobileCallsStatus = document.getElementById("mobileCallsStatus");
+  const storageAutoDeleteMedia = document.getElementById("storageAutoDeleteMedia");
+  const storageHighlightLargeFiles = document.getElementById("storageHighlightLargeFiles");
+  const storageKeepChatMedia = document.getElementById("storageKeepChatMedia");
+  const storageClearCacheBtn = document.getElementById("storageClearCacheBtn");
+  const storageReviewMediaBtn = document.getElementById("storageReviewMediaBtn");
+  const mobileStorageUsageText = document.getElementById("mobileStorageUsageText");
+  const mobileStorageStatus = document.getElementById("mobileStorageStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
   const mobileProfileDisplayName = document.getElementById("mobileProfileDisplayName");
@@ -177,6 +185,19 @@
     };
   }
 
+  function getStorageSettingsKey() {
+    const suffix = currentSession?.user?.id || "guest";
+    return `mini-chatroulette-storage-${suffix}`;
+  }
+
+  function getDefaultStorageSettings() {
+    return {
+      autoDeleteMedia: false,
+      highlightLargeFiles: true,
+      keepChatMedia: true
+    };
+  }
+
   function loadChatSettings() {
     try {
       const raw = localStorage.getItem(getChatSettingsStorageKey());
@@ -262,6 +283,59 @@
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
+  }
+
+  function loadStorageSettings() {
+    try {
+      const raw = localStorage.getItem(getStorageSettingsKey());
+      const parsed = raw ? JSON.parse(raw) : {};
+      return { ...getDefaultStorageSettings(), ...(parsed || {}) };
+    } catch {
+      return getDefaultStorageSettings();
+    }
+  }
+
+  function saveStorageSettings(settings) {
+    localStorage.setItem(getStorageSettingsKey(), JSON.stringify(settings));
+  }
+
+  function setStorageStatus(message = "", type = "") {
+    if (!mobileStorageStatus) return;
+    mobileStorageStatus.textContent = message;
+    mobileStorageStatus.className = "auth-status mobile-settings-status";
+    if (type) mobileStorageStatus.classList.add(type);
+  }
+
+  function estimateLocalStorageUsage() {
+    try {
+      let bytes = 0;
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (!key || !key.startsWith("mini-chatroulette")) continue;
+        const value = localStorage.getItem(key) || "";
+        bytes += (key.length + value.length) * 2;
+      }
+      return bytes;
+    } catch {
+      return 0;
+    }
+  }
+
+  function formatStorageBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return "unter 1 KB lokal gespeichert";
+    if (bytes < 1024) return `${bytes} B lokal gespeichert`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB lokal gespeichert`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB lokal gespeichert`;
+  }
+
+  function renderStorageSettings() {
+    const settings = loadStorageSettings();
+    if (storageAutoDeleteMedia) storageAutoDeleteMedia.checked = !!settings.autoDeleteMedia;
+    if (storageHighlightLargeFiles) storageHighlightLargeFiles.checked = !!settings.highlightLargeFiles;
+    if (storageKeepChatMedia) storageKeepChatMedia.checked = !!settings.keepChatMedia;
+    if (mobileStorageUsageText) {
+      mobileStorageUsageText.textContent = `Aktuell sind ${formatStorageBytes(estimateLocalStorageUsage())}.`;
+    }
   }
 
   function renderChatSettings() {
@@ -434,6 +508,15 @@
         setCallsStatus("");
       }
     }
+    if (mobileSettingsStorageView) {
+      const isStorage = viewName === "storage";
+      mobileSettingsStorageView.hidden = !isStorage;
+      mobileSettingsStorageView.classList.toggle("active", isStorage);
+      if (isStorage) {
+        renderStorageSettings();
+        setStorageStatus("");
+      }
+    }
   }
 
   function setStatus(message = "", type = "") {
@@ -513,6 +596,31 @@
     };
     saveCallSettings(nextSettings);
     setCallsStatus("Anruf-Einstellungen gespeichert.", "success");
+  }
+
+  function handleStorageSettingsToggle() {
+    const nextSettings = {
+      autoDeleteMedia: !!storageAutoDeleteMedia?.checked,
+      highlightLargeFiles: !!storageHighlightLargeFiles?.checked,
+      keepChatMedia: !!storageKeepChatMedia?.checked
+    };
+    saveStorageSettings(nextSettings);
+    renderStorageSettings();
+    setStorageStatus("Speicher-Einstellungen gespeichert.", "success");
+  }
+
+  function clearMiniChatrouletteCache() {
+    const keysToRemove = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key) continue;
+      if (!key.startsWith("mini-chatroulette")) continue;
+      if (key.includes("-privacy-") || key.includes("-chat-settings-") || key.includes("-notifications-") || key.includes("-calls-") || key.includes("-storage-")) continue;
+      keysToRemove.push(key);
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    renderStorageSettings();
+    setStorageStatus("Lokaler Cache wurde geleert.", "success");
   }
 
   function readFileAsDataUrl(file) {
@@ -1462,6 +1570,10 @@
         await openSettingsSubview("calls");
         return;
       }
+      if (section === "storage") {
+        await openSettingsSubview("storage");
+        return;
+      }
       setStatus("Dieser Bereich kommt als nächster Schritt.", "success");
     });
   });
@@ -1489,6 +1601,11 @@
     callsDataSaver,
     callsMissedAlerts
   ].forEach((input) => input?.addEventListener("change", handleCallSettingsToggle));
+  [
+    storageAutoDeleteMedia,
+    storageHighlightLargeFiles,
+    storageKeepChatMedia
+  ].forEach((input) => input?.addEventListener("change", handleStorageSettingsToggle));
   callRingtoneButtons.forEach((button) => {
     button.addEventListener("click", () => {
       callRingtoneButtons.forEach((entry) => entry.classList.remove("is-selected"));
@@ -1496,6 +1613,11 @@
       handleCallSettingsToggle();
       renderCallSettings();
     });
+  });
+  storageClearCacheBtn?.addEventListener("click", clearMiniChatrouletteCache);
+  storageReviewMediaBtn?.addEventListener("click", () => {
+    renderStorageSettings();
+    setStorageStatus("Chat-Medien-Übersicht folgt als nächster Schritt.", "success");
   });
   [
     chatEnterToSend,

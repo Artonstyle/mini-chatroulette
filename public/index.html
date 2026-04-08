@@ -421,7 +421,7 @@
                     <strong>Speicher</strong>
                     <span>Medien, große Dateien und Bereinigung</span>
                   </span>
-                  <span class="mobile-settings-item-meta">Bald</span>
+                  <span class="mobile-settings-item-meta">Öffnen</span>
                 </button>
                 <button class="mobile-settings-item" type="button" data-settings-item="help">
                   <span class="mobile-settings-item-copy">
@@ -720,6 +720,61 @@
               </div>
 
               <div id="mobileCallsStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
+            </section>
+          </div>
+
+          <div id="mobileSettingsStorageView" class="mobile-settings-view" hidden>
+            <section class="mobile-card mobile-settings-card mobile-settings-detail-card">
+              <div class="mobile-settings-detail-head">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Speicher</strong>
+                  <span>Verwalte Cache, Medien und den belegten Platz in deiner App.</span>
+                </div>
+              </div>
+
+              <div class="mobile-privacy-list">
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Medien automatisch löschen</strong>
+                    <span>Entferne ältere Chat-Medien nach einiger Zeit automatisch.</span>
+                  </span>
+                  <input id="storageAutoDeleteMedia" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Große Dateien markieren</strong>
+                    <span>Hebt größere Bilder und Videos in Chats deutlicher hervor.</span>
+                  </span>
+                  <input id="storageHighlightLargeFiles" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="mobile-privacy-item">
+                  <span class="mobile-privacy-copy">
+                    <strong>Chat-Medien behalten</strong>
+                    <span>Bewahre Bilder und Videos lokal auf diesem Gerät auf.</span>
+                  </span>
+                  <input id="storageKeepChatMedia" type="checkbox">
+                  <span class="mobile-switch" aria-hidden="true"></span>
+                </label>
+              </div>
+
+              <div class="mobile-settings-divider"></div>
+
+              <div class="mobile-settings-blocked">
+                <div class="mobile-settings-detail-copy">
+                  <strong>Freier Speicher</strong>
+                  <span id="mobileStorageUsageText">Die App hält deine lokalen Medien und Einstellungen bereit.</span>
+                </div>
+                <div class="mobile-choice-list mobile-choice-list-single">
+                  <button id="storageClearCacheBtn" class="mobile-choice-btn" type="button">Cache leeren</button>
+                  <button id="storageReviewMediaBtn" class="mobile-choice-btn" type="button">Chat-Medien prüfen</button>
+                </div>
+              </div>
+
+              <div id="mobileStorageStatus" class="auth-status mobile-settings-status" aria-live="polite"></div>
             </section>
           </div>
         </div>
