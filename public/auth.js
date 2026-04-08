@@ -60,6 +60,9 @@
   const chatEnterToSend = document.getElementById("chatEnterToSend");
   const chatKeepHistory = document.getElementById("chatKeepHistory");
   const chatAutoLoadMedia = document.getElementById("chatAutoLoadMedia");
+  const chatBackgroundRadios = Array.from(document.querySelectorAll('input[name="chatBackground"]'));
+  const chatBackgroundPick = document.getElementById("chatBackgroundPick");
+  const chatBackgroundInput = document.getElementById("chatBackgroundInput");
   const chatFontSizeRadios = Array.from(document.querySelectorAll('input[name="chatFontSize"]'));
   const mobileChatsStatus = document.getElementById("mobileChatsStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
@@ -120,6 +123,7 @@
       enterToSend: false,
       keepHistory: true,
       autoLoadMedia: true,
+      background: "default",
       fontSize: "medium"
     };
   }
@@ -150,6 +154,9 @@
     if (chatEnterToSend) chatEnterToSend.checked = !!settings.enterToSend;
     if (chatKeepHistory) chatKeepHistory.checked = !!settings.keepHistory;
     if (chatAutoLoadMedia) chatAutoLoadMedia.checked = !!settings.autoLoadMedia;
+    chatBackgroundRadios.forEach((radio) => {
+      radio.checked = radio.value === settings.background;
+    });
     chatFontSizeRadios.forEach((radio) => {
       radio.checked = radio.value === settings.fontSize;
     });
@@ -158,6 +165,12 @@
   function applyChatSettingsToUi() {
     const settings = loadChatSettings();
     document.body.dataset.chatFontSize = settings.fontSize || "medium";
+    document.body.dataset.chatBackground = settings.background || "default";
+    if (settings.backgroundImage) {
+      document.body.style.setProperty("--chat-custom-bg-image", `url("${settings.backgroundImage}")`);
+    } else {
+      document.body.style.removeProperty("--chat-custom-bg-image");
+    }
     window.dispatchEvent(new CustomEvent("mini-chatroulette:chat-settings-updated", {
       detail: settings
     }));
@@ -309,15 +322,49 @@
 
   function handleChatSettingsChange() {
     const selectedFont = chatFontSizeRadios.find((radio) => radio.checked)?.value || "medium";
+    const selectedBackground = chatBackgroundRadios.find((radio) => radio.checked)?.value || "default";
+    const previous = loadChatSettings();
     const nextSettings = {
       enterToSend: !!chatEnterToSend?.checked,
       keepHistory: !!chatKeepHistory?.checked,
       autoLoadMedia: !!chatAutoLoadMedia?.checked,
+      background: selectedBackground,
+      backgroundImage: selectedBackground === "image" ? (previous.backgroundImage || "") : "",
       fontSize: selectedFont
     };
     saveChatSettings(nextSettings);
     applyChatSettingsToUi();
     setChatsStatus("Chat-Einstellungen gespeichert.", "success");
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Bild konnte nicht gelesen werden."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleChatBackgroundSelection(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setChatsStatus("Bitte wähle ein Bild für den Chat-Hintergrund.", "error");
+      return;
+    }
+
+    const imageData = await readFileAsDataUrl(file);
+    const nextSettings = {
+      ...loadChatSettings(),
+      background: "image",
+      backgroundImage: imageData
+    };
+    saveChatSettings(nextSettings);
+    renderChatSettings();
+    applyChatSettingsToUi();
+    setChatsStatus("Chat-Hintergrund gespeichert.", "success");
+    if (chatBackgroundInput) chatBackgroundInput.value = "";
   }
 
   function setAvatarStatus(message = "", type = "") {
@@ -1245,8 +1292,13 @@
     chatEnterToSend,
     chatKeepHistory,
     chatAutoLoadMedia,
+    ...chatBackgroundRadios,
     ...chatFontSizeRadios
   ].forEach((input) => input?.addEventListener("change", handleChatSettingsChange));
+  chatBackgroundPick?.addEventListener("click", () => chatBackgroundInput?.click());
+  chatBackgroundInput?.addEventListener("change", (event) => {
+    void handleChatBackgroundSelection(event);
+  });
   window.addEventListener("mini-chatroulette:mobile-tab", (event) => {
     const tab = event.detail?.tab;
     if (tab === "settings") {
