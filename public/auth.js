@@ -61,10 +61,10 @@
   const chatEnterToSend = document.getElementById("chatEnterToSend");
   const chatKeepHistory = document.getElementById("chatKeepHistory");
   const chatAutoLoadMedia = document.getElementById("chatAutoLoadMedia");
-  const chatBackgroundRadios = Array.from(document.querySelectorAll('input[name="chatBackground"]'));
+  const chatBackgroundButtons = Array.from(document.querySelectorAll("[data-chat-background]"));
   const chatBackgroundPick = document.getElementById("chatBackgroundPick");
   const chatBackgroundInput = document.getElementById("chatBackgroundInput");
-  const chatFontSizeRadios = Array.from(document.querySelectorAll('input[name="chatFontSize"]'));
+  const chatFontSizeButtons = Array.from(document.querySelectorAll("[data-chat-font-size]"));
   const mobileChatsStatus = document.getElementById("mobileChatsStatus");
   const mobileAuthProfileSummary = document.getElementById("mobileAuthProfileSummary");
   const mobileProfileUsername = document.getElementById("mobileProfileUsername");
@@ -155,11 +155,15 @@
     if (chatEnterToSend) chatEnterToSend.checked = !!settings.enterToSend;
     if (chatKeepHistory) chatKeepHistory.checked = !!settings.keepHistory;
     if (chatAutoLoadMedia) chatAutoLoadMedia.checked = !!settings.autoLoadMedia;
-    chatBackgroundRadios.forEach((radio) => {
-      radio.checked = radio.value === settings.background;
+    chatBackgroundButtons.forEach((button) => {
+      const selected = button.dataset.chatBackground === settings.background;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
-    chatFontSizeRadios.forEach((radio) => {
-      radio.checked = radio.value === settings.fontSize;
+    chatFontSizeButtons.forEach((button) => {
+      const selected = button.dataset.chatFontSize === settings.fontSize;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
   }
 
@@ -336,8 +340,8 @@
   }
 
   function handleChatSettingsChange() {
-    const selectedFont = chatFontSizeRadios.find((radio) => radio.checked)?.value || "medium";
-    const selectedBackground = chatBackgroundRadios.find((radio) => radio.checked)?.value || "default";
+    const selectedFont = chatFontSizeButtons.find((button) => button.classList.contains("is-selected"))?.dataset.chatFontSize || "medium";
+    const selectedBackground = chatBackgroundButtons.find((button) => button.classList.contains("is-selected"))?.dataset.chatBackground || "default";
     const previous = loadChatSettings();
     const nextSettings = {
       enterToSend: !!chatEnterToSend?.checked,
@@ -1306,10 +1310,24 @@
   [
     chatEnterToSend,
     chatKeepHistory,
-    chatAutoLoadMedia,
-    ...chatBackgroundRadios,
-    ...chatFontSizeRadios
+    chatAutoLoadMedia
   ].forEach((input) => input?.addEventListener("change", handleChatSettingsChange));
+  chatBackgroundButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      chatBackgroundButtons.forEach((entry) => entry.classList.remove("is-selected"));
+      button.classList.add("is-selected");
+      handleChatSettingsChange();
+      renderChatSettings();
+    });
+  });
+  chatFontSizeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      chatFontSizeButtons.forEach((entry) => entry.classList.remove("is-selected"));
+      button.classList.add("is-selected");
+      handleChatSettingsChange();
+      renderChatSettings();
+    });
+  });
   chatBackgroundPick?.addEventListener("click", () => chatBackgroundInput?.click());
   chatBackgroundInput?.addEventListener("change", (event) => {
     void handleChatBackgroundSelection(event);
