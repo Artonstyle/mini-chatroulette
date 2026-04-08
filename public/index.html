@@ -563,6 +563,7 @@
       const mobilePanes = Array.from(document.querySelectorAll("[data-mobile-pane]"));
 
       let unread = 0;
+      let currentMobileTab = "chats";
 
       function isMobile() {
         return window.innerWidth <= 800;
@@ -596,13 +597,19 @@
         });
       }
 
-      function setActiveBottomTab(tabName) {
+      function setActiveBottomTab(tabName, options = {}) {
+        const pushHistory = options.pushHistory !== false;
         bottomTabs.forEach((button) => {
           const isActive = button.dataset.mobileTab === tabName;
           button.classList.toggle("active", isActive);
           button.setAttribute("aria-pressed", isActive ? "true" : "false");
         });
+        currentMobileTab = tabName;
         syncMobileHub(tabName);
+        if (pushHistory && isMobile()) {
+          const nextState = { ...(window.history.state || {}), miniChatrouletteTab: tabName };
+          window.history.pushState(nextState, "");
+        }
         window.dispatchEvent(new CustomEvent("mini-chatroulette:mobile-tab", {
           detail: { tab: tabName }
         }));
@@ -651,7 +658,9 @@
           if (!isMobile()) return;
 
           const tabName = button.dataset.mobileTab;
-          setActiveBottomTab(tabName);
+          if (tabName !== currentMobileTab) {
+            setActiveBottomTab(tabName);
+          }
 
           if (tabName === "chats") {
             closePanels();
@@ -681,6 +690,17 @@
         overlay.addEventListener("click", closePanels);
       }
 
+      window.history.replaceState({ ...(window.history.state || {}), miniChatrouletteTab: "chats" }, "");
+      window.addEventListener("popstate", (event) => {
+        if (!isMobile()) return;
+        if (body.classList.contains("auth-open")) return;
+
+        const tabName = event.state?.miniChatrouletteTab || "chats";
+        if (tabName !== currentMobileTab) {
+          setActiveBottomTab(tabName, { pushHistory: false });
+        }
+      });
+
       window.addEventListener("partner-message-received", () => {
         if (!isMobile()) return;
         if (body.classList.contains("chat-open")) return;
@@ -695,7 +715,7 @@
         if (!isMobile()) closePanels();
       });
 
-      setActiveBottomTab("chats");
+      setActiveBottomTab("chats", { pushHistory: false });
     })();
   </script>
 </body>
