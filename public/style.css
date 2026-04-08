@@ -3287,8 +3287,18 @@ body.bg-4 .btn-send {
     box-shadow: 0 20px 46px rgba(0,0,0,0.42);
   }
 
+  body.mobile-chat-mode .mobile-hub {
+    background: #0b141a;
+    border-color: rgba(255,255,255,0.06);
+    box-shadow: 0 20px 46px rgba(0,0,0,0.42);
+  }
+
   .mobile-pane[data-mobile-pane="settings"] {
     background: #0b1118;
+  }
+
+  .mobile-pane[data-mobile-pane="chat"] {
+    background: #0b141a;
   }
 
   .mobile-pane-head {
@@ -4349,6 +4359,7 @@ body.chat-open[data-chat-background="image"] .chat-box {
   .mobile-chat-shell {
     position: relative;
     height: 100%;
+    isolation: isolate;
     background:
       radial-gradient(circle at top right, rgba(63, 198, 113, 0.14), transparent 28%),
       #0c1317;

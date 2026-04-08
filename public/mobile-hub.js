@@ -117,6 +117,7 @@
     const openPane = tabName === "status" || tabName === "calls" || tabName === "chat" || tabName === "settings";
     setHubOpen(openPane);
     body.classList.toggle("mobile-status-mode", tabName === "status");
+    body.classList.toggle("mobile-chat-mode", tabName === "chat");
 
     panes.forEach((pane) => {
       pane.classList.toggle("active", pane.dataset.mobilePane === tabName && openPane);

@@ -990,6 +990,7 @@
         const shouldOpenHub = tabName === "status" || tabName === "calls" || tabName === "chat" || tabName === "settings";
         body.classList.toggle("mobile-pane-open", shouldOpenHub);
         body.classList.toggle("mobile-status-mode", tabName === "status");
+        body.classList.toggle("mobile-chat-mode", tabName === "chat");
         body.classList.toggle("mobile-settings-mode", tabName === "settings");
 
         if (mobileHub) {
