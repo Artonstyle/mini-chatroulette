@@ -5947,3 +5947,43 @@ body.chat-open[data-chat-background="image"] .chat-box {
     z-index: 75 !important;
   }
 }
+
+/* Layout 2: video and messaging fit the available desktop height. */
+@media (min-width: 801px) {
+  body.desktop-layout-2 { box-sizing: border-box; min-height: 100dvh; }
+  body.desktop-layout-2 header {
+    font-size: 2.25rem;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  body.desktop-layout-2 .desktop-layout-shell { max-width: 880px; }
+  body.desktop-layout-2 .video-container {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.85fr);
+    gap: 16px;
+    height: clamp(240px, calc(100dvh - 280px), 400px);
+  }
+  body.desktop-layout-2 .local-video-wrap,
+  body.desktop-layout-2 .remote-wrap {
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    aspect-ratio: auto !important;
+  }
+  body.desktop-layout-2 .chat-box {
+    box-sizing: border-box;
+    margin-top: 10px;
+    padding: 14px;
+  }
+  body.desktop-layout-2 .chat-messages {
+    box-sizing: border-box;
+    height: clamp(80px, 17dvh, 122px);
+  }
+  body.desktop-layout-2 .chat-input input { min-width: 0; }
+}
+@media (min-width: 801px) and (max-width: 1200px) {
+  body.desktop-layout-2 header {
+    margin-left: 0;
+    margin-right: 390px;
+    font-size: 1.8rem;
+  }
+}
