@@ -1022,7 +1022,14 @@ async function switchCamera() {
     updateCameraButton();
 }
 
-function closePeerConnection(showSearching = true) {
+function clearPartnerSession() {
+    setMatchMeta("");
+    messagesDiv.replaceChildren();
+    input.value = "";
+}
+
+function closePeerConnection(showSearching = true, resetSession = true) {
+    if (resetSession) clearPartnerSession();
     document.body.classList.remove("connected");
 
     if (disconnectGraceTimer) {
@@ -1055,7 +1062,7 @@ function closePeerConnection(showSearching = true) {
 }
 
 function createPeerConnection() {
-    closePeerConnection(false);
+    closePeerConnection(false, false);
     peerConnection = new RTCPeerConnection(config);
 
     if (localStream) {
@@ -1159,6 +1166,7 @@ ws.onclose = () => {
 
 ws.onmessage = async (event) => {
     const data = JSON.parse(event.data);
+    if (data.type === "matched") clearPartnerSession();
     const partnerLocationLabel = data.partner?.locationLabel || "";
     const distanceInfo =
         Number.isFinite(data.distanceKm) && partnerLocationLabel
@@ -1273,6 +1281,7 @@ startBtn.onclick = async () => {
 nextBtn.onclick = async () => {
     manualStopRequested = false;
     manualNextRequested = true;
+    clearPartnerSession();
     if (!localStream) {
         const ok = await startCamera(false);
         if (!ok) return;
