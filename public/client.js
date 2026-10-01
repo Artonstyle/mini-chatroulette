@@ -284,7 +284,8 @@ let mobileLayoutMode = "overlay";
 let overlayLayoutState = null;
 let desktopLayoutMode = "desktop-layout-1";
 const THEMES = ["theme-1", "theme-2", "theme-3"];
-const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"];
+const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6", "bg-7", "bg-8", "bg-9"];
+const availableBackgrounds = () => window.innerWidth > 800 ? BACKGROUNDS : BACKGROUNDS.slice(0, 5);
 const DESKTOP_LAYOUTS = ["desktop-layout-1", "desktop-layout-2", "desktop-layout-3", "desktop-layout-4"];
 const THEME_STORAGE_KEY = "mini-chatroulette-theme";
 const BG_STORAGE_KEY = "mini-chatroulette-background";
@@ -319,21 +320,18 @@ function cycleTheme() {
 }
 
 function updateBackgroundButtons(backgroundName) {
-    const backgroundNumber =
-        backgroundName === "bg-5" ? "5" :
-        backgroundName === "bg-4" ? "4" :
-        backgroundName === "bg-3" ? "3" :
-        backgroundName === "bg-2" ? "2" : "1";
+    const backgroundNumber = BACKGROUNDS.indexOf(backgroundName) + 1;
+    const backgroundLabel = {"bg-6":"Neon City", "bg-7":"Cosmic", "bg-8":"Cyber Grid", "bg-9":"Aurora"}[backgroundName] || "Hintergrund";
     [bgToggleDesktop, bgToggleMobile].forEach((button) => {
         if (!button) return;
         button.innerHTML = `${BG_ICON}<span>${backgroundNumber}</span>`;
-        button.setAttribute("aria-label", `Hintergrund wechseln, aktuell Hintergrund ${backgroundNumber}`);
-        button.title = `Hintergrund wechseln, aktuell Hintergrund ${backgroundNumber}`;
+        button.setAttribute("aria-label", `Hintergrund wechseln, aktuell ${backgroundLabel} ${backgroundNumber}`);
+        button.title = `Hintergrund wechseln, aktuell ${backgroundLabel} ${backgroundNumber}`;
     });
 }
 
 function applyBackground(backgroundName) {
-    const safeBackground = BACKGROUNDS.includes(backgroundName) ? backgroundName : "bg-1";
+    const safeBackground = availableBackgrounds().includes(backgroundName) ? backgroundName : "bg-1";
     document.body.classList.remove(...BACKGROUNDS);
     document.body.classList.add(safeBackground);
     localStorage.setItem(BG_STORAGE_KEY, safeBackground);
@@ -342,8 +340,9 @@ function applyBackground(backgroundName) {
 
 function cycleBackground() {
     const currentBackground = BACKGROUNDS.find((bgName) => document.body.classList.contains(bgName)) || "bg-1";
-    const currentIndex = BACKGROUNDS.indexOf(currentBackground);
-    const nextBackground = BACKGROUNDS[(currentIndex + 1) % BACKGROUNDS.length];
+    const choices = availableBackgrounds();
+    const currentIndex = choices.indexOf(currentBackground);
+    const nextBackground = choices[(currentIndex + 1) % choices.length];
     applyBackground(nextBackground);
 }
 
@@ -1699,3 +1698,7 @@ if (localVideo) {
     remoteVideo.addEventListener("loadedmetadata", syncRemoteVideoAspectRatio);
 }
 
+
+window.matchMedia('(max-width: 800px)').addEventListener('change', event => {
+    if (event.matches && BACKGROUNDS.slice(5).some(name => document.body.classList.contains(name))) applyBackground('bg-1');
+});

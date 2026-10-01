@@ -6124,3 +6124,54 @@ body:is(.theme-1,.theme-2,.theme-3) .chat-box.neon-message {
 }
 
 }
+
+/* Desktop scenery: decorative layers stay behind video and controls. */
+@media (min-width: 801px) {
+  body:is(.bg-6,.bg-7,.bg-8,.bg-9) { isolation: isolate; background-attachment: fixed; }
+  body:is(.bg-6,.bg-7,.bg-8,.bg-9)::before,
+  body:is(.bg-6,.bg-7,.bg-8,.bg-9)::after {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  }
+  body.bg-6 {
+    background: radial-gradient(ellipse at 12% 60%, #123575, transparent 45%), radial-gradient(ellipse at 90% 75%, #531346, transparent 40%), linear-gradient(#05091b, #10112b);
+  }
+  body.bg-6::before {
+    top: 32%;
+    background: repeating-linear-gradient(90deg, transparent 0 13px, #060c1e 13px 24px), repeating-linear-gradient(0deg, #122344 0 8px, #64d6ff 8px 10px, #142037 10px 23px);
+    clip-path: polygon(0 26%,5% 26%,5% 10%,9% 10%,9% 40%,13% 40%,13% 3%,17% 3%,17% 53%,22% 53%,22% 27%,27% 27%,27% 70%,72% 70%,72% 40%,77% 40%,77% 15%,81% 15%,81% 50%,85% 50%,85% 0,90% 0,90% 28%,95% 28%,95% 12%,100% 12%,100% 100%,0 100%);
+    opacity: .42;
+  }
+  body.bg-6::after { background: linear-gradient(0deg, #050914 0%, transparent 35%), linear-gradient(90deg, #2acaff22, transparent 30% 70%, #ff40c522); }
+  body.bg-7 {
+    background: radial-gradient(ellipse at 5% 25%, #442a785c, transparent 50%), radial-gradient(ellipse at 90% 68%, #13538880, transparent 44%), #040713;
+  }
+  body.bg-7::before {
+    background-image: radial-gradient(circle, #d6edff 0 1px, transparent 1.6px), radial-gradient(circle, #7ca6e9 0 .7px, transparent 1.5px);
+    background-size: 137px 173px, 223px 197px;
+    background-position: 17px 41px, 91px 12px;
+    opacity: .5;
+  }
+  body.bg-7::after {
+    background: conic-gradient(from 35deg at 0 60%, transparent, #a05cdd28, transparent 25%), conic-gradient(from 215deg at 100% 25%, transparent, #3fafff30, transparent 28%);
+    filter: blur(28px);
+  }
+  body.bg-8 { background: radial-gradient(ellipse at 50% 68%, #173158, transparent 65%), #040b16; }
+  body.bg-8::before {
+    inset: 52% -30% -35%;
+    background-image: linear-gradient(#2fe6ff50 1px, transparent 1px), linear-gradient(90deg, #4a93ff50 1px, transparent 1px);
+    background-size: 65px 65px;
+    transform: perspective(500px) rotateX(58deg);
+    transform-origin: top;
+    mask-image: linear-gradient(transparent, #000 25%, #000 80%, transparent);
+  }
+  body.bg-8::after { background: linear-gradient(0deg, transparent 30%, #050b1640 60%), radial-gradient(ellipse at 50% 75%, #0fdfff15, transparent 45%); }
+  body.bg-9 { background: radial-gradient(ellipse at 50% 110%, #123642, transparent 60%), #050d1b; }
+  body.bg-9::before {
+    background: conic-gradient(from 145deg at 18% -10%, transparent 0deg, #28ffc957 18deg, #45aaff48 30deg, transparent 45deg), conic-gradient(from 170deg at 90% -20%, transparent 0deg, #ab68ff60 20deg, #43dbc937 36deg, transparent 50deg);
+    filter: blur(26px);
+    animation: scenery-aurora 18s ease-in-out infinite alternate;
+  }
+  body.bg-9::after { background: radial-gradient(ellipse at 50% 50%, #050d1b50, transparent 70%); }
+  @keyframes scenery-aurora { from { transform: translateX(-3%) skewX(-5deg); opacity: .6; } to { transform: translateX(3%) skewX(5deg); opacity: 1; } }
+}
+@media (prefers-reduced-motion: reduce) { body.bg-9::before { animation: none; } }
