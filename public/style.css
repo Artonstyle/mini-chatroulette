@@ -6190,3 +6190,41 @@ body:is(.theme-1,.theme-2,.theme-3) .chat-box.neon-message {
   body:is(.bg-6,.bg-7,.bg-8)::before,
   body:is(.bg-6,.bg-7,.bg-8)::after { content: none; }
 }
+
+/* Slow desktop wallpaper motion, isolated from the interface. */
+@media (min-width: 801px) {
+  body.bg-6 { --wallpaper: url('backgrounds/neon-city.png'); }
+  body.bg-7 { --wallpaper: url('backgrounds/cosmic-planets.png'); }
+  body.bg-8 { --wallpaper: url('backgrounds/light-waves.png'); }
+  body:is(.bg-6,.bg-7,.bg-8) { background: #040916; }
+  body:is(.bg-6,.bg-7,.bg-8)::before {
+    content: '';
+    position: fixed;
+    inset: -3%;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--wallpaper) center / cover no-repeat;
+    clip-path: none;
+    mask-image: none;
+    filter: none;
+    opacity: 1;
+    transform-origin: center;
+    animation: wallpaper-float 32s ease-in-out infinite alternate;
+  }
+  body.bg-7::before { animation-duration: 44s; animation-direction: alternate-reverse; }
+  body.bg-8::before { animation-duration: 26s; }
+  body:is(.bg-6,.bg-7,.bg-8)::after {
+    content: '';
+    background: linear-gradient(#03091718, #03091718);
+    filter: none;
+    transform: none;
+    animation: none;
+  }
+  @keyframes wallpaper-float {
+    from { transform: scale(1) translate(-.7%, -.3%); }
+    to { transform: scale(1.055) translate(.7%, .4%); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:is(.bg-6,.bg-7,.bg-8)::before { animation: none; transform: none; }
+}
