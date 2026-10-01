@@ -6103,6 +6103,7 @@ body .remote-status .spinner::after { animation-duration: 5s; }
   body .remote-status .spinner::after { animation: none; }
 }
 
+@media (min-width: 801px) {
 /* Activity cues use outlines so video dimensions never change. */
 body:is(.theme-1,.theme-2,.theme-3) :is(.local-video-wrap,.remote-wrap).neon-speaking {
   outline: 2px solid var(--ui-accent);
@@ -6120,4 +6121,6 @@ body:is(.theme-1,.theme-2,.theme-3) .chat-box.neon-message {
 }
 @media (prefers-reduced-motion: reduce) {
   body:is(.theme-1,.theme-2,.theme-3) .chat-box.neon-message { animation: none; }
+}
+
 }

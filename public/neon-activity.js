@@ -1,6 +1,7 @@
 (() => {
   const AudioAPI = window.AudioContext || window.webkitAudioContext;
   let context;
+  const desktop = window.matchMedia("(min-width: 801px)");
   const meters = ['localVideo', 'remoteVideo'].map(id => ({video: document.getElementById(id), stream: null, source: null, analyser: null, hold: 0}));
   function release(meter) {
     meter.source?.disconnect();
@@ -10,7 +11,7 @@
     meter.video?.parentElement.classList.remove('neon-speaking');
   }
   function unlock() {
-    if (!AudioAPI) return;
+    if (!AudioAPI || !desktop.matches) return;
     context ||= new AudioAPI();
     if (context.state === 'suspended') context.resume().catch(() => {});
   }
@@ -21,7 +22,7 @@
       if (!meter.video) continue;
       const stream = meter.video.srcObject;
       const tracks = stream?.getAudioTracks?.().filter(t => t.readyState === 'live' && t.enabled && !t.muted) || [];
-      if (document.hidden || !tracks.length || context?.state !== 'running') {
+      if (!desktop.matches || document.hidden || !tracks.length || context?.state !== 'running') {
         release(meter);
         continue;
       }
@@ -46,12 +47,19 @@
   const chat = document.getElementById('chatBox');
   let messageTimer;
   window.addEventListener('partner-message-received', () => {
-    if (!chat) return;
+    if (!chat || !desktop.matches) return;
     chat.classList.remove('neon-message');
     void chat.offsetWidth;
     chat.classList.add('neon-message');
     clearTimeout(messageTimer);
     messageTimer = setTimeout(() => chat.classList.remove('neon-message'), 1500);
+  });
+  desktop.addEventListener('change', () => {
+    if (desktop.matches) return;
+    meters.forEach(release);
+    clearTimeout(messageTimer);
+    chat?.classList.remove('neon-message');
+    context?.suspend().catch(() => {});
   });
   window.addEventListener('pagehide', () => {
     clearInterval(timer);
