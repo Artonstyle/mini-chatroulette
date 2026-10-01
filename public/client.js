@@ -284,7 +284,7 @@ let mobileLayoutMode = "overlay";
 let overlayLayoutState = null;
 let desktopLayoutMode = "desktop-layout-1";
 const THEMES = ["theme-1", "theme-2", "theme-3"];
-const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6", "bg-7", "bg-8", "bg-9"];
+const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6", "bg-7", "bg-8", "bg-9", "bg-10"];
 const availableBackgrounds = () => window.innerWidth > 800 ? BACKGROUNDS : BACKGROUNDS.slice(0, 5);
 const DESKTOP_LAYOUTS = ["desktop-layout-1", "desktop-layout-2", "desktop-layout-3", "desktop-layout-4"];
 const THEME_STORAGE_KEY = "mini-chatroulette-theme";
@@ -321,7 +321,7 @@ function cycleTheme() {
 
 function updateBackgroundButtons(backgroundName) {
     const backgroundNumber = BACKGROUNDS.indexOf(backgroundName) + 1;
-    const backgroundLabel = {"bg-6":"Neon City", "bg-7":"Cosmic Planets", "bg-8":"3D Light Waves", "bg-9":"Aurora"}[backgroundName] || "Hintergrund";
+    const backgroundLabel = {"bg-6":"Neon City", "bg-7":"Cosmic Planets", "bg-8":"3D Light Waves", "bg-9":"Aurora", "bg-10":"Neonstadt Video"}[backgroundName] || "Hintergrund";
     [bgToggleDesktop, bgToggleMobile].forEach((button) => {
         if (!button) return;
         button.innerHTML = `${BG_ICON}<span>${backgroundNumber}</span>`;
@@ -330,12 +330,37 @@ function updateBackgroundButtons(backgroundName) {
     });
 }
 
+let backgroundVideo;
+function syncBackgroundVideo() {
+    const active = window.innerWidth > 800 && document.body.classList.contains('bg-10');
+    if (!active) {
+        if (backgroundVideo) { backgroundVideo.pause(); backgroundVideo.removeAttribute('src'); backgroundVideo.load(); backgroundVideo.remove(); backgroundVideo = null; }
+        return;
+    }
+    if (!backgroundVideo) {
+        backgroundVideo = document.createElement('video');
+        backgroundVideo.className = 'city-background-video';
+        backgroundVideo.muted = true;
+        backgroundVideo.loop = true;
+        backgroundVideo.playsInline = true;
+        backgroundVideo.setAttribute('aria-hidden', 'true');
+        backgroundVideo.poster = 'backgrounds/neon-city.png';
+        backgroundVideo.src = 'backgrounds/neon-city-rain.mp4';
+        document.body.prepend(backgroundVideo);
+    }
+    if (document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) backgroundVideo.pause();
+    else backgroundVideo.play().catch(() => {});
+}
+document.addEventListener('visibilitychange', syncBackgroundVideo);
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', syncBackgroundVideo);
+
 function applyBackground(backgroundName) {
     const safeBackground = availableBackgrounds().includes(backgroundName) ? backgroundName : "bg-1";
     document.body.classList.remove(...BACKGROUNDS);
     document.body.classList.add(safeBackground);
     localStorage.setItem(BG_STORAGE_KEY, safeBackground);
     updateBackgroundButtons(safeBackground);
+    syncBackgroundVideo();
 }
 
 function cycleBackground() {

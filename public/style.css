@@ -6190,3 +6190,9 @@ body:is(.theme-1,.theme-2,.theme-3) .chat-box.neon-message {
   body:is(.bg-6,.bg-7,.bg-8)::before,
   body:is(.bg-6,.bg-7,.bg-8)::after { content: none; }
 }
+
+.city-background-video { display: none; }
+@media (min-width: 801px) {
+ body.bg-10 { isolation: isolate; background: #050d1b url('backgrounds/neon-city.png') center / cover fixed; }
+ body.bg-10 > .city-background-video { display: block; position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; filter: brightness(.6); }
+}
