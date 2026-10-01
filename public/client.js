@@ -677,18 +677,18 @@ function setRemoteButtonsVisible(visible, autoHide = false) {
     }
 }
 
-function setMatchMeta(text = "") {
+function setMatchMeta(text = "", reveal = false) {
     if (!matchMetaBar) return;
     currentMatchMetaText = text || "";
     matchMetaBar.textContent = text || "";
-    matchMetaBar.classList.toggle("show", Boolean(text));
+    matchMetaBar.classList.toggle("show", Boolean(text) && reveal);
 
     if (matchMetaRevealTimer) {
         clearTimeout(matchMetaRevealTimer);
         matchMetaRevealTimer = null;
     }
 
-    if (text && isMobile()) {
+    if (text && reveal) {
         matchMetaRevealTimer = setTimeout(() => {
             matchMetaBar.classList.remove("show");
             matchMetaRevealTimer = null;
@@ -700,7 +700,7 @@ function revealMatchMeta() {
     if (!matchMetaBar) return;
     const text = currentMatchMetaText || matchMetaBar.textContent?.trim();
     if (!text) return;
-    setMatchMeta(text);
+    setMatchMeta(text, true);
 }
 
 function setModerationMenuOpen(open) {
@@ -1179,7 +1179,7 @@ ws.onmessage = async (event) => {
         manualStopRequested = false;
         manualNextRequested = false;
         createPeerConnection();
-        setRemoteStatus("Partner gefunden", distanceInfo || "Verbindung wird aufgebaut...", true, true);
+        setRemoteStatus("Partner gefunden", "Verbindung wird aufgebaut...", true, true);
         setMatchMeta(distanceInfo);
 
         const offer = await peerConnection.createOffer();
@@ -1189,7 +1189,7 @@ ws.onmessage = async (event) => {
     } else if (data.type === "matched" && !data.should_offer) {
         manualStopRequested = false;
         manualNextRequested = false;
-        setRemoteStatus("Partner gefunden", distanceInfo || "Warte auf Videoanruf...", true, true);
+        setRemoteStatus("Partner gefunden", "Warte auf Videoanruf...", true, true);
         setMatchMeta(distanceInfo);
 
     } else if (data.type === "offer") {
@@ -1640,7 +1640,7 @@ remoteVideo.addEventListener("pointerdown", (e) => {
 
         if (chatting && !clickedRemoteButton && !clickedTopbarButton && !clickedProfileForm && !clickedLocalControls) {
             setRemoteButtonsVisible(true, true);
-            revealMatchMeta();
+            if (document.body.classList.contains("connected") && e.target.closest(".remote-wrap")) revealMatchMeta();
 
             if (isMobile()) {
                 setMobileControlsVisible(true);
