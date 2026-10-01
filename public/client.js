@@ -1,4 +1,4 @@
-﻿// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
+// ACHTUNG: VERWENDEN SIE IHRE ECHTE RENDER-URL!
 const WS_URL =
     window.location.protocol === "http:" || window.location.protocol === "https:"
         ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`
@@ -284,7 +284,7 @@ let mobileLayoutMode = "overlay";
 let overlayLayoutState = null;
 let desktopLayoutMode = "desktop-layout-1";
 const THEMES = ["theme-1", "theme-2", "theme-3", "theme-4", "theme-5", "theme-6"];
-const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4"];
+const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"];
 const DESKTOP_LAYOUTS = ["desktop-layout-1", "desktop-layout-2", "desktop-layout-3"];
 const THEME_STORAGE_KEY = "mini-chatroulette-theme";
 const BG_STORAGE_KEY = "mini-chatroulette-background";
@@ -324,6 +324,7 @@ function cycleTheme() {
 
 function updateBackgroundButtons(backgroundName) {
     const backgroundNumber =
+        backgroundName === "bg-5" ? "5" :
         backgroundName === "bg-4" ? "4" :
         backgroundName === "bg-3" ? "3" :
         backgroundName === "bg-2" ? "2" : "1";

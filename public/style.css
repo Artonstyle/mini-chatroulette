@@ -6241,3 +6241,13 @@ body.chat-open[data-chat-background="image"] .chat-box {
 @media (min-width: 801px) and (max-width: 1200px) {
   body.desktop-layout-1 header { margin-left: 0; margin-right: 390px; font-size: 1.8rem; }
 }
+
+/* Background 5: deep ocean blue with cyan and cobalt light. */
+body.bg-5 {
+  background:
+    radial-gradient(ellipse at 8% 12%, rgba(0, 204, 255, 0.30), transparent 42%),
+    radial-gradient(ellipse at 94% 30%, rgba(35, 100, 255, 0.34), transparent 45%),
+    radial-gradient(ellipse at 48% 100%, rgba(0, 140, 230, 0.20), transparent 52%),
+    linear-gradient(145deg, #041329 0%, #082e59 48%, #030d23 100%);
+  background-attachment: fixed;
+}
