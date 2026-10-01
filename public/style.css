@@ -6175,3 +6175,18 @@ body:is(.theme-1,.theme-2,.theme-3) .chat-box.neon-message {
   @keyframes scenery-aurora { from { transform: translateX(-3%) skewX(-5deg); opacity: .6; } to { transform: translateX(3%) skewX(5deg); opacity: 1; } }
 }
 @media (prefers-reduced-motion: reduce) { body.bg-9::before { animation: none; } }
+
+/* Generated desktop wallpapers replace procedural scenery for 6–8. */
+@media (min-width: 801px) {
+  body.bg-6 { background-image: linear-gradient(#03091722, #03091722), url('backgrounds/neon-city.png'); }
+  body.bg-7 { background-image: url('backgrounds/cosmic-planets.png'); }
+  body.bg-8 { background-image: linear-gradient(#03091722, #03091722), url('backgrounds/light-waves.png'); }
+  body:is(.bg-6,.bg-7,.bg-8) {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  body:is(.bg-6,.bg-7,.bg-8)::before,
+  body:is(.bg-6,.bg-7,.bg-8)::after { content: none; }
+}

@@ -321,7 +321,7 @@ function cycleTheme() {
 
 function updateBackgroundButtons(backgroundName) {
     const backgroundNumber = BACKGROUNDS.indexOf(backgroundName) + 1;
-    const backgroundLabel = {"bg-6":"Neon City", "bg-7":"Cosmic", "bg-8":"Cyber Grid", "bg-9":"Aurora"}[backgroundName] || "Hintergrund";
+    const backgroundLabel = {"bg-6":"Neon City", "bg-7":"Cosmic Planets", "bg-8":"3D Light Waves", "bg-9":"Aurora"}[backgroundName] || "Hintergrund";
     [bgToggleDesktop, bgToggleMobile].forEach((button) => {
         if (!button) return;
         button.innerHTML = `${BG_ICON}<span>${backgroundNumber}</span>`;
