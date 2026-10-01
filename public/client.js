@@ -285,7 +285,7 @@ let overlayLayoutState = null;
 let desktopLayoutMode = "desktop-layout-1";
 const THEMES = ["theme-1", "theme-2", "theme-3", "theme-4", "theme-5", "theme-6"];
 const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"];
-const DESKTOP_LAYOUTS = ["desktop-layout-1", "desktop-layout-2", "desktop-layout-3"];
+const DESKTOP_LAYOUTS = ["desktop-layout-1", "desktop-layout-2", "desktop-layout-3", "desktop-layout-4"];
 const THEME_STORAGE_KEY = "mini-chatroulette-theme";
 const BG_STORAGE_KEY = "mini-chatroulette-background";
 const LOCAL_BG_STORAGE_KEY = "mini-chatroulette-custom-bg";
@@ -421,7 +421,11 @@ function openLocalBackgroundPicker() {
 function updateDesktopLayoutButton() {
     if (!desktopLayoutToggle) return;
 
-    if (desktopLayoutMode === "desktop-layout-3") {
+    if (desktopLayoutMode === "desktop-layout-4") {
+        desktopLayoutToggle.innerHTML = `${LAYOUT_1_ICON}<span>4</span>`;
+        desktopLayoutToggle.title = "Desktop Layout 4 aktiv";
+        desktopLayoutToggle.setAttribute("aria-label", "Desktop Layout 4 aktiv, zum nächsten Layout wechseln");
+    } else if (desktopLayoutMode === "desktop-layout-3") {
         desktopLayoutToggle.innerHTML = `${LAYOUT_3_ICON}<span>3</span>`;
         desktopLayoutToggle.title = "Desktop Layout 3 aktiv";
         desktopLayoutToggle.setAttribute("aria-label", "Desktop Layout 3 aktiv, zum nächsten Layout wechseln");
