@@ -6251,3 +6251,48 @@ body.bg-5 {
     linear-gradient(145deg, #041329 0%, #082e59 48%, #030d23 100%);
   background-attachment: fixed;
 }
+
+/* Aurora layers sit behind the interface and never intercept clicks. */
+body.bg-5 { isolation: isolate; }
+body.bg-5::before,
+body.bg-5::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+body.bg-5::before {
+  background:
+    radial-gradient(ellipse 12% 65% at 4% 35%, rgba(0, 235, 255, .48), transparent 75%),
+    radial-gradient(ellipse 16% 75% at 97% 65%, rgba(52, 104, 255, .6), transparent 75%),
+    conic-gradient(from 185deg at 0% 80%, transparent 0deg, rgba(0, 190, 255, .3) 24deg, transparent 42deg 360deg),
+    conic-gradient(from 5deg at 100% 20%, transparent 0deg, rgba(75, 128, 255, .28) 25deg, transparent 44deg 360deg);
+  filter: blur(24px);
+  transform-origin: center;
+  animation: blue-aurora 18s ease-in-out infinite alternate;
+}
+body.bg-5::after {
+  background:
+    radial-gradient(circle at 5% 18%, #adf8ff 0 1px, transparent 3px),
+    radial-gradient(circle at 12% 46%, #58cfff 0 1.5px, transparent 4px),
+    radial-gradient(circle at 7% 78%, #b5e9ff 0 1px, transparent 3px),
+    radial-gradient(circle at 18% 91%, #67cfff 0 1px, transparent 3px),
+    radial-gradient(circle at 90% 14%, #c0eeff 0 1px, transparent 3px),
+    radial-gradient(circle at 95% 40%, #70bcff 0 1.5px, transparent 4px),
+    radial-gradient(circle at 88% 72%, #91ddff 0 1px, transparent 3px),
+    radial-gradient(circle at 97% 92%, #a7eeff 0 1px, transparent 3px);
+  animation: blue-drift 14s ease-in-out infinite alternate;
+}
+@keyframes blue-aurora {
+  from { transform: translateY(-2%) scaleX(1); opacity: .65; }
+  to { transform: translateY(3%) scaleX(1.12); opacity: 1; }
+}
+@keyframes blue-drift {
+  from { transform: translateY(10px); opacity: .4; }
+  to { transform: translateY(-18px); opacity: .85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.bg-5::before,
+  body.bg-5::after { animation: none; }
+}
