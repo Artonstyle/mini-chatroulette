@@ -6126,8 +6126,10 @@ body.chat-open[data-chat-background="image"] .chat-box {
   }
   body.desktop-layout-3 .local-video-wrap { display: block !important; }
   body.desktop-layout-3 .local-video-wrap .action-row {
-    position: relative !important;
-    inset: auto !important;
+    position: absolute !important;
+    inset: 10px !important;
+    width: auto !important;
+    transform: none !important;
     margin: 0 !important;
     max-height: 100%;
     overflow-y: auto;
