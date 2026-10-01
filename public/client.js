@@ -283,7 +283,7 @@ const BG_ICON = `
 let mobileLayoutMode = "overlay";
 let overlayLayoutState = null;
 let desktopLayoutMode = "desktop-layout-1";
-const THEMES = ["theme-1", "theme-2", "theme-3", "theme-4", "theme-5", "theme-6"];
+const THEMES = ["theme-1", "theme-2", "theme-3"];
 const BACKGROUNDS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"];
 const DESKTOP_LAYOUTS = ["desktop-layout-1", "desktop-layout-2", "desktop-layout-3", "desktop-layout-4"];
 const THEME_STORAGE_KEY = "mini-chatroulette-theme";
@@ -293,23 +293,19 @@ const LAYOUT_STORAGE_KEY = "mini-chatroulette-layout";
 const DESKTOP_LAYOUT_STORAGE_KEY = "mini-chatroulette-desktop-layout";
 
 function updateThemeButtons(themeName) {
-    const themeNumber =
-        themeName === "theme-6" ? "6" :
-        themeName === "theme-5" ? "5" :
-        themeName === "theme-4" ? "4" :
-        themeName === "theme-3" ? "3" :
-        themeName === "theme-2" ? "2" : "1";
+    const themeNumber = Math.max(1, THEMES.indexOf(themeName) + 1);
+    const themeLabel = ["Midnight", "Ocean", "Graphite"][themeNumber - 1];
     [themeToggleDesktop, themeToggleMobile].forEach((button) => {
         if (!button) return;
         button.innerHTML = `${THEME_ICON}<span>${themeNumber}</span>`;
-        button.setAttribute("aria-label", `Theme wechseln, aktuell Theme ${themeNumber}`);
-        button.title = `Theme wechseln, aktuell Theme ${themeNumber}`;
+        button.setAttribute("aria-label", `Theme wechseln, aktuell ${themeLabel} (${themeNumber})`);
+        button.title = `Theme wechseln, aktuell ${themeLabel} (${themeNumber})`;
     });
 }
 
 function applyTheme(themeName) {
     const safeTheme = THEMES.includes(themeName) ? themeName : "theme-1";
-    document.body.classList.remove(...THEMES);
+    document.body.classList.remove(...THEMES, "theme-4", "theme-5", "theme-6");
     document.body.classList.add(safeTheme);
     localStorage.setItem(THEME_STORAGE_KEY, safeTheme);
     updateThemeButtons(safeTheme);
