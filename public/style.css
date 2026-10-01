@@ -6010,3 +6010,51 @@ body:is(.theme-1,.theme-2,.theme-3) .meeting-toolbar .meeting-stop:not(:disabled
   color: #ffe9ed !important;
   box-shadow: inset 0 0 0 1px #a44862, 0 0 12px rgba(255,66,115,.18) !important;
 }
+
+/* Theme-aware neon search radar. */
+body .remote-status .spinner {
+  position: relative;
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ui-accent, #53edff);
+  background: radial-gradient(circle, currentColor 0 3px, transparent 5px), radial-gradient(circle, var(--ui-glow, rgba(0,210,255,.3)), transparent 65%);
+  box-shadow: 0 0 24px var(--ui-glow, rgba(0,210,255,.3));
+  animation: search-beacon 2.8s ease-in-out infinite;
+}
+body .remote-status .spinner::before,
+body .remote-status .spinner::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 50%;
+  pointer-events: none;
+}
+body .remote-status .spinner::before {
+  inset: 0;
+  border: 2px solid var(--ui-border, #207d9e);
+  border-top-color: var(--ui-accent, #53edff);
+  border-right-color: var(--ui-accent, #53edff);
+  box-shadow: 0 -3px 12px var(--ui-glow, rgba(0,210,255,.3));
+  animation: spin 2.4s linear infinite;
+}
+body .remote-status .spinner::after {
+  inset: 11px;
+  border: 2px solid transparent;
+  border-bottom-color: var(--ui-secondary, #397bff);
+  border-left-color: var(--ui-secondary, #397bff);
+  box-shadow: inset 0 0 10px var(--ui-glow, rgba(0,210,255,.3));
+  animation: spin 1.8s linear infinite reverse;
+}
+@keyframes search-beacon {
+  0%, 100% { opacity: .72; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .remote-status .spinner,
+  body .remote-status .spinner::before,
+  body .remote-status .spinner::after { animation: none; }
+}
