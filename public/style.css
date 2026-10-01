@@ -1,4 +1,4 @@
-﻿/* ================= DESKTOP: DEIN ORIGINAL ================= */
+/* ================= DESKTOP: DEIN ORIGINAL ================= */
 :root {
   --bg-0: #130f18;
   --bg-1: #221827;
@@ -5960,7 +5960,7 @@ body.chat-open[data-chat-background="image"] .chat-box {
   body.desktop-layout-2 .video-container {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2.85fr);
     gap: 16px;
-    height: clamp(240px, calc(100dvh - 280px), 400px);
+    height: clamp(240px, calc(100dvh - 312px), 384px);
   }
   body.desktop-layout-2 .local-video-wrap,
   body.desktop-layout-2 .remote-wrap {
@@ -5985,5 +5985,51 @@ body.chat-open[data-chat-background="image"] .chat-box {
     margin-left: 0;
     margin-right: 390px;
     font-size: 1.8rem;
+  }
+}
+
+/* Compact filters stay inside the local video panel. */
+@media (min-width: 801px) {
+  body.desktop-layout-2 .local-video-wrap .action-row {
+    width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    overflow-y: auto;
+  }
+  body.desktop-layout-2 .local-video-wrap .profile-form {
+    box-sizing: border-box;
+    padding: 12px;
+    gap: 8px;
+    min-width: 0;
+  }
+  body.desktop-layout-2 .local-video-wrap .form-left {
+    gap: 8px;
+    min-width: 0;
+  }
+  body.desktop-layout-2 .local-video-wrap .form-left label {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+    font-size: 13px;
+    line-height: 1.2;
+    min-width: 0;
+  }
+  body.desktop-layout-2 .local-video-wrap .form-left select,
+  body.desktop-layout-2 #locationText {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 34px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  body.desktop-layout-2 .local-video-wrap .btn-start {
+    box-sizing: border-box;
+    margin-left: 0;
+    padding: 9px 12px;
+    font-size: 16px;
+  }
+  body.desktop-layout-2 .local-video-wrap .online-right {
+    margin: 0;
+    font-size: 14px;
   }
 }
