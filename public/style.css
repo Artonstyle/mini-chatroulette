@@ -6058,3 +6058,47 @@ body .remote-status .spinner::after {
   body .remote-status .spinner::before,
   body .remote-status .spinner::after { animation: none; }
 }
+
+/* Softer neon with a slow glow cycle; text and video stay steady. */
+@property --neon-strength {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0.1;
+}
+body.theme-1 { --neon-rgb: 0, 210, 255; }
+body.theme-2 { --neon-rgb: 218, 62, 255; }
+body.theme-3 { --neon-rgb: 39, 255, 176; }
+body:is(.theme-1,.theme-2,.theme-3) {
+  --ui-glow: rgba(var(--neon-rgb), var(--neon-strength));
+  animation: soft-neon-breathe 6s ease-in-out infinite;
+}
+@keyframes soft-neon-breathe {
+  0%, 100% { --neon-strength: 0.045; }
+  50% { --neon-strength: 0.16; }
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(.local-video-wrap,.remote-wrap,.chat-box,.auth-dialog,.meeting-toolbar) {
+  box-shadow: 0 0 0 1px var(--ui-border), 0 0 12px var(--ui-glow), 0 10px 24px rgba(0,0,0,.28) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(.btn-start,.btn-send,.auth-primary-btn) {
+  background: var(--ui-raised) !important;
+  color: var(--ui-accent) !important;
+  box-shadow: inset 0 0 0 1px var(--ui-border), 0 0 12px var(--ui-glow) !important;
+}
+body .remote-status .spinner {
+  width: 54px;
+  height: 54px;
+  box-shadow: 0 0 12px var(--ui-glow);
+  animation: search-beacon-soft 4s ease-in-out infinite;
+}
+body .remote-status .spinner::before { animation-duration: 4s; }
+body .remote-status .spinner::after { animation-duration: 5s; }
+@keyframes search-beacon-soft {
+  0%, 100% { opacity: .4; }
+  50% { opacity: .78; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:is(.theme-1,.theme-2,.theme-3) { animation: none; --neon-strength: .08; }
+  body .remote-status .spinner,
+  body .remote-status .spinner::before,
+  body .remote-status .spinner::after { animation: none; }
+}
