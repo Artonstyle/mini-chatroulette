@@ -6098,3 +6098,88 @@ body.chat-open[data-chat-background="image"] .chat-box {
   }
   .auth-close-btn { cursor: pointer; }
 }
+
+/* Layout 3: bounded desktop rows and readable controls. */
+@media (min-width: 801px) {
+  body.desktop-layout-3 { box-sizing: border-box; min-height: 100dvh; }
+  body.desktop-layout-3 header { font-size: 2.25rem; line-height: 1.3; }
+  body.desktop-layout-3 .desktop-layout-shell {
+    --layout-video-height: clamp(320px, calc(100dvh - 300px), 384px);
+    max-width: 1000px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: var(--layout-video-height) auto !important;
+    gap: 12px !important;
+  }
+  body.desktop-layout-3 .videos,
+  body.desktop-layout-3 .chat-box { grid-column: 1 !important; }
+  body.desktop-layout-3 .video-container {
+    grid-template-columns: minmax(220px, 28%) minmax(0, 1fr) !important;
+    height: var(--layout-video-height) !important;
+    min-height: 0 !important;
+  }
+  body.desktop-layout-3 .local-video-wrap,
+  body.desktop-layout-3 .remote-wrap {
+    height: var(--layout-video-height) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 10px !important;
+  }
+  body.desktop-layout-3 .local-video-wrap { display: block !important; }
+  body.desktop-layout-3 .local-video-wrap .action-row {
+    position: relative !important;
+    inset: auto !important;
+    margin: 0 !important;
+    max-height: 100%;
+    overflow-y: auto;
+    z-index: 20 !important;
+  }
+  body.desktop-layout-3 .local-video-wrap .profile-form {
+    box-sizing: border-box;
+    padding: 10px !important;
+    gap: 6px !important;
+  }
+  body.desktop-layout-3 .local-video-wrap .form-left { gap: 6px !important; }
+  body.desktop-layout-3 .local-video-wrap .form-left label {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+    font-size: 13px !important;
+    line-height: 1.2;
+    color: var(--text-main) !important;
+  }
+  body.desktop-layout-3 .local-video-wrap .form-left select,
+  body.desktop-layout-3 #locationText {
+    box-sizing: border-box;
+    min-width: 0 !important;
+    width: 100%;
+    height: 34px !important;
+    padding: 6px 10px !important;
+    font-size: 14px !important;
+  }
+  body.desktop-layout-3 .local-video-wrap .btn-start {
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 9px 12px !important;
+    font-size: 16px !important;
+  }
+  body.desktop-layout-3 .local-video-wrap .online-right {
+    margin: 0 !important;
+    font-size: 14px !important;
+    color: var(--success) !important;
+  }
+  body.desktop-layout-3 .chat-box { padding: 14px !important; }
+  body.desktop-layout-3 .chat-messages {
+    box-sizing: border-box;
+    height: clamp(80px, 17dvh, 122px) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+  body.desktop-layout-3 .chat-input input,
+  body.desktop-layout-3 .btn-send { box-sizing: border-box; height: 44px !important; }
+  body.desktop-layout-3 .remote-status,
+  body.desktop-layout-3 .remote-status * { color: var(--text-main) !important; }
+  body.desktop-layout-3 .chat-text { color: var(--text-main); }
+}
+@media (min-width: 801px) and (max-width: 1200px) {
+  body.desktop-layout-3 header { margin-left: 0; margin-right: 390px; font-size: 1.8rem; }
+}
