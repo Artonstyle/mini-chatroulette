@@ -5924,20 +5924,20 @@ body.bg-5::after {
   }
 }
 
-/* Three restrained interface palettes, independent of background selection. */
+/* Three neon interface palettes, independent of background selection. */
 body.theme-1 {
-  --ui-panel: #141c29; --ui-field: #0c121d; --ui-raised: #202d40;
-  --ui-accent: #a7d8ff; --ui-ink: #101c2b; --ui-border: #30435b;
+  --ui-panel: #080f20; --ui-field: #050a15; --ui-raised: #10213b; --ui-glow: rgba(0, 210, 255, .3); --ui-secondary: #397bff;
+  --ui-accent: #53edff; --ui-ink: #031322; --ui-border: #207d9e;
   --text-main: #edf4fc; --text-soft: #adbed1;
 }
 body.theme-2 {
-  --ui-panel: #0b2433; --ui-field: #071922; --ui-raised: #13394b;
-  --ui-accent: #5de0e6; --ui-ink: #062229; --ui-border: #275164;
+  --ui-panel: #140a20; --ui-field: #090611; --ui-raised: #291337; --ui-glow: rgba(218, 62, 255, .3); --ui-secondary: #ff4cbb;
+  --ui-accent: #de9aff; --ui-ink: #200b2b; --ui-border: #9144ae;
   --text-main: #e8f8fc; --text-soft: #a4c6d3;
 }
 body.theme-3 {
-  --ui-panel: #222427; --ui-field: #151719; --ui-raised: #33363b;
-  --ui-accent: #e1e4e8; --ui-ink: #1c1e22; --ui-border: #484c52;
+  --ui-panel: #061914; --ui-field: #040e0c; --ui-raised: #103329; --ui-glow: rgba(39, 255, 176, .28); --ui-secondary: #20cfc7;
+  --ui-accent: #65ffbf; --ui-ink: #05231b; --ui-border: #278b6c;
   --text-main: #f0f1f3; --text-soft: #b9bdc5;
 }
 body:is(.theme-1,.theme-2,.theme-3) { --panel-border: var(--ui-border); }
@@ -5982,3 +5982,31 @@ body:is(.theme-1,.theme-2,.theme-3) :is(.remote-status-sub,.auth-hint) { color: 
 body:is(.theme-1,.theme-2,.theme-3) :is(.chat-label,.auth-text-link,.auth-kicker) { color: var(--ui-accent) !important; }
 body:is(.theme-1,.theme-2,.theme-3) :is(input,textarea)::placeholder { color: var(--text-soft); opacity: .8; }
 body:is(.theme-1,.theme-2,.theme-3) button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+
+/* Light is applied to surfaces and controls, never to the video image. */
+body:is(.theme-1,.theme-2,.theme-3) :is(header,.mobile-logo) {
+  text-shadow: 0 0 12px var(--ui-glow), 0 0 30px var(--ui-glow) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(.local-video-wrap,.remote-wrap,.chat-box,.auth-dialog,.meeting-toolbar) {
+  box-shadow: 0 0 0 1px var(--ui-border), 0 0 20px var(--ui-glow), 0 14px 32px rgba(0,0,0,.35) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(.profile-form,.remote-status-inner) {
+  box-shadow: 0 0 12px var(--ui-glow), inset 0 1px 0 var(--ui-border) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(.btn-start,.btn-send,.auth-primary-btn) {
+  background: linear-gradient(120deg, var(--ui-accent), var(--ui-secondary)) !important;
+  box-shadow: 0 0 16px var(--ui-glow), inset 0 1px 0 rgba(255,255,255,.35) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(.desktop-menu-toggle,.theme-switch-btn,.layout-switch-btn,.bg-switch-btn,.auth-launch-btn,.meeting-toolbar button,.btn-next):not(:disabled) {
+  color: var(--ui-accent) !important;
+  box-shadow: inset 0 0 0 1px var(--ui-border), 0 0 10px var(--ui-glow) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) :is(input,select,textarea):focus {
+  outline: 2px solid var(--ui-accent) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 14px var(--ui-glow) !important;
+}
+body:is(.theme-1,.theme-2,.theme-3) .meeting-toolbar .meeting-stop:not(:disabled) {
+  color: #ffe9ed !important;
+  box-shadow: inset 0 0 0 1px #a44862, 0 0 12px rgba(255,66,115,.18) !important;
+}

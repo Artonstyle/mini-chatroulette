@@ -294,7 +294,7 @@ const DESKTOP_LAYOUT_STORAGE_KEY = "mini-chatroulette-desktop-layout";
 
 function updateThemeButtons(themeName) {
     const themeNumber = Math.max(1, THEMES.indexOf(themeName) + 1);
-    const themeLabel = ["Midnight", "Ocean", "Graphite"][themeNumber - 1];
+    const themeLabel = ["Neon Ice", "Neon Purple", "Neon Mint"][themeNumber - 1];
     [themeToggleDesktop, themeToggleMobile].forEach((button) => {
         if (!button) return;
         button.innerHTML = `${THEME_ICON}<span>${themeNumber}</span>`;
