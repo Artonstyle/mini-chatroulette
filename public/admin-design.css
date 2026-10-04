@@ -71,3 +71,22 @@ input[type=password] { background:#0b1422; border-color:var(--line); }
   .login { padding:24px; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } button { transition:none; } }
+/* Sidebar navigation and separate dashboard sections. */
+.dashboard > [hidden] { display: none !important; }
+.admin-nav-brand { font-size:15px; font-weight:700; color:var(--text); padding:4px 14px 24px; }
+.admin-nav-brand span { display:block; color:var(--muted); font-size:12px; font-weight:400; margin-top:6px; }
+.admin-nav a[aria-current="page"] { background:#8bd7ee15; color:var(--blue); box-shadow:inset 3px 0 var(--blue); }
+.dashboard > :is(.reports-panel,.bans-panel) { grid-column:1/-1; }
+@media(min-width:901px) {
+  .shell { max-width:1700px; padding-left:260px; }
+  .admin-nav { position:fixed; inset:0 auto 0 0; width:224px; flex-direction:column; align-items:stretch; gap:6px; padding:32px 14px; background:#101a28; border:0; border-right:1px solid var(--line); z-index:10; }
+  .admin-nav a { padding:13px 14px; }
+  .admin-nav .admin-site-link { margin: auto 0 0; }
+}
+@media(max-width:900px) {
+  .admin-nav-brand { display:none; }
+  .admin-nav { flex-wrap:nowrap; overflow-x:auto; }
+  .admin-nav a { flex-shrink:0; }
+  .admin-nav a[aria-current="page"] { box-shadow:inset 0 -2px var(--blue); }
+}
+body:not(:has(.dashboard.show)) .shell { padding-left:24px; }

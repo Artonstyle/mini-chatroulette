@@ -223,7 +223,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="admin-design.css?v=20261004-01">
+  <link rel="stylesheet" href="admin-design.css?v=20261004-02">
 </head>
 <body>
   <div class="shell">
@@ -252,7 +252,7 @@
         </div>
       </div>
 
-      <nav class="admin-nav" aria-label="Dashboard-Bereiche"><a href="#live-users">Live-Nutzer</a><a href="#registered-users">Registrierte Nutzer</a><a href="#moderation">Meldungen</a><a href="#blocked-users">Sperrliste</a><a href="/" class="admin-site-link">Zur Website ↗</a></nav>
+      <nav class="admin-nav" aria-label="Dashboard-Bereiche"><div class="admin-nav-brand">Mini Chatroulette<span>Administration</span></div><a href="#overview">Übersicht</a><a href="#live-users">Live-Nutzer</a><a href="#registered-users">Registrierte Nutzer</a><a href="#moderation">Meldungen</a><a href="#blocked-users">Sperrliste</a><a href="/" class="admin-site-link">Zur Website ↗</a></nav>
       <div class="stats">
         <div class="panel stat"><div class="muted">Online</div><strong id="statOnline">0</strong></div>
         <div class="panel stat"><div class="muted">Wartet</div><strong id="statWaiting">0</strong></div>
@@ -635,5 +635,6 @@
       });
     }
   </script>
+  <script src="admin-navigation.js?v=20261004-01"></script>
 </body>
 </html>
