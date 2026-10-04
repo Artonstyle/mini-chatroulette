@@ -1,6 +1,5 @@
 (function () {
   const STATUS_MEDIA_BUCKET = "status-media";
-  const DEMO_CONTACT_ID = "__demo_contact__";
 
   const client = window.getMiniChatrouletteSupabaseClient?.();
 
@@ -60,7 +59,14 @@
   const directMessageMediaInput = document.getElementById("directMessageMediaInput");
   const directChatFab = document.querySelector(".mobile-chat-fab");
 
+  if (directMessageAttach) directMessageAttach.hidden = true;
+  if (directMessageMic) directMessageMic.hidden = true;
+
   let currentSession = null;
+  let activeHubTab = "chats";
+  let profilesUnavailable = false;
+  let sendingMessage = false;
+  let chatRefreshInFlight = false;
   let profileMap = new Map();
   let profiles = [];
   let statusItems = [];
@@ -77,29 +83,6 @@
   let textDragOffset = { x: 0, y: 0 };
   let realtimeChannel = null;
   let typingTimeout = null;
-  let demoMessages = [
-    {
-      id: "demo-1",
-      sender_id: DEMO_CONTACT_ID,
-      recipient_id: "me",
-      message: "Hey, das ist ein Demo-Chat zum Testen deiner Chat-Ansicht.",
-      created_at: new Date(Date.now() - 1000 * 60 * 22).toISOString()
-    },
-    {
-      id: "demo-2",
-      sender_id: "me",
-      recipient_id: DEMO_CONTACT_ID,
-      message: "Perfekt, dann kann ich Liste, Verlauf und Senden testen.",
-      created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString()
-    },
-    {
-      id: "demo-3",
-      sender_id: DEMO_CONTACT_ID,
-      recipient_id: "me",
-      message: "Genau. Diese Demo bleibt lokal und ist nur für deinen Test da.",
-      created_at: new Date(Date.now() - 1000 * 60 * 12).toISOString()
-    }
-  ];
 
   function getStatusMediaInput() {
     return document.getElementById("statusMediaFileInline");
@@ -121,6 +104,7 @@
   }
 
   function setActivePane(tabName) {
+    activeHubTab = tabName;
     const openPane = tabName === "status" || tabName === "calls" || tabName === "chat" || tabName === "settings";
     setHubOpen(openPane);
     body.classList.toggle("mobile-status-mode", tabName === "status");
@@ -335,16 +319,6 @@
       .join("");
   }
 
-  function getDemoProfile() {
-    return {
-      id: DEMO_CONTACT_ID,
-      username: "demo.chat",
-      display_name: "Demo Chat",
-      phone_number: "Nur zum Testen",
-      avatar_url: "",
-      is_demo: true
-    };
-  }
 
   function renderAvatarMarkup(profile) {
     const avatarUrl = String(profile?.avatar_url || "").trim();
@@ -502,6 +476,7 @@
   }
 
   async function loadProfiles() {
+    profilesUnavailable = false;
     if (!currentSession?.user) {
       profiles = [];
       profileMap = new Map();
@@ -516,6 +491,7 @@
       .order("display_name", { ascending: true });
 
     if (error) {
+      profilesUnavailable = true;
       profiles = [];
       profileMap = new Map();
       throw error;
@@ -576,8 +552,16 @@
   function renderChatContacts() {
     if (!directChatList) return;
 
+    if (!currentSession?.user) {
+      directChatList.innerHTML = requireLoginMessage('Melde dich an, um echte Nachrichten mit anderen Nutzern auszutauschen.');
+      return;
+    }
     const query = directChatSearch?.value?.trim().toLowerCase() || "";
-    const contactPool = [getDemoProfile(), ...profiles];
+    if (profilesUnavailable) {
+      directChatList.innerHTML = requireLoginMessage('Chat-Verbindung momentan nicht verfügbar. Bitte versuche es später erneut.');
+      return;
+    }
+    const contactPool = profiles;
     const filtered = contactPool.filter((profile) => {
       const haystack = `${profile.display_name || ""} ${profile.username || ""} ${profile.phone_number || ""}`.toLowerCase();
       return haystack.includes(query);
@@ -588,24 +572,16 @@
       const previewB = chatPreviewMap.get(b.id);
       const timeA = previewA?.created_at ? new Date(previewA.created_at).getTime() : 0;
       const timeB = previewB?.created_at ? new Date(previewB.created_at).getTime() : 0;
-      if (a.id === DEMO_CONTACT_ID) return -1;
-      if (b.id === DEMO_CONTACT_ID) return 1;
       return timeB - timeA || getDisplayName(a).localeCompare(getDisplayName(b), "de");
     });
 
     if (!filtered.length) {
-      directChatList.innerHTML = '<div class="mobile-empty-state">Keine Kontakte gefunden.</div>';
+      directChatList.innerHTML = '<div class="mobile-empty-state">Noch keine passenden Nutzer gefunden. Suche nach einem registrierten Namen oder einer Telefonnummer.</div>';
       return;
     }
 
     directChatList.innerHTML = filtered.map((profile) => {
-      const preview = profile.id === DEMO_CONTACT_ID
-        ? {
-            message: demoMessages[demoMessages.length - 1]?.message || "Demo-Nachricht",
-            created_at: demoMessages[demoMessages.length - 1]?.created_at || new Date().toISOString(),
-            unreadCount: 0
-          }
-        : chatPreviewMap.get(profile.id);
+      const preview = chatPreviewMap.get(profile.id);
       return `
         <button class="mobile-chat-contact ${profile.id === activeContactId ? "active" : ""}" type="button" data-contact-id="${profile.id}">
           ${renderAvatarMarkup(profile)}
@@ -650,39 +626,6 @@
       return;
     }
 
-    if (activeContactId === DEMO_CONTACT_ID) {
-      const demoProfile = getDemoProfile();
-      setThreadAvatar(demoProfile);
-      if (directChatClear) directChatClear.hidden = false;
-      if (directChatTyping) directChatTyping.hidden = true;
-      if (directChatTitle) directChatTitle.textContent = getDisplayName(demoProfile);
-      if (directChatMeta) directChatMeta.textContent = "Lokaler Testchat";
-      directChatHeader.innerHTML = `
-        <strong>${escapeHtml(getDisplayName(demoProfile))}</strong>
-        <span>Teste hier frei die Chat-Oberfläche.</span>
-      `;
-      directMessageInput.disabled = false;
-      directMessageSend.disabled = false;
-      directMessageInput.placeholder = "Demo-Nachricht schreiben...";
-      directMessageList.innerHTML = demoMessages.map((message) => `
-        <article class="mobile-direct-message ${message.sender_id === "me" ? "me" : ""}">
-          <button class="mobile-direct-message-delete" type="button" data-delete-message="${message.id}" aria-label="Nachricht löschen">×</button>
-          <div>${escapeHtml(message.message)}</div>
-          <span class="meta">${formatDate(message.created_at)}</span>
-        </article>
-      `).join("");
-      directMessageList.querySelectorAll("[data-delete-message]").forEach((button) => {
-        button.addEventListener("click", async (event) => {
-          event.stopPropagation();
-          demoMessages = demoMessages.filter((message) => message.id !== button.dataset.deleteMessage);
-          renderChatContacts();
-          await loadDirectMessages();
-        });
-      });
-      directMessageList.scrollTop = directMessageList.scrollHeight;
-      updateChatView();
-      return;
-    }
 
     if (!currentSession?.user) {
       setThreadAvatar(null);
@@ -717,6 +660,7 @@
     `;
 
     directMessageInput.disabled = false;
+    directMessageInput.placeholder = "Nachricht schreiben...";
     directMessageSend.disabled = false;
 
     const userId = currentSession.user.id;
@@ -728,7 +672,7 @@
       .limit(200);
 
     if (error) {
-      directMessageList.innerHTML = requireLoginMessage("Direktnachrichten konnten noch nicht geladen werden. Führe zuerst die neue SQL-Datei in Supabase aus.");
+      directMessageList.innerHTML = requireLoginMessage("Nachrichten konnten nicht geladen werden. Bitte versuche es gleich erneut.");
       updateChatView();
       return;
     }
@@ -771,55 +715,34 @@
   async function sendDirectMessage(event) {
     event.preventDefault();
 
-    if (!activeContactId) return;
+    if (!activeContactId || sendingMessage) return;
     const text = directMessageInput?.value?.trim();
     if (!text) return;
 
-    if (activeContactId === DEMO_CONTACT_ID) {
-      demoMessages.push({
-        id: `demo-${Date.now()}`,
-        sender_id: "me",
-        recipient_id: DEMO_CONTACT_ID,
-        message: text,
-        created_at: new Date().toISOString()
-      });
-      directMessageInput.value = "";
-      renderChatContacts();
-      await loadDirectMessages();
-      if (directChatTyping) {
-        directChatTyping.hidden = false;
-        directChatTyping.textContent = "Demo Chat tippt...";
-      }
-      window.clearTimeout(typingTimeout);
-      typingTimeout = window.setTimeout(async () => {
-        demoMessages.push({
-          id: `demo-reply-${Date.now()}`,
-          sender_id: DEMO_CONTACT_ID,
-          recipient_id: "me",
-          message: "Alles klar, das war eine automatische Demo-Antwort.",
-          created_at: new Date().toISOString()
-        });
-        if (directChatTyping) directChatTyping.hidden = true;
-        renderChatContacts();
-        await loadDirectMessages();
-      }, 1100);
-      return;
-    }
 
     if (!currentSession?.user) return;
 
-    const { error } = await client.from("direct_messages").insert({
+    sendingMessage = true;
+    directMessageSend.disabled = true;
+    const recipientId = activeContactId;
+    let error;
+    try {
+      ({ error } = await client.from("direct_messages").insert({
       sender_id: currentSession.user.id,
-      recipient_id: activeContactId,
+      recipient_id: recipientId,
       message: text
-    });
+      }));
+    } catch (failure) { error = failure; } finally {
+      sendingMessage = false;
+      directMessageSend.disabled = !currentSession?.user || !activeContactId;
+    }
 
     if (error) {
-      directMessageList.innerHTML = requireLoginMessage("Nachricht konnte nicht gesendet werden. Bitte prüfe, ob die SQL-Datei in Supabase ausgeführt wurde.");
+      directMessageList.innerHTML = requireLoginMessage("Nachricht konnte nicht gesendet werden. Dein Text bleibt erhalten. Bitte versuche es erneut.");
       return;
     }
 
-    directMessageInput.value = "";
+    if (activeContactId === recipientId && directMessageInput.value.trim() === text) directMessageInput.value = "";
     await loadChatPreviews();
     renderChatContacts();
     await loadDirectMessages();
@@ -828,12 +751,6 @@
   async function deleteDirectMessage(messageId) {
     if (!messageId || !activeContactId) return;
 
-    if (activeContactId === DEMO_CONTACT_ID) {
-      demoMessages = demoMessages.filter((message) => message.id !== messageId);
-      renderChatContacts();
-      await loadDirectMessages();
-      return;
-    }
 
     if (!currentSession?.access_token) return;
 
@@ -859,12 +776,6 @@
   async function clearDirectChat() {
     if (!activeContactId) return;
 
-    if (activeContactId === DEMO_CONTACT_ID) {
-      demoMessages = [];
-      renderChatContacts();
-      await loadDirectMessages();
-      return;
-    }
 
     if (!currentSession?.access_token) return;
 
@@ -888,11 +799,13 @@
   }
 
   async function handleRealtimeMessageChange() {
-    await loadChatPreviews();
-    renderChatContacts();
-    if (activeContactId) {
-      await loadDirectMessages();
-    }
+    if (chatRefreshInFlight) return;
+    chatRefreshInFlight = true;
+    try {
+      await loadChatPreviews();
+      renderChatContacts();
+      if (activeContactId) await loadDirectMessages();
+    } finally { chatRefreshInFlight = false; }
   }
 
   function setupRealtimeSubscriptions() {
@@ -1286,31 +1199,6 @@
   directMessageMediaInput?.addEventListener("change", () => {
     const file = directMessageMediaInput.files?.[0];
     if (!file) return;
-    const label = file.type.startsWith("image/")
-      ? `Foto ausgewählt: ${file.name}`
-      : file.type.startsWith("video/")
-        ? `Video ausgewählt: ${file.name}`
-        : `Datei ausgewählt: ${file.name}`;
-    if (activeContactId === DEMO_CONTACT_ID) {
-      demoMessages.push({
-        id: `demo-file-${Date.now()}`,
-        sender_id: "me",
-        recipient_id: DEMO_CONTACT_ID,
-        message: label,
-        created_at: new Date().toISOString()
-      });
-      renderChatContacts();
-      void loadDirectMessages();
-    } else {
-      if (directChatTyping) {
-        directChatTyping.hidden = false;
-        directChatTyping.textContent = "Medienversand kommt als nächster Schritt.";
-      }
-      window.clearTimeout(typingTimeout);
-      typingTimeout = window.setTimeout(() => {
-        if (directChatTyping) directChatTyping.hidden = true;
-      }, 1600);
-    }
     directMessageMediaInput.value = "";
   });
   directMessageMic?.addEventListener("click", () => {
@@ -1323,6 +1211,9 @@
       if (directChatTyping) directChatTyping.hidden = true;
     }, 1600);
   });
+  window.setInterval(() => {
+    if (currentSession?.user && !document.hidden && !mobileHub?.hidden && activeHubTab === 'chat') void handleRealtimeMessageChange();
+  }, 5000);
   client.auth.onAuthStateChange((_event, session) => {
     currentSession = session;
     setupRealtimeSubscriptions();
