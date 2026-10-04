@@ -19,6 +19,9 @@
     color: var(--text-main);
   }
   body[class]::before, body[class]::after { display: none !important; }
+  body.mobile-chat-mode:not(.mobile-chat-thread-open) .mobile-hub {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+  }
   body[class] .mobile-logo { color: #e8f5ff !important; text-shadow: none !important; }
   body[class] :is(.mobile-hub, .mobile-pane, .mobile-chat-shell, .mobile-chat-thread) {
     background: var(--mobile-bg) !important;
