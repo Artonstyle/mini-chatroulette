@@ -19,7 +19,7 @@
     color: var(--text-main);
   }
   body[class]::before, body[class]::after { display: none !important; }
-  body.mobile-chat-mode:not(.mobile-chat-thread-open) .mobile-hub {
+  body.mobile-pane-open:not(.mobile-status-mode):not(.mobile-chat-thread-open) .mobile-hub {
     top: calc(8px + env(safe-area-inset-top, 0px));
   }
   body[class] .mobile-logo { color: #e8f5ff !important; text-shadow: none !important; }
