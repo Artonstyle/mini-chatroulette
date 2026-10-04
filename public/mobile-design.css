@@ -1,0 +1,101 @@
+/* Mobile visual system. Desktop themes and backgrounds retain their own palette. */
+@media (max-width: 800px) {
+  body[class] {
+    --mobile-bg: #090f1b;
+    --mobile-panel: #111b2a;
+    --mobile-raised: #1a273a;
+    --mobile-line: #2a384c;
+    --mobile-accent: #8bd7ee;
+    --ui-panel: var(--mobile-panel);
+    --ui-field: #0d1624;
+    --ui-raised: var(--mobile-raised);
+    --ui-accent: var(--mobile-accent);
+    --ui-secondary: #a7baff;
+    --ui-border: var(--mobile-line);
+    --ui-glow: transparent;
+    --text-main: #f0f5fc;
+    --text-soft: #a9b8ce;
+    background: var(--mobile-bg) !important;
+    color: var(--text-main);
+  }
+  body[class]::before, body[class]::after { display: none !important; }
+  body[class] .mobile-logo { color: #e8f5ff !important; text-shadow: none !important; }
+  body[class] :is(.mobile-hub, .mobile-pane, .mobile-chat-shell, .mobile-chat-thread) {
+    background: var(--mobile-bg) !important;
+    border-color: var(--mobile-line) !important;
+    box-shadow: none !important;
+  }
+  body[class] :is(.mobile-pane-head, .mobile-chat-appbar, .mobile-thread-appbar, .mobile-chat-search-wrap) {
+    background: var(--mobile-panel);
+    border-color: var(--mobile-line);
+  }
+  body[class] :is(.mobile-pane-head, .mobile-chat-appbar) { padding: 20px 18px 14px; }
+  body[class] :is(.mobile-card, .mobile-settings-card, .mobile-status-item, .mobile-call-item, .mobile-empty-state) {
+    background: var(--mobile-panel);
+    border: 1px solid var(--mobile-line);
+    border-radius: 18px;
+    box-shadow: none;
+  }
+  body[class] .mobile-empty-state { color: var(--text-soft); line-height: 1.6; padding: 24px 18px; }
+  body[class] .mobile-bottom-nav {
+    background: #101a29f5;
+    border: 1px solid var(--mobile-line);
+    box-shadow: 0 -6px 24px #00000020;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  body[class] .mobile-bottom-tab {
+    min-height: 56px; min-width: 0;
+    color: var(--text-soft); background: transparent;
+    border: 1px solid transparent; box-shadow: none;
+    border-radius: 16px;
+  }
+  body[class] .mobile-bottom-tab:is(.active, [aria-pressed="true"]) {
+    color: var(--mobile-accent); background: #8bd7ee13;
+    border-color: transparent; box-shadow: none;
+  }
+  body[class] .mobile-bottom-label { font-size: 11px; font-weight: 600; }
+  body[class] :is(.mobile-chat-search, .mobile-message-form input, .mobile-pane input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .mobile-pane textarea) {
+    color: var(--text-main); background: var(--mobile-raised);
+    border: 1px solid var(--mobile-line); border-radius: 14px;
+    font-size: 16px; min-height: 46px; box-sizing: border-box;
+  }
+  body[class] .mobile-chat-search input { background: transparent !important; border: 0 !important; min-width: 0; width: 100%; }
+  body[class] .mobile-chat-search:focus-within { outline: 2px solid var(--mobile-accent); outline-offset: 2px; }
+  body[class] .mobile-chat-search input:focus { outline: none !important; }
+  body[class] .mobile-chat-list-view { display: flex; flex-direction: column; min-height: 0; }
+  body[class] .mobile-chat-contact-list { height: auto; flex: 1; min-height: 0; align-content: start; padding: 8px 10px 88px; gap: 4px; }
+  body[class] .mobile-chat-contact { padding: 14px 10px; border-radius: 14px; min-width: 0; }
+  body[class] .mobile-chat-contact.active { background: #8bd7ee12; }
+  body[class] .mobile-chat-contact :is(.mobile-chat-contact-copy, .mobile-chat-contact-top, .mobile-chat-contact-bottom) { display: flex; margin-top: 0; }
+  body[class] :is(.mobile-chat-avatar, .mobile-thread-avatar) { background: #243952; color: #bcecff; }
+  body[class] .mobile-chat-contact .mobile-chat-avatar { display: inline-flex; margin-top: 0; color: #bcecff; }
+  body[class] :is(.mobile-chat-fab, #directMessageSend, .mobile-settings-btn-primary, .mobile-status-editor-send, .mobile-chat-unread-badge) {
+    background: var(--mobile-accent); color: #092232;
+    border-color: transparent; box-shadow: none; font-weight: 700;
+  }
+  body[class] .mobile-chat-fab { box-shadow: 0 6px 20px #00000035; }
+  body[class] .mobile-direct-message { background: var(--mobile-raised); border-radius: 16px 16px 16px 5px; padding-right: 38px; overflow-wrap: anywhere; }
+  body[class] .mobile-direct-message.me { background: #233d54; border-radius: 16px 16px 5px 16px; }
+  body[class] .mobile-direct-message .meta { color: #a9bfd4; }
+  body[class] .mobile-message-form { background: var(--mobile-bg); border-top: 1px solid var(--mobile-line); gap: 8px; }
+  body[class] .mobile-message-form input { min-width: 0; }
+  body[class] .mobile-message-form button { min-height: 46px; border-radius: 14px; }
+  body[class] .mobile-message-form [hidden] { display: none !important; }
+  body[class] :is(.mobile-thread-back, .mobile-thread-clear) { min-width: 44px; min-height: 44px; background: var(--mobile-raised); }
+  body[class] .mobile-thread-typing { color: var(--mobile-accent); }
+  body[class] :is(.mobile-settings-item-primary, .mobile-choice-btn.is-selected) { background: #8bd7ee10; border-color: var(--mobile-line); }
+  body[class] :is(.mobile-settings-item-primary .mobile-settings-item-meta, .mobile-choice-btn.is-selected) { color: var(--mobile-accent); }
+  body[class] .mobile-privacy-item input:checked + .mobile-switch { background: #335870; }
+  body[class] .mobile-privacy-item input:checked + .mobile-switch::after,
+  body[class] .mobile-radio-mark::after { background: var(--mobile-accent); }
+  body[class] .mobile-radio-item input:checked + .mobile-radio-mark { border-color: var(--mobile-accent); }
+  body[class] :is(.mobile-status-card-own .mobile-status-thumb, .mobile-status-add) { background: var(--mobile-raised); color: var(--mobile-accent); border-color: var(--mobile-line); }
+  body[class] :is(.local-video-wrap, .remote-wrap, .chat-box, .profile-form, .auth-dialog) { border-color: var(--mobile-line) !important; box-shadow: none !important; }
+  body[class] :is(.btn-start, .btn-send, .auth-primary-btn) { background: var(--mobile-accent) !important; color: #092232 !important; box-shadow: none !important; }
+  body[class] :is(.btn-stop) { background: #402431 !important; color: #ffd1dc !important; }
+  body[class] .mobile-status-card { background: var(--mobile-panel); }
+  body[class] .mobile-status-thumb { box-shadow: inset 0 0 0 2px #8bd7ee70; color: var(--mobile-accent); }
+  body[class] .mobile-status-feed-avatar { background: #243952; color: #bcecff; }
+  body[class] button:disabled { opacity: .45; box-shadow: none !important; }
+  body[class] :is(button, a, input, textarea):focus-visible { outline: 2px solid var(--mobile-accent); outline-offset: 3px; }
+}
